@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ck-sys-erp-api"
+version = "1.0.0"
+description = "FastAPI gateway for the CK SYS Supabase ERP"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "fastapi==0.141.1",
+  "httpx==0.28.1",
+  "pydantic==2.12.5",
+  "pydantic-settings==2.15.0",
+  "PyJWT[crypto]==2.14.0",
+  "uvicorn[standard]==0.53.0",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+

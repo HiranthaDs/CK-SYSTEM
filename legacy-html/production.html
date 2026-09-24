@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enterprise ERP | Advanced Production Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf is lazy-loaded only when a PDF is requested -->
+    <!-- Chart.js is lazy-loaded after operational data is rendered -->
+    <style>
+        :root { --mac-bg: #f5f5f7; --mac-window: #ffffff; --mac-sidebar: rgba(245, 245, 247, 0.85); --mac-border: #e5e5e5; --mac-text: #1d1d1f; }
+        body { background-color: var(--mac-bg); color: var(--mac-text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
+        .mac-window { background: var(--mac-window); box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); overflow: hidden; }
+        @media (min-width: 768px) { .mac-window { border-radius: 12px; } }
+        .mac-titlebar { background: linear-gradient(to bottom, #ffffff, #f6f6f6); border-bottom: 1px solid var(--mac-border); height: 40px; display: flex; align-items: center; padding: 0 16px; user-select: none; }
+        .mac-traffic-lights { display: flex; gap: 8px; } .traffic-light { width: 12px; height: 12px; border-radius: 50%; } .tl-red { background-color: #ff5f56; } .tl-yellow { background-color: #ffbd2e; } .tl-green { background-color: #27c93f; }
+        .glass-panel { background: var(--mac-sidebar); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .nav-item { border-radius: 8px; transition: all 0.2s ease; } .nav-item:hover, .nav-item.active { background-color: rgba(0, 0, 0, 0.05); } .nav-item.active { background-color: #007aff; color: white !important; }
+        .mobile-nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #8e8e93; transition: color 0.2s; padding: 4px 0; width: 20%; } .mobile-nav-item.active { color: #007aff; } .mobile-nav-item span { font-size: 10px; margin-top: 4px; font-weight: 500; }
+        .mac-input { border: 1px solid #d1d1d6; border-radius: 8px; padding: 10px 14px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff; font-size: 14px; width: 100%; } 
+        .mac-input:focus { outline: none; border-color: #007aff; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2); }
+        .tab-btn { border-bottom: 2px solid transparent; transition: all 0.2s; } .tab-btn.active { border-bottom-color: #007aff; color: #007aff; font-weight: bold; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Stripe-like Advanced PDF Styles */
+        .stripe-pdf { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; background: #ffffff; }
+        .stripe-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .stripe-table th { background-color: #f8fafc; color: #6b7280; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px; border-bottom: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; font-weight: 700; text-align: left; }
+        .stripe-table td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 11px; page-break-inside: avoid; }
+    
+
+        /* ==============================================================
+           HICH FIX PACK V7 - Professional responsive ERP shell
+           ============================================================== */
+        html, body { width: 100%; height: 100%; min-height: 100dvh; overflow: hidden; background: #f3f4f6 !important; }
+        body { display: block !important; padding: 0 !important; }
+        .mac-window { width: 100% !important; height: 100dvh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; border: 0 !important; box-shadow: none !important; }
+        .mac-titlebar { height: 56px !important; background: #ffffff !important; border-bottom: 1px solid #e5e7eb !important; box-shadow: none !important; }
+        .mac-traffic-lights, .traffic-light { display: none !important; }
+        .glass-panel { background: #ffffff !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+        .nav-item { border-radius: 10px !important; }
+        .nav-item.active { background: #111827 !important; color: #ffffff !important; }
+        .nav-item.active svg { color: #ffffff !important; }
+        .mac-input { min-height: 42px; border-radius: 10px !important; }
+        .admin-scroll, .overflow-x-auto { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+        table { border-collapse: separate; border-spacing: 0; }
+        main { min-width: 0 !important; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+        @media (min-width: 768px) {
+            .mac-window > .flex.flex-1 { height: calc(100dvh - 56px) !important; min-height: 0 !important; }
+            aside { height: calc(100dvh - 56px) !important; }
+            main { height: 100% !important; }
+            .mobile-only { display: none !important; }
+        }
+
+        @media (max-width: 767px) {
+            html, body { height: 100dvh !important; overflow: hidden !important; }
+            .mac-window { height: 100dvh !important; min-height: 100dvh !important; overflow: hidden !important; }
+            .mac-window > .flex.flex-1 { height: calc(100dvh - 68px - env(safe-area-inset-bottom)) !important; min-height: 0 !important; padding-bottom: 0 !important; overflow: hidden !important; }
+            main { height: 100% !important; overflow-y: auto !important; overflow-x: hidden !important; padding: 12px !important; -webkit-overflow-scrolling: touch; }
+            .mac-input, input, select, textarea { font-size: 16px !important; min-height: 44px !important; }
+            .fixed.inset-0 { padding: 10px !important; }
+            .fixed.inset-0 > .bg-white, .fixed.inset-0 .rounded-2xl { max-height: 92dvh !important; overflow-y: auto !important; }
+            table { min-width: 720px; }
+            .text-4xl { font-size: 1.75rem !important; line-height: 2rem !important; }
+            .text-3xl { font-size: 1.5rem !important; line-height: 1.9rem !important; }
+            .text-2xl { font-size: 1.25rem !important; line-height: 1.65rem !important; }
+            .mobile-nav-item { min-height: 60px; color: #6b7280 !important; }
+            .mobile-nav-item.active { color: #111827 !important; font-weight: 800 !important; }
+            .mobile-nav-item span { font-size: 10px !important; }
+            #toast { width: calc(100vw - 24px) !important; justify-content: center; border-radius: 14px !important; }
+        }
+
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center md:p-6 pb-0 bg-gray-100">
+
+    <!-- Microsoft Login Overlay (Password Only) -->
+    <div id="ms-login-overlay" class="fixed inset-0 bg-[#f3f2f1] z-[99999] flex flex-col items-center justify-center hidden">
+        <div class="bg-white p-10 w-full max-w-[440px] shadow-[0_2px_6px_rgba(0,0,0,0.2)]">
+            <div class="flex items-center gap-2 mb-6">
+                <svg viewBox="0 0 23 23" class="w-6 h-6"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+                <span class="text-xl font-semibold text-[#737373]">Microsoft</span>
+            </div>
+            <h2 class="text-2xl font-semibold text-[#1b1b1b] mb-4 tracking-tight">Sign in</h2>
+            <p class="text-sm text-gray-500 mb-6 font-medium">to continue to Enterprise ERP</p>
+            <form onsubmit="doLogin(event)" class="space-y-4">
+                <p id="ms-err" class="text-[#e81123] text-[13px] hidden">Incorrect password. Please try again.</p>
+                <div>
+                    <input type="password" id="ms-pass" placeholder="Enter Access Password" required class="w-full border-b border-black outline-none py-2 focus:border-b-2 focus:border-[#0067b8] text-[15px] transition-all bg-transparent placeholder-gray-600">
+                </div>
+                <p class="text-[13px] text-[#0067b8] hover:text-[#333] cursor-pointer mt-4 inline-block">Can't access your account?</p>
+                <div class="flex justify-end mt-8">
+                    <button type="submit" class="bg-[#0067b8] hover:bg-[#005da6] text-white px-8 py-2 font-semibold text-[15px] transition-colors">Sign in</button>
+                </div>
+            </form>
+        </div>
+        <div class="mt-8 text-center text-xs text-gray-500 font-mono">
+            <p>Super Admin Pass: superadmin123</p>
+            <p>Admin Pass: admin123</p>
+        </div>
+        <div class="fixed bottom-4 flex gap-4 text-xs text-gray-500">
+            <a href="#" class="hover:underline">Terms of use</a>
+            <a href="#" class="hover:underline">Privacy & cookies</a>
+            <span>...</span>
+        </div>
+    </div>
+
+    <!-- Global Loading Overlay -->
+    <div id="loader" class="hidden fixed inset-0 bg-white/95 backdrop-blur-md z-[999] flex flex-col items-center justify-center transition-opacity">
+        <div class="animate-spin rounded-full h-14 w-14 border-4 border-gray-200 border-t-indigo-600 mb-4 shadow-lg"></div>
+        <p class="text-sm font-black text-gray-800 tracking-widest uppercase" id="loader-msg">Loading System...</p>
+    </div>
+    
+    <!-- Global Toast Notification -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 -translate-y-20 opacity-0 transition-all duration-300 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 z-[1000]">
+        <i data-lucide="info" class="w-5 h-5 text-blue-400" id="toast-icon"></i>
+        <span id="toast-msg" class="text-sm font-bold tracking-wide"></span>
+    </div>
+
+    <!-- Main Window Interface -->
+    <div class="mac-window w-full h-full md:max-w-7xl flex flex-col relative bg-white shadow-2xl">
+        <div class="mac-titlebar shrink-0 hidden md:flex justify-between">
+            <div class="mac-traffic-lights items-center"><div class="traffic-light tl-red"></div><div class="traffic-light tl-yellow"></div><div class="traffic-light tl-green"></div></div>
+            <div class="text-xs font-bold tracking-widest text-gray-600 absolute left-1/2 transform -translate-x-1/2 uppercase">Advanced Production & Manufacturing Hub</div>
+            <div class="flex items-center gap-2">
+                <span id="user-role-badge" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-gray-100 text-gray-600 border border-gray-200 rounded shadow-inner hidden md:inline-block"></span>
+                <span id="sync-status" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-green-50 text-green-600 border border-green-200 rounded shadow-inner">Online</span>
+                <button onclick="doLogout()" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded shadow-inner hover:bg-red-100 transition flex items-center gap-1"><i data-lucide="log-out" class="w-3 h-3"></i> Logout</button>
+            </div>
+        </div>
+
+        <div class="flex flex-1 overflow-hidden flex-col md:flex-row pb-16 md:pb-0 min-h-0">
+            <aside class="glass-panel w-64 flex-shrink-0 hidden md:flex flex-col p-4 border-r border-gray-200 overflow-y-auto">
+                <div class="mb-6"><nav class="space-y-1">
+                    <a href="index.html" id="nav-acc-link" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="pie-chart" class="w-4 h-4"></i> Accounting / Reports</a>
+                    <a href="production.html" class="nav-item active w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="factory" class="w-4 h-4"></i> Production</a>
+                    <a href="sales.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Sales & Invoices</a>
+                    <a href="inventory.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="package" class="w-4 h-4"></i> Inventory</a>
+                    <a href="employees.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="users" class="w-4 h-4"></i> Staff & Payroll</a>
+                </nav></div>
+                <div class="mt-auto space-y-3">
+                    <button onclick="openProdModal(null)" class="w-full bg-indigo-600 text-white px-4 py-4 rounded-xl font-black shadow-lg transform active:scale-95 transition flex justify-center items-center gap-2 hover:bg-indigo-700 uppercase tracking-widest text-[10px]"><i data-lucide="clipboard-plus" class="w-4 h-4"></i> Log Production Run</button>
+                    <button onclick="openRMModal(null)" class="w-full bg-orange-600 text-white px-4 py-4 rounded-xl font-black shadow-lg transform active:scale-95 transition flex justify-center items-center gap-2 hover:bg-orange-700 uppercase tracking-widest text-[10px]"><i data-lucide="truck" class="w-4 h-4"></i> Receive Bulk Plastic</button>
+                    <button onclick="openConversionModal()" class="w-full bg-emerald-600 text-white px-4 py-4 rounded-xl font-black shadow-lg transform active:scale-95 transition flex justify-center items-center gap-2 hover:bg-emerald-700 uppercase tracking-widest text-[10px]"><i data-lucide="recycle" class="w-4 h-4"></i> Convert Bulk to Chips</button>
+                    <button onclick="generateDailyPDF()" class="w-full bg-white border border-gray-200 text-gray-800 px-4 py-3 rounded-xl text-[10px] font-bold shadow-sm hover:shadow transition flex items-center justify-center gap-2 uppercase tracking-widest"><i data-lucide="printer" class="w-4 h-4"></i> Print Daily Report</button>
+                </div>
+            </aside>
+
+            <main class="flex-1 bg-gray-50 p-4 md:p-6 flex flex-col min-w-0 min-h-0 overflow-hidden relative">
+                
+                <div class="bg-white p-3 border-b border-gray-200 rounded-t-xl shrink-0 flex justify-between items-center mb-4 shadow-sm">
+                    <div class="flex gap-4 md:gap-6 px-2 overflow-x-auto">
+                        <button onclick="switchView('dash-view')" id="btn-dash-view" class="tab-btn active pb-1 text-sm font-bold text-gray-500 whitespace-nowrap tracking-wide">Production Dashboard</button>
+                        <button onclick="switchView('rm-view')" id="btn-rm-view" class="tab-btn pb-1 text-sm font-bold text-gray-500 whitespace-nowrap tracking-wide">Bulk RM Stock</button>
+                        <button onclick="switchView('chip-view')" id="btn-chip-view" class="tab-btn pb-1 text-sm font-bold text-gray-500 whitespace-nowrap tracking-wide">Chip Conversion</button>
+                        <button onclick="switchView('log-view')" id="btn-log-view" class="tab-btn pb-1 text-sm font-bold text-gray-500 whitespace-nowrap tracking-wide">Master Prod Logs</button>
+                    </div>
+                    <div class="md:hidden flex gap-2 shrink-0 pl-2">
+                        <button onclick="openProdModal(null)" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm uppercase tracking-wider">Log Run</button>
+                        <button onclick="openRMModal(null)" class="bg-orange-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm uppercase tracking-wider">Bulk</button>
+                        <button onclick="openConversionModal()" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold shadow-sm uppercase tracking-wider">Chips</button>
+                    </div>
+                </div>
+
+                <div class="mb-4 shrink-0">
+                    <button onclick="toggleInfoBox()" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 hover:bg-indigo-100 flex items-center gap-1 transition shadow-sm"><i data-lucide="help-circle" class="w-3 h-3"></i> System Logic Guide</button>
+                </div>
+                <div id="info-box" class="hidden bg-indigo-50 border border-indigo-200 p-4 rounded-xl mb-4 text-sm text-indigo-900 shrink-0 transition-all shadow-inner">
+                    <div class="flex gap-3">
+                        <i data-lucide="brain-circuit" class="w-5 h-5 shrink-0 text-indigo-500 mt-0.5"></i>
+                        <p class="leading-relaxed"><strong>Controlled Material Flow:</strong><br>1. Receive unloaded/bulk plastic into <strong>Bulk RM Stock</strong>.<br>2. Use <strong>Chip Conversion</strong> to break PP, HI or other plastic into chips, allocate employees and accrue piecework wages by quantity/rate.<br>3. Production can consume <strong>converted chip stock only</strong>. Bulk/unloaded plastic can never be selected directly for production.<br>4. The backend re-checks stock and cost before posting balanced inventory and payroll ledgers.</p>
+                    </div>
+                </div>
+
+                <!-- DASHBOARD VIEW -->
+                <div id="dash-view" class="flex-1 flex flex-col min-h-0">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 shrink-0">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-1 h-full bg-blue-500"></div>
+                            <h3 class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Today's Qty Produced</h3>
+                            <p class="text-3xl font-black mt-1 text-gray-800" id="dash-today-qty">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-1 h-full bg-orange-500"></div>
+                            <h3 class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Today's RM Used (Kg)</h3>
+                            <p class="text-3xl font-black mt-1 text-gray-800" id="dash-today-rm">0.00</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-sm flex flex-col justify-center">
+                            <h3 class="text-[9px] font-black text-blue-600 uppercase tracking-widest">MTD Qty Produced</h3>
+                            <p class="text-xl font-black text-blue-800 mt-1" id="dash-mtd-qty">0</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl border border-green-100 shadow-sm flex flex-col justify-center">
+                            <h3 class="text-[9px] font-black text-green-600 uppercase tracking-widest">MTD FG Value</h3>
+                            <p class="text-xl font-black text-green-800 mt-1 font-mono tracking-tight" id="dash-mtd-val">0.00</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm flex-1 min-h-[250px]">
+                        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 border-b pb-2">7-Day Production Trend</h3>
+                        <div class="h-[calc(100%-30px)] w-full">
+                            <canvas id="prodChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RM PROCUREMENT VIEW -->
+                <div id="rm-view" class="flex-1 flex flex-col min-h-0 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 shrink-0">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm text-center">
+                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total RM Types</p>
+                            <p class="text-2xl font-black text-gray-800 mt-1" id="rm-dash-types">0</p>
+                        </div>
+                        <div class="bg-orange-50 p-4 rounded-xl border border-orange-200 shadow-sm text-center">
+                            <p class="text-[9px] font-black text-orange-600 uppercase tracking-widest">Total RM Stock (KG)</p>
+                            <p class="text-2xl font-black font-mono text-orange-800 mt-1" id="rm-dash-kg">0.00</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm text-center">
+                            <p class="text-[9px] font-black text-green-600 uppercase tracking-widest">Total RM Asset Value</p>
+                            <p class="text-2xl font-black font-mono text-green-800 mt-1" id="rm-dash-val">0.00</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col min-h-0 mb-4">
+                        <div class="p-3 bg-gray-50 border-b shrink-0 flex justify-between items-center rounded-t-xl">
+                            <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2"><i data-lucide="database" class="w-4 h-4 text-gray-500"></i> Live Bulk Raw Material Inventory</h2>
+                        </div>
+                        <div class="flex-1 overflow-auto bg-white rounded-b-xl">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
+                                <thead class="bg-white sticky top-0 shadow-sm border-b text-[9px] uppercase text-gray-500 tracking-widest font-black z-10">
+                                    <tr><th class="p-3">Material Name</th><th class="p-3 text-right">Total Purchased (Kg)</th><th class="p-3 text-right">Sent to Conversion (Kg)</th><th class="p-3 text-right font-bold text-orange-700 bg-orange-50 border-l border-r">Stock Available (Kg)</th><th class="p-3 text-right">Avg Cost/Kg (Rs)</th><th class="p-3 text-right font-bold text-green-700">Stock Value (Rs)</th><th class="p-3 text-center">Breakdown</th></tr>
+                                </thead>
+                                <tbody id="rm-inv-body" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col min-h-0">
+                        <div class="p-3 bg-gray-50 border-b shrink-0 flex justify-between items-center rounded-t-xl">
+                            <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-gray-500"></i> Bulk RM Procurement Logs</h2>
+                            <input type="text" id="rm-log-search" placeholder="Search suppliers..." class="mac-input py-1 text-xs w-48 shadow-inner" onkeyup="renderRMLogs()">
+                        </div>
+                        <div class="flex-1 overflow-auto bg-white rounded-b-xl">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
+                                <thead class="bg-white sticky top-0 shadow-sm border-b text-[9px] uppercase text-gray-500 tracking-widest font-black z-10">
+                                    <tr><th class="p-3">Date</th><th class="p-3">Supplier Details</th><th class="p-3">Material Procured</th><th class="p-3 text-right">Qty (Kg)</th><th class="p-3 text-right">Total Cost (Rs)</th><th class="p-3 text-center">Payment</th><th class="p-3 text-center">Actions</th></tr>
+                                </thead>
+                                <tbody id="rm-log-body" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHIP CONVERSION VIEW -->
+                <div id="chip-view" class="flex-1 flex flex-col min-h-0 hidden">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 shrink-0">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Chip Types</p><p id="chip-dash-types" class="text-2xl font-black mt-1">0</p></div>
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 shadow-sm"><p class="text-[9px] font-black text-emerald-700 uppercase tracking-widest">Chip Stock Kg</p><p id="chip-dash-kg" class="text-2xl font-black font-mono text-emerald-800 mt-1">0.00</p></div>
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm"><p class="text-[9px] font-black text-blue-700 uppercase tracking-widest">Chip Asset Value</p><p id="chip-dash-val" class="text-2xl font-black font-mono text-blue-800 mt-1">0.00</p></div>
+                        <div class="bg-violet-50 p-4 rounded-xl border border-violet-200 shadow-sm"><p class="text-[9px] font-black text-violet-700 uppercase tracking-widest">Accrued Piecework</p><p id="chip-dash-labor" class="text-2xl font-black font-mono text-violet-800 mt-1">0.00</p></div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col min-h-0 mb-4">
+                        <div class="p-3 bg-gray-50 border-b flex justify-between items-center gap-2"><h2 class="text-sm font-bold text-gray-800 flex gap-2"><i data-lucide="recycle" class="w-4 h-4"></i> Converted Chip Inventory</h2><div class="flex gap-2"><button onclick="openPieceworkRateModal()" class="bg-violet-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest">Piecework Rates</button><button onclick="openConversionModal()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest">New Conversion</button></div></div>
+                        <div class="flex-1 overflow-auto"><table class="w-full text-left text-sm whitespace-nowrap min-w-[780px]"><thead class="bg-white sticky top-0 shadow-sm text-[9px] uppercase text-gray-500 tracking-widest"><tr><th class="p-3">Chip Stock</th><th class="p-3">Type</th><th class="p-3 text-right">Converted In Kg</th><th class="p-3 text-right">Used in Production Kg</th><th class="p-3 text-right bg-emerald-50 text-emerald-800">Available Kg</th><th class="p-3 text-right">Avg Cost/Kg</th><th class="p-3 text-right">Value</th></tr></thead><tbody id="chip-inv-body" class="divide-y"></tbody></table></div>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col min-h-0">
+                        <div class="p-3 bg-gray-50 border-b"><h2 class="text-sm font-bold text-gray-800">Conversion & Employee Allocation History</h2></div>
+                        <div class="flex-1 overflow-auto"><table class="w-full text-left text-sm whitespace-nowrap min-w-[900px]"><thead class="bg-white sticky top-0 shadow-sm text-[9px] uppercase text-gray-500 tracking-widest"><tr><th class="p-3">Date / Ref</th><th class="p-3">Bulk → Chip</th><th class="p-3 text-right">Input Kg</th><th class="p-3 text-right">Output Kg</th><th class="p-3 text-right">Waste Kg</th><th class="p-3 text-right">Employee Pay</th><th class="p-3">Allocated Employees</th><th class="p-3 text-center">Action</th></tr></thead><tbody id="chip-log-body" class="divide-y"></tbody></table></div>
+                    </div>
+                </div>
+
+                <!-- LOG HISTORY VIEW -->
+                <div id="log-view" class="flex-1 flex flex-col min-h-0 hidden">
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col min-h-0">
+                        <div class="p-2 md:p-3 bg-gray-50 border-b flex flex-wrap gap-2 shrink-0 items-center rounded-t-xl">
+                            <div class="relative flex-1 min-w-[150px]">
+                                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+                                <input type="text" id="l-search" placeholder="Search item, machine, operator..." class="mac-input py-2 pl-9 text-xs w-full shadow-inner" onkeyup="renderLogs()">
+                            </div>
+                            <input type="date" id="l-date" class="mac-input py-2 text-xs w-36 font-bold text-gray-700" onchange="renderLogs()">
+                            <button onclick="document.getElementById('l-date').value=''; document.getElementById('l-search').value=''; renderLogs();" class="bg-white border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-gray-100 transition shadow-sm">Clear Filters</button>
+                        </div>
+                        <div class="flex-1 overflow-auto bg-white rounded-b-xl">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[900px]">
+                                <thead class="bg-white sticky top-0 shadow-sm border-b text-[9px] uppercase text-gray-500 tracking-widest font-black z-10">
+                                    <tr>
+                                        <th class="p-3 bg-white">Date & Ref</th>
+                                        <th class="p-3 bg-white">Machine & Operator</th>
+                                        <th class="p-3 bg-white">Produced Item</th>
+                                        <th class="p-3 bg-white text-right">FG Qty</th>
+                                        <th class="p-3 bg-white text-right">RM Used (Kg)</th>
+                                        <th class="p-3 bg-white text-right">Mfg Cost (Rs)</th>
+                                        <th class="p-3 bg-blue-50 text-blue-800 text-right border-l border-blue-100">Unit Cost</th>
+                                        <th class="p-3 bg-white text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                            <div id="table-empty" class="hidden p-8 text-center text-sm text-gray-400 italic">No production logs found matching your criteria.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <nav class="md:hidden glass-panel fixed bottom-0 w-full border-t flex justify-around items-center z-50 h-[65px] pb-safe">
+            <a href="index.html" id="mobile-nav-acc-link" class="mobile-nav-item"><i data-lucide="pie-chart" class="w-6 h-6"></i><span>Finance</span></a>
+            <a href="production.html" class="mobile-nav-item active"><i data-lucide="factory" class="w-6 h-6"></i><span>Prod</span></a>
+            <a href="sales.html" class="mobile-nav-item"><i data-lucide="shopping-cart" class="w-6 h-6"></i><span>Sales</span></a>
+            <a href="inventory.html" class="mobile-nav-item"><i data-lucide="package" class="w-6 h-6"></i><span>Inv</span></a>
+            <a href="employees.html" class="mobile-nav-item"><i data-lucide="users" class="w-6 h-6"></i><span>Staff</span></a>
+        </nav>
+    </div>
+
+    <!-- RM PROCUREMENT MODAL -->
+    <div id="rm-modal" class="hidden fixed inset-0 bg-black/70 z-[300] flex items-center justify-center p-2 md:p-4 backdrop-blur-md transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[95vh] overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="text-xl font-black text-gray-900 tracking-tight" id="rm-modal-title">Receive Bulk Plastic</h2>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-1">Increases Bulk RM stock and posts to AP/Cash ledgers. Production cannot consume this stock directly.</p>
+                </div>
+                <button type="button" onclick="closeRMModal()" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300 transition"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-100">
+                <form id="rm-form" class="space-y-6" onsubmit="submitRMPurchase(event)">
+                    
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2 flex items-center gap-2"><i data-lucide="truck" class="w-4 h-4"></i> Supplier Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Purchase Date</label><input type="date" id="r-date" required class="mac-input w-full bg-gray-50"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Supplier Name</label><input type="text" id="r-supp" required class="mac-input w-full bg-white font-bold border-gray-300 focus:ring-orange-500 shadow-sm" list="supp-hints" placeholder="e.g. ABC Plastics"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Supplier Phone</label><input type="text" id="r-phone" required class="mac-input w-full bg-white border-gray-300 focus:ring-orange-500 shadow-sm font-mono" placeholder="e.g. 0770000000"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-orange-50/50 p-5 rounded-xl border border-orange-200 shadow-sm">
+                        <h3 class="text-[10px] font-black text-orange-700 uppercase tracking-widest mb-4 border-b border-orange-100 pb-2 flex items-center gap-2"><i data-lucide="package-plus" class="w-4 h-4"></i> Material Procurement</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Material Name</label><input type="text" id="r-mat" required class="mac-input w-full bg-white font-bold border-orange-300 focus:ring-orange-500 shadow-sm" list="rm-hints" placeholder="e.g. PP Resin"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Quantity (KG)</label><input type="number" step="0.01" id="r-qty" required class="mac-input w-full font-mono text-xl text-center border-orange-300 focus:ring-orange-500 bg-white shadow-sm" placeholder="0.00"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Total Cost Amount (Rs)</label><input type="number" step="0.01" id="r-cost" required class="mac-input w-full font-mono text-xl text-right bg-white text-gray-900 border-orange-300 focus:ring-orange-500 shadow-sm" placeholder="0.00"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2 flex items-center gap-2"><i data-lucide="credit-card" class="w-4 h-4"></i> Payment Terms</h3>
+                        <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Payment Method</label><select id="r-meth" class="mac-input w-full font-bold text-gray-800 border-gray-300 focus:ring-indigo-500"><option value="Accounts Payable (Credit)">Accounts Payable (Credit Purchase)</option><option value="Cash">Cash Paid Now</option><option value="Bank Transfer">Bank Transfer Paid Now</option></select></div>
+                    </div>
+                    
+                    <button type="submit" id="btn-rm-submit" class="w-full bg-orange-600 text-white py-5 rounded-xl font-black shadow-xl text-lg flex justify-center items-center gap-2 hover:bg-orange-700 transform active:scale-95 transition uppercase tracking-widest"><i data-lucide="check-circle" class="w-6 h-6"></i> Confirm RM Procurement</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- RM SUPPLIER BREAKDOWN MODAL -->
+    <div id="rm-breakdown-modal" class="hidden fixed inset-0 bg-black/70 z-[400] flex items-center justify-center p-2 md:p-4 backdrop-blur-md transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[95vh] overflow-hidden">
+            <div class="p-5 border-b bg-gray-900 text-white flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="text-2xl font-black tracking-widest uppercase" id="b-rm-name">Material Name</h2>
+                    <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold">Supplier Procurement History</p>
+                </div>
+                <button type="button" onclick="document.getElementById('rm-breakdown-modal').classList.add('hidden')" class="bg-gray-800 p-2 rounded-lg hover:bg-gray-700 transition border border-gray-700"><i data-lucide="x" class="w-5 h-5 text-gray-300"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm text-center">
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Sourced (Kg)</p>
+                        <p class="text-3xl font-black text-gray-800 font-mono mt-2" id="b-rm-in">0</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm text-center">
+                        <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Average Cost/Kg</p>
+                        <p class="text-2xl font-black font-mono text-blue-700 mt-2" id="b-rm-avg">0.00</p>
+                    </div>
+                    <div class="bg-orange-50 p-5 rounded-xl border border-orange-200 shadow-sm text-center">
+                        <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest">Current Stock (Kg)</p>
+                        <p class="text-3xl font-black font-mono text-orange-700 mt-2" id="b-rm-stock">0</p>
+                    </div>
+                </div>
+
+                <h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 border-b border-gray-200 pb-2">Supplier Log</h3>
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap">
+                            <thead class="bg-gray-50 border-b border-gray-200 text-[9px] uppercase text-gray-500 tracking-widest font-black">
+                                <tr><th class="p-3">Date</th><th class="p-3">Supplier Details</th><th class="p-3 text-right">Qty (Kg)</th><th class="p-3 text-right">Total Cost (Rs)</th><th class="p-3 text-right">Effective Unit Cost</th></tr>
+                            </thead>
+                            <tbody id="b-rm-body" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- PRODUCTION ENTRY MODAL -->
+    <div id="add-modal" class="hidden fixed inset-0 bg-black/70 z-[300] flex items-center justify-center p-2 md:p-4 backdrop-blur-md transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[95vh] overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="text-xl font-black text-gray-900 tracking-tight" id="prod-modal-title">Log Manufacturing Run</h2>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-1">Records output, calculates COGS, and updates inventory & ledgers.</p>
+                </div>
+                <button type="button" onclick="closeProdModal()" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300 transition"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-100">
+                <form id="add-form" class="space-y-6">
+                    
+                    <!-- Run Details -->
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2 flex items-center gap-2"><i data-lucide="settings" class="w-4 h-4"></i> Run & Operator Information</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Date</label><input type="date" id="f-date" required class="mac-input w-full bg-gray-50 border-gray-300 focus:bg-white focus:ring-indigo-500"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Shift</label><select id="f-shift" required class="mac-input w-full bg-white border-gray-300 focus:ring-indigo-500 font-bold"><option>Day Shift</option><option>Night Shift</option></select></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Machine</label><input type="text" id="f-machine" required class="mac-input w-full bg-white focus:ring-indigo-500 font-bold" placeholder="e.g. Extruder A" list="machine-hints"></div>
+                            <div>
+                                <label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Operator</label>
+                                <select id="f-op" required class="mac-input w-full bg-white focus:ring-indigo-500 font-bold text-indigo-900 border-indigo-200"></select>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Total Working Hours</label>
+                            <input type="number" step="0.5" id="f-hours" required class="mac-input w-32 font-mono bg-white border-gray-300 focus:ring-indigo-500 shadow-sm" placeholder="e.g. 8.5">
+                        </div>
+                    </div>
+                    
+                    <!-- Materials & Output -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                        
+                        <!-- RM Inputs (LINKED TO RM STOCK) -->
+                        <div class="bg-white p-5 rounded-xl border border-orange-200 shadow-sm">
+                            <div class="flex justify-between items-center mb-4 border-b border-orange-100 pb-2">
+                                <h3 class="text-[10px] font-black text-orange-600 uppercase tracking-widest flex items-center gap-2"><i data-lucide="scale" class="w-4 h-4"></i> Converted Chip Plastic Consumed</h3>
+                                <span class="text-[9px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded" id="live-rm-stock">Avail: -- Kg</span>
+                            </div>
+                            <div class="space-y-4">
+                                <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Select Converted Chip Stock</label><select id="f-rm-name" required class="mac-input w-full bg-white font-bold text-gray-800 border-orange-300 focus:ring-orange-500" onchange="autoFillRMCost()"></select></div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Chip Weight Used (Kg)</label><input type="number" step="0.01" id="f-rm-kg" required class="mac-input w-full bg-white font-mono text-lg border-orange-300 focus:ring-orange-500" placeholder="0.00" oninput="autoFillRMCost()"></div>
+                                    <div><label class="text-[9px] font-bold text-orange-600 uppercase tracking-widest block mb-1">Auto Chip Cost (Rs)</label><input type="number" step="0.01" id="f-rm-cost" required class="mac-input w-full bg-orange-50 border-orange-200 font-mono font-bold text-orange-900 focus:ring-orange-500 cursor-not-allowed shadow-inner" placeholder="0.00" readonly title="Auto calculated from converted chip weighted average cost"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Outputs -->
+                        <div class="bg-white p-5 rounded-xl border border-blue-200 shadow-sm">
+                            <h3 class="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-4 border-b border-blue-100 pb-2 flex items-center gap-2"><i data-lucide="package" class="w-4 h-4"></i> Finished Goods Output</h3>
+                            <div class="space-y-4">
+                                <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Product Name</label><input type="text" id="f-item" required class="mac-input w-full bg-white border-blue-300 focus:ring-blue-500 font-bold" placeholder="e.g. 500ml Pet Bottle" list="item-hints"></div>
+                                <div><label class="text-[9px] font-bold text-blue-600 uppercase tracking-widest block mb-1">Produced Quantity</label><input type="number" id="f-qty" required class="mac-input w-full bg-blue-50 border-blue-300 font-mono font-black text-2xl text-blue-900 focus:ring-blue-500 shadow-inner" placeholder="0" oninput="calcCost()"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overheads -->
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-4 border-b border-gray-100 pb-2 flex items-center gap-2"><i data-lucide="calculator" class="w-4 h-4"></i> Apportioned Direct Costs</h3>
+                        <div class="grid grid-cols-2 gap-5">
+                            <div>
+                                <label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Factory Overhead (Rs)</label>
+                                <input type="number" step="0.01" id="f-over" required class="mac-input w-full font-mono bg-white border-gray-300 focus:ring-indigo-500 shadow-sm" placeholder="0.00" oninput="calcCost()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="bg-gray-900 text-white p-6 rounded-xl shadow-lg grid grid-cols-1 md:grid-cols-2 gap-6 items-center border border-gray-800">
+                        <div class="text-left border-b md:border-b-0 md:border-r border-gray-700 pb-4 md:pb-0">
+                            <p class="text-[9px] uppercase tracking-widest text-gray-400 font-bold mb-1">Total Manufacturing Cost</p>
+                            <p class="text-3xl font-mono font-black text-white tracking-tight" id="f-tot">Rs. 0.00</p>
+                        </div>
+                        <div class="text-left md:text-right md:pl-4">
+                            <p class="text-[9px] uppercase tracking-widest text-green-400 font-bold mb-1">Calculated True Cost Per Unit</p>
+                            <p class="text-4xl font-mono font-black text-green-400 tracking-tight" id="f-unit">Rs. 0.00</p>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="btn-prod-submit" class="w-full bg-indigo-600 text-white py-5 rounded-xl font-black shadow-xl text-lg flex justify-center items-center gap-2 hover:bg-indigo-700 transform active:scale-95 transition uppercase tracking-widest"><i data-lucide="check-circle" class="w-6 h-6"></i> Confirm Run & Post Balanced Ledgers</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- BULK TO CHIP CONVERSION MODAL -->
+    <div id="conversion-modal" class="hidden fixed inset-0 bg-black/70 z-[350] flex items-center justify-center p-2 md:p-4 backdrop-blur-md">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col max-h-[95vh] overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center"><div><h2 class="text-xl font-black">Bulk Plastic → Chip Conversion</h2><p class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mt-1">Select any saved piecework type or manually enter a new job-specific type. Rates come from the shared Piecework Rate Master, not employee profiles.</p></div><button type="button" onclick="closeConversionModal()" class="bg-gray-200 p-2 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+            <div class="p-5 overflow-y-auto bg-gray-100">
+                <form id="conversion-form" class="space-y-5">
+                    <div class="bg-white p-5 rounded-xl border grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Date</label><input id="c-date" type="date" required class="mac-input" onchange="renderPieceworkRateHints();document.querySelectorAll('#conversion-workers tr').forEach(tr=>applyWorkerRate(tr,true))"></div>
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Bulk Material</label><select id="c-source" required class="mac-input font-bold" onchange="calcConversion()"></select><span id="c-bulk-stock" class="text-[9px] font-bold text-gray-500"></span></div>
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Input Bulk Kg</label><input id="c-input" type="number" step="0.01" min="0.01" required class="mac-input font-mono" oninput="calcConversion()"></div>
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Chip / Work Type</label><input id="c-type" class="mac-input font-bold" list="piecework-rate-hints" placeholder="Type PP, HI or any type" oninput="syncChipName()"></div>
+                        <div class="md:col-span-2"><label class="text-[9px] font-black uppercase text-gray-500">Chip Stock Name</label><input id="c-chip-name" required class="mac-input font-bold" placeholder="e.g. PP Chips"></div>
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Output Chip Kg</label><input id="c-output" type="number" step="0.01" min="0.01" required class="mac-input font-mono" oninput="calcConversion()"></div>
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Conversion Overhead Rs</label><input id="c-over" type="number" step="0.01" value="0" class="mac-input font-mono" oninput="calcConversion()"></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border">
+                        <div class="flex justify-between items-center mb-3"><div><h3 class="text-[10px] font-black uppercase tracking-widest text-violet-700">Employee Piecework Allocation</h3><p class="text-[10px] text-gray-500 mt-1">Each worker can use a saved work type/rate or a job-specific manual override. Historical conversions keep the rate snapshot used on that date.</p></div><button type="button" onclick="addConversionWorker()" class="px-3 py-2 bg-violet-600 text-white rounded-lg text-[10px] font-black uppercase">+ Add Employee</button></div>
+                        <div class="overflow-x-auto"><table class="w-full min-w-[760px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-2 text-left">Employee</th><th class="p-2 text-left">Rate Type / Task</th><th class="p-2 text-right">Qty Kg</th><th class="p-2 text-right">Rate / Kg</th><th class="p-2 text-right">Pay Amount</th><th class="p-2"></th></tr></thead><tbody id="conversion-workers"></tbody></table></div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="bg-orange-50 border border-orange-200 p-4 rounded-xl"><p class="text-[9px] uppercase font-black text-orange-700">Material Cost</p><p id="c-material-cost" class="font-mono font-black text-lg">0.00</p></div>
+                        <div class="bg-violet-50 border border-violet-200 p-4 rounded-xl"><p class="text-[9px] uppercase font-black text-violet-700">Employee Pay</p><p id="c-labor-total" class="font-mono font-black text-lg">0.00</p></div>
+                        <div class="bg-red-50 border border-red-200 p-4 rounded-xl"><p class="text-[9px] uppercase font-black text-red-700">Waste</p><p id="c-waste" class="font-mono font-black text-lg">0.00 Kg</p></div>
+                        <div class="bg-gray-900 text-white p-4 rounded-xl"><p class="text-[9px] uppercase font-black text-green-400">Estimated Chip Cost/Kg</p><p id="c-unit" class="font-mono font-black text-xl">0.00</p></div>
+                    </div>
+                    <button id="c-submit" class="w-full bg-emerald-600 text-white py-5 rounded-xl font-black uppercase tracking-widest shadow-lg">Confirm Conversion & Accrue Piecework</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIECEWORK RATE MASTER MODAL -->
+    <div id="piecework-rate-modal" class="hidden fixed inset-0 bg-black/70 z-[360] flex items-center justify-center p-2 md:p-4 backdrop-blur-md">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col max-h-[94vh] overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                <div><h2 class="text-xl font-black">Chip Conversion Piecework Rate Master</h2><p class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mt-1">Create any type manually — PP, HI, ABS, sorting, breaking, shredding or future work types.</p></div>
+                <button type="button" onclick="closePieceworkRateModal()" class="bg-gray-200 p-2 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto bg-gray-100 space-y-4">
+                <form id="piecework-rate-form" class="bg-white p-5 rounded-xl border border-violet-200 shadow-sm">
+                    <input type="hidden" id="pr-id">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Type / Work Name</label><input id="pr-type" required class="mac-input font-bold" placeholder="e.g. PP, HI, Sorting"></div>
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Rate / Kg (Rs)</label><input id="pr-rate" type="number" step="0.01" min="0.01" required class="mac-input font-mono font-bold" placeholder="0.00"></div>
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Effective From</label><input id="pr-effective" type="date" required class="mac-input"></div>
+                        <div><label class="text-[9px] font-black uppercase text-gray-500">Status</label><select id="pr-status" class="mac-input font-bold"><option>Active</option><option>Inactive</option></select></div>
+                        <div class="flex gap-2"><button type="submit" class="flex-1 bg-violet-600 text-white py-3 rounded-lg text-[10px] font-black uppercase tracking-widest">Save Rate</button><button type="button" onclick="resetPieceworkRateForm()" class="px-3 bg-gray-100 border rounded-lg text-[10px] font-black uppercase">Clear</button></div>
+                    </div>
+                    <div class="mt-3"><label class="text-[9px] font-black uppercase text-gray-500">Notes (Optional)</label><input id="pr-notes" class="mac-input" placeholder="Description, grade, shift rule, work method..."></div>
+                </form>
+                <div class="bg-white border rounded-xl overflow-hidden shadow-sm">
+                    <div class="p-3 bg-gray-50 border-b flex justify-between items-center"><div><h3 class="text-sm font-bold">Saved Piecework Rates</h3><p class="text-[9px] text-gray-500 uppercase tracking-widest mt-1">Rate changes apply to future allocations only. Historical conversions remain unchanged.</p></div><span id="pr-count" class="text-[10px] font-black text-violet-700 bg-violet-50 border border-violet-200 px-3 py-1 rounded-full">0 Rates</span></div>
+                    <div class="overflow-x-auto"><table class="w-full min-w-[760px] text-xs"><thead class="bg-white text-[9px] uppercase tracking-widest text-gray-500 border-b"><tr><th class="p-3 text-left">Type</th><th class="p-3 text-right">Rate / Kg</th><th class="p-3">Effective</th><th class="p-3">Status</th><th class="p-3">Notes</th><th class="p-3 text-center">Actions</th></tr></thead><tbody id="piecework-rate-body"></tbody></table></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Datalists -->
+    <datalist id="machine-hints"></datalist>
+    <datalist id="item-hints"></datalist>
+    <datalist id="supp-hints"></datalist>
+    <datalist id="piecework-rate-hints"></datalist>
+
+    <!-- STRIPE-STYLE DAILY PDF REPORT TEMPLATE -->
+    <div id="pdf-template" class="hidden bg-white stripe-pdf" style="width: 210mm; min-height: 297mm; padding: 40px 50px;">
+        <div class="flex justify-between items-end border-b-2 border-gray-900 pb-6 mb-10">
+            <div>
+                <h1 class="text-4xl font-black tracking-tighter text-gray-900">AR PLASTIC DATA</h1>
+                <p class="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">Enterprise Manufacturing Solutions</p>
+                <div class="mt-4 text-[11px] text-gray-500 leading-relaxed font-medium">
+                    <p>123 Industrial Estate, Colombo, LK</p>
+                    <p>finance@arplastic.com</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <h2 class="text-3xl font-light text-gray-400 uppercase tracking-widest mb-2">Daily Run Report</h2>
+                <p class="font-bold text-gray-900 text-base">Date: <span id="pdf-header-date" class="font-mono text-gray-700 font-normal"></span></p>
+            </div>
+        </div>
+
+        <div class="flex gap-4 mb-10">
+            <div class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-5">
+                <h3 class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Quantity Produced</h3>
+                <p class="text-3xl font-black text-gray-900" id="pdf-tot-qty"></p>
+            </div>
+            <div class="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-5">
+                <h3 class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Total Chip Consumed (Kg)</h3>
+                <p class="text-3xl font-black font-mono text-gray-900" id="pdf-tot-rm"></p>
+            </div>
+            <div class="flex-1 bg-blue-50 border border-blue-200 rounded-lg p-5">
+                <h3 class="text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-1">Total Cost Incurred (Rs)</h3>
+                <p class="text-3xl font-black font-mono text-blue-900 tracking-tight" id="pdf-tot-val"></p>
+            </div>
+        </div>
+
+        <table class="stripe-table mb-10">
+            <thead>
+                <tr>
+                    <th class="w-1/4">Product Created</th>
+                    <th class="w-1/4">Machine & Operator</th>
+                    <th class="text-center w-16">Chip (Kg)</th>
+                    <th class="text-center w-20 text-blue-600">FG Qty</th>
+                    <th class="text-right w-24">Mfg Cost</th>
+                    <th class="text-right w-24">Unit Cost</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-items-body">
+                <!-- Dynamically populated -->
+            </tbody>
+        </table>
+
+        <div class="border-t border-gray-200 pt-8 mt-auto flex justify-between items-end page-break-inside-avoid">
+            <div>
+                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Audit Compliance</p>
+                <p class="text-[10px] text-gray-500 w-80 leading-relaxed">This production run has been successfully verified and posted to the master double-entry accounting ledgers. Finished goods are now available in Live Stock.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-48 border-b-2 border-gray-400 mb-2"></div>
+                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Authorized Supervisor</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let backendUrl = localStorage.getItem('erp_backend_url') || 'https://script.google.com/macros/s/AKfycbyXl2ysDYn0ROMdTyWXPJ6FGmJAPiexRe3WwDGfXLyOVP9Rw-IREhZmFEYYsRkX5TKj_g/exec';
+        let sysData = { employees: [], pieceworkRates: [], conversions: [], production: [], sales: [], financials: [], payroll: [], adjustments: [], rmPurchases: [] };
+        
+        let prodChartInstance = null;
+        let rmInventory = {}; // Bulk/unloaded plastic inventory
+        let chipInventory = {}; // Converted chip inventory - the only material production may consume
+        
+        // Edit States
+        let editingProdId = null;
+        let editingProdRefId = null;
+        let editingRMId = null;
+        let editingRMRefId = null;
+
+        const genId = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'ID-' + new Date().getTime();
+
+        lucide.createIcons(); document.getElementById('f-date').valueAsDate = new Date();
+
+        // --- AUTHENTICATION ENGINE ---
+        const authOverlay = document.getElementById('ms-login-overlay');
+        
+        function checkAuth() {
+            const userStr = localStorage.getItem('erp_user');
+            const path = window.location.pathname.toLowerCase();
+            const isAccounting = path.includes('index.html') || path.endsWith('/');
+
+            if (!userStr) {
+                if(authOverlay) authOverlay.classList.remove('hidden');
+                return false;
+            }
+
+            const user = JSON.parse(userStr);
+            if (user.role === 'Admin' && isAccounting) {
+                window.location.href = 'production.html';
+                return false;
+            }
+
+            if(authOverlay) authOverlay.classList.add('hidden');
+            
+            let roleBadge = document.getElementById('user-role-badge');
+            if(roleBadge) {
+                roleBadge.innerText = user.role;
+                roleBadge.classList.remove('hidden');
+            }
+
+            // Restrict UI for Admin
+            if(user.role === 'Admin') {
+                let n1 = document.getElementById('nav-acc-link'); if(n1) n1.classList.add('hidden');
+                let n2 = document.getElementById('mobile-nav-acc-link'); if(n2) n2.classList.add('hidden');
+            }
+            
+            return true;
+        }
+
+        function doLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('ms-pass').value;
+            const err = document.getElementById('ms-err');
+
+            if (pass === 'superadmin123') {
+                localStorage.setItem('erp_user', JSON.stringify({ role: 'Super Admin' }));
+                window.location.reload();
+            } else if (pass === 'admin123') {
+                localStorage.setItem('erp_user', JSON.stringify({ role: 'Admin' }));
+                window.location.reload();
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function doLogout() {
+            localStorage.removeItem('erp_user');
+            window.location.href = 'index.html'; 
+        }
+
+        // --- CUSTOM MODALS ---
+        function customConfirm(msg) {
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm px-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-gray-200">
+                        <div class="flex items-center gap-3 mb-4 text-amber-600">
+                            <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                            <h3 class="text-lg font-black tracking-tight text-gray-900">Confirmation Required</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-6 font-medium leading-relaxed">${msg}</p>
+                        <div class="flex gap-3 justify-end">
+                            <button id="cc-cancel" class="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition text-sm">Cancel</button>
+                            <button id="cc-ok" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow-md">Confirm Action</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                lucide.createIcons();
+                document.getElementById('cc-cancel').onclick = () => { modal.remove(); resolve(false); };
+                document.getElementById('cc-ok').onclick = () => { modal.remove(); resolve(true); };
+            });
+        }
+
+        function customPrompt(msg) {
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm px-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-red-200">
+                        <div class="flex items-center gap-3 mb-4 text-red-600">
+                            <i data-lucide="alert-octagon" class="w-6 h-6"></i>
+                            <h3 class="text-lg font-black tracking-tight text-gray-900">Critical Action</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4 font-medium leading-relaxed">${msg.replace(/\n/g, '<br>')}</p>
+                        <input type="text" id="cp-input" class="w-full border border-gray-300 rounded-xl p-3 mb-6 focus:ring-2 focus:ring-red-500 outline-none transition" placeholder="Type here...">
+                        <div class="flex gap-3 justify-end">
+                            <button id="cp-cancel" class="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition text-sm">Cancel</button>
+                            <button id="cp-ok" class="px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition text-sm shadow-md">Execute</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                lucide.createIcons();
+                document.getElementById('cp-input').focus();
+                document.getElementById('cp-cancel').onclick = () => { modal.remove(); resolve(null); };
+                document.getElementById('cp-ok').onclick = () => { resolve(document.getElementById('cp-input').value); modal.remove(); };
+            });
+        }
+
+        function switchView(vid) {
+            let views = ['dash-view', 'log-view', 'rm-view', 'chip-view'];
+            views.forEach(v => {
+                let el = document.getElementById(v); if(el) el.classList.add('hidden');
+                let btn = document.getElementById('btn-' + v); if(btn) btn.classList.remove('active');
+            });
+            let tv = document.getElementById(vid); if (tv) tv.classList.remove('hidden');
+            let tb = document.getElementById('btn-' + vid); if (tb) tb.classList.add('active');
+            if(vid === 'dash-view') renderDashboardAndChart(); // refresh chart
+        }
+
+        function toggleInfoBox() {
+            const box = document.getElementById('info-box');
+            if(box) box.classList.toggle('hidden');
+        }
+
+        function showLoader(show, msg="Processing...") { 
+            let loader = document.getElementById('loader');
+            if(!loader) return;
+            document.getElementById('loader-msg').innerText = msg; 
+            if(show) { loader.classList.remove('hidden'); setTimeout(() => loader.classList.remove('opacity-0'), 10); } 
+            else { loader.classList.add('opacity-0'); setTimeout(() => loader.classList.add('hidden'), 300); }
+        }
+
+        function showToast(msg, type="success") { 
+            let t=document.getElementById('toast'), i=document.getElementById('toast-icon'); 
+            if(!t||!i) return; 
+            document.getElementById('toast-msg').innerText=msg; 
+            t.className=`fixed top-4 left-1/2 transform -translate-x-1/2 transition-all duration-300 px-6 py-4 rounded-full shadow-2xl flex items-center gap-3 z-[1000] translate-y-0 opacity-100 ${type==='error'?'bg-red-600 text-white':'bg-gray-900 text-white'}`; 
+            i.setAttribute('data-lucide', type==='error'?'alert-circle':'check-circle'); 
+            lucide.createIcons(); 
+            setTimeout(() => { t.classList.replace('translate-y-0', '-translate-y-20'); t.classList.replace('opacity-100', 'opacity-0'); }, 3000); 
+        }
+
+        async function apiGet(force=false) { try { let url = backendUrl + (backendUrl.includes('?')?'&':'?') + 'modules=employees,pieceworkRates,production,rmPurchases,conversions' + (force?'&refresh=true&_ts='+Date.now():''); let res = await fetch(url, {cache:'no-store'}); if(!res.ok) throw new Error("HTTP Error"); return await res.json(); } catch(e) { return null; } }
+        function loadScriptOnce(src, key){ return new Promise((resolve,reject)=>{ if(key && window[key]) return resolve(); let found=document.querySelector(`script[data-lazy="${src}"]`); if(found){found.addEventListener('load',resolve,{once:true});return;} let s=document.createElement('script');s.src=src;s.async=true;s.dataset.lazy=src;s.onload=resolve;s.onerror=reject;document.head.appendChild(s);}); }
+        async function apiPost(payload) { try { let res = await fetch(backendUrl, { method:'POST', body:JSON.stringify(payload) }); if(!res.ok) throw new Error("HTTP Error"); return await res.json(); } catch(e) { return null; } }
+        
+        function safeArray(arr) { return Array.isArray(arr) ? arr : []; }
+        function formatMoney(num) { 
+            let n = parseFloat(num);
+            if(isNaN(n)) n = 0;
+            return new Intl.NumberFormat('en-LK', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(n); 
+        }
+
+        // ==========================================
+        // FIXED DATA PARSING (CRITICAL FOR CALCS)
+        // ==========================================
+        function normalizeSysData() {
+            ['financials','production','sales','payroll','adjustments','rmPurchases','employees','pieceworkRates','conversions'].forEach(k => {
+                sysData[k] = safeArray(sysData[k]).map(r => {
+                    if(r && typeof r.parsedJson === 'string' && r.parsedJson.trim()) {
+                        try { r.parsedJson = JSON.parse(r.parsedJson); } catch(e) { /* keep raw */ }
+                    }
+                    return r;
+                });
+            });
+        }
+
+        async function fetchData(force=false) {
+            showLoader(true, "Syncing Manufacturing & RM Engine..."); 
+            try {
+                let res = await apiGet(force);
+                if(res?.status==='success') { 
+                    sysData=res.data; 
+                    normalizeSysData();
+                    try { localStorage.setItem('cksys_v2_production_v13_final', JSON.stringify(sysData)); } catch(e){} 
+                    updateUI(); 
+                }
+                else { 
+                    let c=localStorage.getItem('cksys_v2_production_v13_final'); 
+                    if(c){
+                        try { sysData=JSON.parse(c); normalizeSysData(); updateUI(); showToast("Operating offline with cached data.", "info"); } 
+                        catch(e) { localStorage.removeItem('cksys_v2_production_v13_final'); updateUI(); }
+                    } else { updateUI(); } 
+                }
+            } catch(e) {
+                showToast("System Error while fetching data", "error");
+                updateUI(); 
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        // INVENTORY CALCULATION: bulk -> chips -> production
+        function calculateRMInventory() {
+            const rm = {};
+            safeArray(sysData.rmPurchases).forEach(r => { const p=r.parsedJson||{}; const nm=p.materialName; if(!nm)return; if(!rm[nm])rm[nm]={name:nm,totalIn:0,totalOut:0,totalCost:0,currentStock:0,purchases:[]}; rm[nm].totalIn += parseFloat(p.qty)||0; rm[nm].totalCost += parseFloat(p.totalCost)||0; rm[nm].purchases.push({id:r.id,refId:r.refId,date:r.date,supplier:p.supplierName,phone:p.supplierPhone,qty:parseFloat(p.qty)||0,cost:parseFloat(p.totalCost)||0,method:p.paymentMethod}); });
+            safeArray(sysData.conversions).forEach(r => { const p=r.parsedJson||{}; const nm=p.sourceMaterial?.name; if(nm&&rm[nm]) { rm[nm].totalOut += parseFloat(p.sourceMaterial?.kg)||0; rm[nm].costOut=(rm[nm].costOut||0)+(parseFloat(p.sourceMaterial?.cost)||0); } });
+            // V7 migration: historical production used bulk material directly.
+            safeArray(sysData.production).forEach(r => { const p=r.parsedJson||{}, mat=p.rawMaterial||{}; if(String(mat.stage||'').toUpperCase()==='CHIP') return; const nm=mat.name; if(nm&&rm[nm]) { rm[nm].totalOut += parseFloat(mat.kg)||0; rm[nm].costOut=(rm[nm].costOut||0)+(parseFloat(mat.cost)||0); } });
+            Object.values(rm).forEach(v=>{v.currentStock=v.totalIn-v.totalOut;v.assetValue=Math.max(0,v.totalCost-(v.costOut||0));v.avgCost=v.currentStock>0?v.assetValue/v.currentStock:(v.totalIn>0?v.totalCost/v.totalIn:0);}); return rm;
+        }
+        function calculateChipInventory() {
+            const chips={};
+            safeArray(sysData.conversions).forEach(r=>{ const p=r.parsedJson||{}; const c=p.chip||{}; const nm=c.name||c.type; if(!nm)return; if(!chips[nm])chips[nm]={name:nm,type:c.type||'',totalIn:0,totalOut:0,totalCost:0,currentStock:0,avgCost:0}; chips[nm].totalIn += parseFloat(c.outputKg)||0; chips[nm].totalCost += parseFloat(p.costing?.totalConvertedCost)||0; });
+            safeArray(sysData.production).forEach(r=>{ if(editingProdId && r.id===editingProdId)return; const p=r.parsedJson||{}, mat=p.rawMaterial||{}; if(String(mat.stage||'').toUpperCase()!=='CHIP')return; const nm=mat.name; if(nm&&chips[nm]){chips[nm].totalOut += parseFloat(mat.kg)||0; chips[nm].costOut=(chips[nm].costOut||0)+(parseFloat(mat.cost)||0);} });
+            Object.values(chips).forEach(v=>{v.currentStock=v.totalIn-v.totalOut;v.assetValue=Math.max(0,v.totalCost-(v.costOut||0));v.avgCost=v.currentStock>0?v.assetValue/v.currentStock:(v.totalIn>0?v.totalCost/v.totalIn:0);}); return chips;
+        }
+        function updateUI() {
+            rmInventory=calculateRMInventory(); chipInventory=calculateChipInventory(); populateDatalists(); renderDashboardAndChart(); renderLogs(); renderRMDash(); renderChipDash();
+        }
+
+        function populateDatalists() {
+            let machines = new Set(); let items = new Set(); let supps = new Set();
+            safeArray(sysData.production).forEach(p => {
+                let j = p.parsedJson; if(!j) return;
+                if(j.machine) machines.add(j.machine);
+                if(j.item?.name) items.add(j.item.name);
+            });
+            safeArray(sysData.rmPurchases).forEach(p => {
+                if(p.parsedJson?.supplierName) supps.add(p.parsedJson.supplierName);
+            });
+
+            let mh = document.getElementById('machine-hints'); if(mh) mh.innerHTML = Array.from(machines).map(m=>`<option value="${m}">`).join('');
+            let ih = document.getElementById('item-hints'); if(ih) ih.innerHTML = Array.from(items).map(m=>`<option value="${m}">`).join('');
+            let sh = document.getElementById('supp-hints'); if(sh) sh.innerHTML = Array.from(supps).map(m=>`<option value="${m}">`).join('');
+
+            // Operators Dropdown
+            let opEl = document.getElementById('f-op');
+            if(opEl) {
+                let ops = safeArray(sysData.employees).filter(e=>(e.parsedJson?.status==='Active')).map(e=>`<option value="${e.id}">${e.parsedJson?.name} (${e.parsedJson?.role})</option>`).join('');
+                opEl.innerHTML = ops || '<option disabled>No active employees found.</option>';
+            }
+
+            // Production may select converted chips only.
+            let rmEl = document.getElementById('f-rm-name');
+            if(rmEl) {
+                let rOpts = `<option value="">Select Converted Chip Stock...</option>`;
+                Object.values(chipInventory).forEach(r => { if(r.currentStock > 0 || (editingProdId && r.currentStock >= 0)) rOpts += `<option value="${r.name}">${r.name} (Chip Stock: ${r.currentStock.toFixed(2)} Kg)</option>`; });
+                let cv=rmEl.value; rmEl.innerHTML=rOpts; if(cv)rmEl.value=cv;
+            }
+            const cSource=document.getElementById('c-source');
+            if(cSource){ const cv=cSource.value; cSource.innerHTML='<option value="">Select Bulk Plastic...</option>'+Object.values(rmInventory).filter(x=>x.currentStock>0).map(x=>`<option value="${x.name}">${x.name} (${x.currentStock.toFixed(2)} Kg)</option>`).join(''); if(cv)cSource.value=cv; }
+            
+            // RM Names Datalist for RM Procurement Modal
+            let rmh = document.getElementById('rm-hints');
+            if(rmh) rmh.innerHTML = Object.keys(rmInventory).map(m=>`<option value="${m}">`).join('');
+            renderPieceworkRateHints();
+            if(!document.getElementById('piecework-rate-modal').classList.contains('hidden')) renderPieceworkRates();
+        }
+
+        function renderRMDash() {
+            let html='', tp=0, tv=0, types=0;
+            Object.values(rmInventory).forEach(r => {
+                types++; tp += r.currentStock; tv += r.assetValue;
+                let btnHtml = `<button onclick="viewSupplierBreakdown('${r.name}')" class="text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition shadow-sm">View Suppliers</button>`;
+                html += `<tr class="hover:bg-orange-50 transition"><td class="p-3 font-bold text-gray-800 border-r border-gray-100">${r.name}</td><td class="p-3 text-right font-mono text-gray-500 border-r border-gray-100">${r.totalIn.toFixed(2)}</td><td class="p-3 text-right font-mono text-gray-500 border-r border-gray-100">${r.totalOut.toFixed(2)}</td><td class="p-3 text-right font-mono font-black text-orange-700 bg-orange-50 border-r border-gray-100 text-base">${r.currentStock.toFixed(2)}</td><td class="p-3 text-right font-mono text-gray-500 border-r border-gray-100 text-xs">${formatMoney(r.avgCost)}</td><td class="p-3 text-right font-mono font-bold text-green-700 border-r border-gray-100">${formatMoney(r.assetValue)}</td><td class="p-3 text-center">${btnHtml}</td></tr>`;
+            });
+            let rb = document.getElementById('rm-inv-body'); if(rb) rb.innerHTML = html;
+            let rt = document.getElementById('rm-dash-types'); if(rt) rt.innerText = types;
+            let rk = document.getElementById('rm-dash-kg'); if(rk) rk.innerText = tp.toFixed(2);
+            let rv = document.getElementById('rm-dash-val'); if(rv) rv.innerText = formatMoney(tv);
+            renderRMLogs();
+        }
+
+        function renderChipDash(){
+            let types=0,kg=0,val=0,labor=0,html='',logs='';
+            Object.values(chipInventory).forEach(c=>{types++;kg+=c.currentStock;val+=c.assetValue;html+=`<tr class="hover:bg-emerald-50"><td class="p-3 font-bold">${c.name}</td><td class="p-3 text-gray-500">${c.type||'-'}</td><td class="p-3 text-right font-mono">${c.totalIn.toFixed(2)}</td><td class="p-3 text-right font-mono">${c.totalOut.toFixed(2)}</td><td class="p-3 text-right font-mono font-black bg-emerald-50 text-emerald-800">${c.currentStock.toFixed(2)}</td><td class="p-3 text-right font-mono">${formatMoney(c.avgCost)}</td><td class="p-3 text-right font-mono font-bold">${formatMoney(c.assetValue)}</td></tr>`;});
+            safeArray(sysData.conversions).sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(r=>{const p=r.parsedJson||{};const ws=safeArray(p.workers);const l=parseFloat(p.costing?.laborCost)||0;labor+=l;logs+=`<tr class="hover:bg-emerald-50"><td class="p-3"><span class="block font-mono text-xs">${String(r.date||'').substring(0,10)}</span><span class="text-[9px] text-gray-400 font-mono">${r.refId||''}</span></td><td class="p-3 font-bold">${p.sourceMaterial?.name||'-'} <span class="text-gray-400">→</span> ${p.chip?.name||'-'}</td><td class="p-3 text-right font-mono">${Number(p.sourceMaterial?.kg||0).toFixed(2)}</td><td class="p-3 text-right font-mono font-bold text-emerald-700">${Number(p.chip?.outputKg||0).toFixed(2)}</td><td class="p-3 text-right font-mono text-red-600">${Number(p.chip?.wasteKg||0).toFixed(2)}</td><td class="p-3 text-right font-mono font-bold text-violet-700">${formatMoney(l)}</td><td class="p-3 text-xs">${ws.map(w=>`${w.employeeName}: ${formatMoney(w.amount)}`).join('<br>')}</td><td class="p-3 text-center"><button onclick="delConversion('${r.id}','${r.refId}')" class="p-1.5 border rounded text-gray-400 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`;});
+            document.getElementById('chip-inv-body').innerHTML=html||'<tr><td colspan="7" class="p-8 text-center text-gray-400">No chip stock yet. Convert bulk plastic first.</td></tr>'; document.getElementById('chip-log-body').innerHTML=logs||'<tr><td colspan="8" class="p-8 text-center text-gray-400">No conversion records.</td></tr>'; document.getElementById('chip-dash-types').innerText=types; document.getElementById('chip-dash-kg').innerText=kg.toFixed(2); document.getElementById('chip-dash-val').innerText=formatMoney(val); document.getElementById('chip-dash-labor').innerText=formatMoney(labor); lucide.createIcons();
+        }
+
+        function renderRMLogs() {
+            let sqEl = document.getElementById('rm-log-search'); let sq = sqEl ? sqEl.value.toLowerCase() : '';
+            let html = '';
+            safeArray(sysData.rmPurchases).sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(r => {
+                let p = r.parsedJson; if(!p)return;
+                if(sq && !(p.supplierName||'').toLowerCase().includes(sq) && !(p.materialName||'').toLowerCase().includes(sq)) return;
+
+                html += `<tr class="hover:bg-orange-50 transition"><td class="p-3 text-xs border-r border-gray-100"><span class="block text-gray-500">${r.date?.substring(0,10)}</span><span class="font-mono font-bold text-gray-400 text-[10px]">${r.refId}</span></td><td class="p-3 border-r border-gray-100"><span class="block font-bold text-gray-800">${p.supplierName}</span><span class="text-[10px] text-gray-500 font-mono">${p.supplierPhone||'-'}</span></td><td class="p-3 font-bold text-orange-700 border-r border-gray-100">${p.materialName}</td><td class="p-3 text-right font-mono font-black text-gray-900 border-r border-gray-100">${parseFloat(p.qty||0).toFixed(2)}</td><td class="p-3 text-right font-mono font-bold text-gray-900 border-r border-gray-100">${formatMoney(p.totalCost)}</td><td class="p-3 text-center border-r border-gray-100"><span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest ${p.paymentMethod.includes('Credit')?'bg-red-100 text-red-700':'bg-green-100 text-green-700'}">${p.paymentMethod}</span></td><td class="p-3 text-center flex justify-center gap-1"><button onclick="editRMPurchase('${r.id}')" class="text-blue-500 hover:text-blue-700 bg-white border p-1.5 rounded shadow-sm transition" title="Edit Purchase"><i data-lucide="edit" class="w-4 h-4"></i></button><button onclick="delRMPurchase('${r.id}','${r.refId}')" class="text-gray-400 hover:text-red-600 bg-white border p-1.5 rounded shadow-sm transition"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`;
+            });
+            let lb = document.getElementById('rm-log-body'); if(lb) lb.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function viewSupplierBreakdown(rmName) {
+            let rm = rmInventory[rmName]; if(!rm) return;
+            let bm = document.getElementById('b-rm-name'); if(bm) bm.innerText = rm.name;
+            let bi = document.getElementById('b-rm-in'); if(bi) bi.innerText = rm.totalIn.toFixed(2);
+            let ba = document.getElementById('b-rm-avg'); if(ba) ba.innerText = 'Rs. ' + formatMoney(rm.avgCost);
+            let bs = document.getElementById('b-rm-stock'); if(bs) bs.innerText = rm.currentStock.toFixed(2);
+            
+            let html = '';
+            rm.purchases.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(p => {
+                let uc = p.qty > 0 ? p.cost / p.qty : 0;
+                html += `<tr class="hover:bg-gray-50 transition"><td class="p-3 text-xs text-gray-500 border-r border-gray-100">${String(p.date).substring(0,10)}</td><td class="p-3 border-r border-gray-100"><span class="block font-bold text-gray-800">${p.supplier}</span><span class="text-[10px] text-gray-500 font-mono">${p.phone||'-'}</span></td><td class="p-3 text-right font-mono font-bold text-gray-900 border-r border-gray-100">${p.qty.toFixed(2)}</td><td class="p-3 text-right font-mono font-bold text-gray-900 border-r border-gray-100">${formatMoney(p.cost)}</td><td class="p-3 text-right font-mono text-blue-600">${formatMoney(uc)}</td></tr>`;
+            });
+            let bb = document.getElementById('b-rm-body'); if(bb) bb.innerHTML = html;
+            
+            let modal = document.getElementById('rm-breakdown-modal'); if(modal) modal.classList.remove('hidden');
+        }
+
+        function renderDashboardAndChart() {
+            let today = new Date().toISOString().substring(0,10);
+            let month = today.substring(0,7);
+            
+            let tQty=0, tRm=0, mQty=0, mVal=0;
+            let chartMap = {};
+
+            // Initialize last 7 days for chart
+            for(let i=6; i>=0; i--) {
+                let d = new Date(); d.setDate(d.getDate() - i);
+                chartMap[d.toISOString().substring(0,10)] = { qty: 0, rm: 0 };
+            }
+
+            safeArray(sysData.production).forEach(r => {
+                let p = r.parsedJson; if(!p || !r.date) return;
+                let dateStr = String(r.date).substring(0,10);
+                let qty = parseFloat(p.item?.qty)||0;
+                let rm = parseFloat(p.rawMaterial?.kg)||0;
+                let val = parseFloat(p.costing?.totalCost)||0;
+
+                if(dateStr === today) { tQty += qty; tRm += rm; }
+                if(dateStr.startsWith(month)) { mQty += qty; mVal += val; }
+
+                if(chartMap[dateStr]) {
+                    chartMap[dateStr].qty += qty;
+                    chartMap[dateStr].rm += rm;
+                }
+            });
+
+            let dq = document.getElementById('dash-today-qty'); if(dq) dq.innerText = tQty.toLocaleString();
+            let dr = document.getElementById('dash-today-rm'); if(dr) dr.innerText = tRm.toLocaleString(undefined, {minimumFractionDigits:2});
+            let mq = document.getElementById('dash-mtd-qty'); if(mq) mq.innerText = mQty.toLocaleString();
+            let mv = document.getElementById('dash-mtd-val'); if(mv) mv.innerText = formatMoney(mVal);
+
+            // Render Chart
+            let cEl = document.getElementById('prodChart');
+            let ctx = cEl ? cEl.getContext('2d') : null;
+            if(!ctx) return;
+            if(prodChartInstance) prodChartInstance.destroy();
+
+            let labels = Object.keys(chartMap).map(d => d.substring(5)); // MM-DD
+            let dataQty = Object.values(chartMap).map(v => v.qty);
+            let dataRm = Object.values(chartMap).map(v => v.rm);
+
+            if(typeof Chart==='undefined'){ loadScriptOnce('https://cdn.jsdelivr.net/npm/chart.js','Chart').then(()=>renderDashboardAndChart()).catch(()=>{}); return; }
+                prodChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'FG Produced (Qty)', data: dataQty, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true, tension: 0.3, borderWidth: 2 },
+                        { label: 'RM Used (Kg)', data: dataRm, borderColor: '#f97316', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.3, borderWidth: 2 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: {size: 10} } } }, scales: { x: { grid: {display: false}, ticks: {font: {size: 9}} }, y: { beginAtZero: true, grid: {color: '#f3f4f6'}, ticks: {font: {size: 9}} } } }
+            });
+        }
+
+        function renderLogs() {
+            let html='', count=0;
+            let sqEl = document.getElementById('l-search'); let sq = sqEl ? sqEl.value.toLowerCase() : '';
+            let sdEl = document.getElementById('l-date'); let sd = sdEl ? sdEl.value : '';
+
+            safeArray(sysData.production).sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(r => {
+                let p = r.parsedJson; if(!p)return;
+                let dateStr = r.date ? String(r.date).substring(0,10) : '';
+                
+                if(sd && dateStr !== sd) return;
+                if(sq && !(p.item?.name||'').toLowerCase().includes(sq) && !(p.machine||'').toLowerCase().includes(sq) && !(p.operator?.name||'').toLowerCase().includes(sq)) return;
+
+                count++;
+                let qty = parseFloat(p.item?.qty)||0;
+                let rm = parseFloat(p.rawMaterial?.kg)||0;
+                let tc = parseFloat(p.costing?.totalCost)||0;
+                let uc = parseFloat(p.item?.unitCost)||0;
+
+                html += `<tr class="hover:bg-blue-50 transition">
+                            <td class="p-3 text-xs border-r border-gray-100"><span class="block text-gray-500">${dateStr}</span><span class="font-mono font-bold text-gray-400 text-[10px]">${r.refId}</span></td>
+                            <td class="p-3 border-r border-gray-100"><span class="block font-bold text-gray-800">${p.machine}</span><span class="text-[10px] text-gray-500 uppercase tracking-widest">${p.operator?.name||'Unknown'} | ${p.shift||'-'}</span></td>
+                            <td class="p-3 font-bold text-blue-700 border-r border-gray-100">${p.item?.name||'-'}</td>
+                            <td class="p-3 text-right font-mono font-black text-gray-900 border-r border-gray-100">${qty}</td>
+                            <td class="p-3 text-right font-mono text-gray-500 border-r border-gray-100">${rm.toFixed(2)}</td>
+                            <td class="p-3 text-right font-mono text-gray-600 border-r border-gray-100">${formatMoney(tc)}</td>
+                            <td class="p-3 text-right font-mono font-bold text-green-600 border-r border-gray-100 border-l">${formatMoney(uc)}</td>
+                            <td class="p-3 text-center flex justify-center gap-1">
+                                <button onclick="editProd('${r.id}')" class="text-blue-500 hover:text-blue-700 bg-white border p-1.5 rounded shadow-sm transition" title="Edit Log"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                <button onclick="delProd('${r.id}','${r.refId}')" class="text-gray-400 hover:text-red-600 bg-white border p-1.5 rounded shadow-sm transition" title="Delete & Reverse Ledgers"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </td>
+                        </tr>`;
+            });
+            let tb = document.getElementById('table-body'); if(tb) tb.innerHTML = html;
+            let te = document.getElementById('table-empty'); if(te) te.classList.toggle('hidden', count > 0);
+            lucide.createIcons();
+        }
+
+        // RM PROCUREMENT LOGIC
+        function openRMModal(editId) {
+            editingRMId = editId;
+            editingRMRefId = null;
+            let mTit = document.getElementById('rm-modal-title'); if(mTit) mTit.innerText = editId ? "Edit RM Procurement" : "Receive Bulk Plastic";
+            
+            if(editId) {
+                let row = sysData.rmPurchases.find(r => r.id === editId);
+                if(!row) return showToast("Cannot find record", "error");
+                let p = row.parsedJson;
+                editingRMRefId = row.refId;
+
+                document.getElementById('r-date').value = row.date?.substring(0,10) || '';
+                document.getElementById('r-supp').value = p.supplierName || '';
+                document.getElementById('r-phone').value = p.supplierPhone || '';
+                document.getElementById('r-mat').value = p.materialName || '';
+                document.getElementById('r-qty').value = p.qty || '';
+                document.getElementById('r-cost').value = p.totalCost || '';
+                document.getElementById('r-meth').value = p.paymentMethod || 'Accounts Payable (Credit)';
+            } else {
+                document.getElementById('rm-form').reset();
+                document.getElementById('r-date').valueAsDate = new Date();
+            }
+
+            let m = document.getElementById('rm-modal'); if(m) m.classList.remove('hidden');
+        }
+
+        function closeRMModal() {
+            editingRMId = null;
+            editingRMRefId = null;
+            let m = document.getElementById('rm-modal'); if(m) m.classList.add('hidden');
+        }
+
+        document.getElementById('rm-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            let confirmSave = await customConfirm("Are you sure you want to log this Raw Material Purchase and post to financial ledgers?");
+            if(!confirmSave) return;
+
+            let q = parseFloat(document.getElementById('r-qty').value)||0;
+            let c = parseFloat(document.getElementById('r-cost').value)||0;
+            if(q <= 0) return showToast("Quantity must be greater than zero.", "error");
+
+            let btn = document.getElementById('btn-rm-submit');
+            let ogHtml = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i> Processing Ledger...`;
+            btn.disabled = true;
+
+            let data = {
+                supplierName: document.getElementById('r-supp').value,
+                supplierPhone: document.getElementById('r-phone').value,
+                materialName: document.getElementById('r-mat').value,
+                qty: q,
+                totalCost: c,
+                paymentMethod: document.getElementById('r-meth').value
+            };
+
+            showLoader(true, "Posting RM Purchase & Finances...");
+            try {
+                const rmAction = editingRMId ? 'update_rm_purchase' : 'add_rm_purchase';
+                let res = await apiPost({ action: rmAction, data: { id: editingRMId || undefined, refId: editingRMRefId || undefined, parsedJson: data, date: document.getElementById('r-date').value } });
+                
+                if(res?.status==='success') { 
+                    showToast("RM Received & Financed!"); 
+                    closeRMModal(); 
+                    await fetchData(true); 
+                } else throw new Error(res?.message || "Save rejected");
+            } catch(err) {
+                showToast(err?.message || "Failed to log RM purchase", "error");
+            } finally {
+                btn.innerHTML = ogHtml;
+                btn.disabled = false;
+                showLoader(false);
+            }
+        };
+
+        async function delRMPurchase(id, refId) {
+            let conf = await customPrompt("CRITICAL: Deleting this completely reverses RM Inventory and Accounts Payable!\n\nType DELETE to confirm.");
+            if(conf !== "DELETE") { showToast("Deletion cancelled.", "info"); return; }
+            showLoader(true, "Reversing RM Ledgers...");
+            let res = await apiPost({ action: 'delete_rm_purchase', data: { id: id, refId: refId } });
+            if(res?.status==='success') { showToast("RM Purchase Reversed"); await fetchData(true); } else showToast(res?.message || "Deletion Failed", "error");
+            showLoader(false);
+        }
+
+        // CHIP CONVERSION + DYNAMIC PIECEWORK RATE MASTER
+        function activeEmployeeOptions(){ return safeArray(sysData.employees).filter(e=>e.parsedJson?.status==='Active').map(e=>`<option value="${e.id}">${escapeHtmlLocal(e.parsedJson?.name||'Employee')} (${escapeHtmlLocal(e.parsedJson?.role||'-')})</option>`).join(''); }
+        function escapeHtmlLocal(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+        function activePieceworkRates(date){const d=String(date||document.getElementById('c-date')?.value||new Date().toISOString().substring(0,10)).substring(0,10);return safeArray(sysData.pieceworkRates).filter(r=>{const q=r.parsedJson||{},active=String(q.status||r.status||'Active').toLowerCase()==='active',eff=String(q.effectiveFrom||r.date||'').substring(0,10);return active&&(!eff||eff<=d);}).sort((a,b)=>String(a.parsedJson?.type||'').localeCompare(String(b.parsedJson?.type||'')));}
+        function findPieceworkRate(typeOrId,date){const key=String(typeOrId||'').trim().toLowerCase();if(!key)return null;return activePieceworkRates(date).find(r=>String(r.id)===String(typeOrId)||String(r.parsedJson?.type||'').trim().toLowerCase()===key)||null;}
+        function renderPieceworkRateHints(){const dl=document.getElementById('piecework-rate-hints');if(!dl)return;dl.innerHTML=activePieceworkRates().map(r=>`<option value="${escapeHtmlLocal(r.parsedJson?.type||'')}">`).join('');}
+        function syncChipName(){ const t=(document.getElementById('c-type').value||'').trim(); const n=document.getElementById('c-chip-name'); if(t && (!n.value || / Chips$/i.test(n.value))) n.value=t+' Chips'; document.querySelectorAll('#conversion-workers tr').forEach(tr=>{const task=tr.querySelector('.cw-task');if(task && (!task.value||task.dataset.auto==='1')){task.value=t;task.dataset.auto='1';}applyWorkerRate(tr,true);}); calcConversion(); }
+        function applyWorkerRate(tr,force=false){if(!tr)return;const taskEl=tr.querySelector('.cw-task'),rateEl=tr.querySelector('.cw-rate'),hint=tr.querySelector('.cw-rate-hint');if(!rateEl)return calcConversion();const master=findPieceworkRate(taskEl?.value,document.getElementById('c-date')?.value);tr.dataset.rateMasterId=master?.id||'';if(master&&Number(master.parsedJson?.ratePerKg)>0&&(force||!(parseFloat(rateEl.value)>0)))rateEl.value=Number(master.parsedJson.ratePerKg).toFixed(2);if(hint)hint.textContent=master?`Master: ${master.parsedJson.type} @ Rs. ${formatMoney(master.parsedJson.ratePerKg)}/Kg`:'Manual / no saved rate matched';calcConversion();}
+        function addConversionWorker(pref={}){const tb=document.getElementById('conversion-workers'),tr=document.createElement('tr');tr.className='border-t';const taskVal=pref.rateType||pref.task||document.getElementById('c-type')?.value||'';tr.innerHTML=`<td class="p-2"><select class="cw-emp mac-input py-2"><option value="">Select...</option>${activeEmployeeOptions()}</select></td><td class="p-2"><input class="cw-task mac-input py-2" list="piecework-rate-hints" value="${escapeHtmlLocal(taskVal)}" data-auto="${pref.task||pref.rateType?'0':'1'}" oninput="this.dataset.auto='0';applyWorkerRate(this.closest('tr'),true)"></td><td class="p-2"><input type="number" step="0.01" min="0.01" class="cw-qty mac-input py-2 text-right font-mono" value="${pref.qty||''}" oninput="calcConversion()"></td><td class="p-2"><input type="number" step="0.01" min="0.01" class="cw-rate mac-input py-2 text-right font-mono" value="${pref.rate||''}" oninput="calcConversion()"><span class="cw-rate-hint text-[8px] text-violet-600 block mt-1">Select a saved type or enter rate manually</span></td><td class="p-2 text-right font-mono font-black cw-amt">0.00</td><td class="p-2 text-center"><button type="button" onclick="this.closest('tr').remove();calcConversion()" class="text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></td>`;tb.appendChild(tr);if(pref.employeeId)tr.querySelector('.cw-emp').value=pref.employeeId;applyWorkerRate(tr,!pref.rate);lucide.createIcons();calcConversion();}
+        function calcConversion(){const srcName=document.getElementById('c-source')?.value||'',input=parseFloat(document.getElementById('c-input')?.value)||0,output=parseFloat(document.getElementById('c-output')?.value)||0,over=parseFloat(document.getElementById('c-over')?.value)||0,stock=rmInventory[srcName];const material=input*(stock?.avgCost||0);let labor=0;document.querySelectorAll('#conversion-workers tr').forEach(tr=>{const q=parseFloat(tr.querySelector('.cw-qty')?.value)||0,r=parseFloat(tr.querySelector('.cw-rate')?.value)||0,a=q*r;labor+=a;const el=tr.querySelector('.cw-amt');if(el)el.innerText=formatMoney(a);});document.getElementById('c-bulk-stock').innerText=stock?`Available: ${stock.currentStock.toFixed(2)} Kg @ Rs. ${formatMoney(stock.avgCost)}/Kg`:'Select bulk stock';document.getElementById('c-material-cost').innerText=formatMoney(material);document.getElementById('c-labor-total').innerText=formatMoney(labor);document.getElementById('c-waste').innerText=Math.max(0,input-output).toFixed(2)+' Kg';document.getElementById('c-unit').innerText=formatMoney(output>0?(material+labor+over)/output:0);}
+        function openConversionModal(){updateUI();document.getElementById('conversion-form').reset();document.getElementById('c-date').valueAsDate=new Date();const first=activePieceworkRates()[0];document.getElementById('c-type').value=first?.parsedJson?.type||'';document.getElementById('c-chip-name').value=(first?.parsedJson?.type||'')+(first?' Chips':'');document.getElementById('conversion-workers').innerHTML='';addConversionWorker();document.getElementById('conversion-modal').classList.remove('hidden');calcConversion();}
+        function closeConversionModal(){document.getElementById('conversion-modal').classList.add('hidden');}
+        document.getElementById('conversion-form').onsubmit=async(e)=>{e.preventDefault();const source=document.getElementById('c-source').value,input=parseFloat(document.getElementById('c-input').value)||0,output=parseFloat(document.getElementById('c-output').value)||0,stock=rmInventory[source],chipType=(document.getElementById('c-type').value||'').trim();if(!stock)return showToast('Select valid bulk material','error');if(!chipType)return showToast('Enter a chip/work type','error');if(input>stock.currentStock+0.001)return showToast(`Insufficient bulk stock. Available ${stock.currentStock.toFixed(2)} Kg`,'error');if(output<=0||input<=0||output>input*1.02)return showToast('Check input/output weights','error');const workers=[];for(const tr of document.querySelectorAll('#conversion-workers tr')){const sel=tr.querySelector('.cw-emp'),qty=parseFloat(tr.querySelector('.cw-qty').value)||0,rate=parseFloat(tr.querySelector('.cw-rate').value)||0,rateType=(tr.querySelector('.cw-task').value||chipType).trim();if(!sel.value||qty<=0||rate<=0||!rateType)return showToast('Complete every employee, work type, quantity and rate','error');workers.push({employeeId:sel.value,employeeName:sel.options[sel.selectedIndex].text.split('(')[0].trim(),task:rateType,rateType,rateMasterId:tr.dataset.rateMasterId||'',qty,rate,amount:qty*rate});}if(!workers.length)return showToast('Allocate at least one employee','error');if(!await customConfirm('Confirm conversion? Bulk stock will move to chip stock and employee piecework wages will be accrued.'))return;showLoader(true,'Converting stock & accruing employee wages...');const data={date:document.getElementById('c-date').value,sourceMaterial:{name:source,kg:input},chip:{type:chipType,name:document.getElementById('c-chip-name').value,outputKg:output},workers,costing:{overheadCost:parseFloat(document.getElementById('c-over').value)||0}};const res=await apiPost({action:'add_conversion',data:{date:data.date,parsedJson:data}});showLoader(false);if(res?.status==='success'){showToast('Chip conversion posted · employee daily pay updated');closeConversionModal();await fetchData(true);switchView('chip-view');}else showToast(res?.message||'Conversion failed','error');};
+        async function delConversion(id,refId){const c=await customPrompt('Deleting a conversion reverses chip inventory and accrued employee piecework.\nType DELETE to continue.');if(c!=='DELETE')return;showLoader(true,'Reversing conversion...');const res=await apiPost({action:'delete_conversion',data:{id,refId}});showLoader(false);if(res?.status==='success'){showToast('Conversion reversed');await fetchData(true);}else showToast(res?.message||'Failed','error');}
+
+        function resetPieceworkRateForm(){document.getElementById('piecework-rate-form').reset();document.getElementById('pr-id').value='';document.getElementById('pr-effective').valueAsDate=new Date();document.getElementById('pr-status').value='Active';}
+        function openPieceworkRateModal(){resetPieceworkRateForm();renderPieceworkRates();document.getElementById('piecework-rate-modal').classList.remove('hidden');lucide.createIcons();}
+        function closePieceworkRateModal(){document.getElementById('piecework-rate-modal').classList.add('hidden');}
+        function renderPieceworkRates(){const rows=safeArray(sysData.pieceworkRates).slice().sort((a,b)=>String(a.parsedJson?.type||'').localeCompare(String(b.parsedJson?.type||'')));const body=document.getElementById('piecework-rate-body');if(!body)return;body.innerHTML=rows.length?rows.map(r=>{const q=r.parsedJson||{};return `<tr class="border-b hover:bg-violet-50"><td class="p-3 font-black text-gray-800">${escapeHtmlLocal(q.type||'-')}</td><td class="p-3 text-right font-mono font-black text-violet-800">${formatMoney(q.ratePerKg)}</td><td class="p-3 font-mono text-gray-500">${escapeHtmlLocal(q.effectiveFrom||String(r.date||'').substring(0,10))}</td><td class="p-3"><span class="px-2 py-1 rounded text-[9px] font-bold ${String(q.status||r.status)==='Active'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-600'}">${escapeHtmlLocal(q.status||r.status||'Active')}</span></td><td class="p-3 text-gray-500 max-w-[220px] truncate" title="${escapeHtmlLocal(q.notes||'')}">${escapeHtmlLocal(q.notes||'-')}</td><td class="p-3 text-center"><div class="flex justify-center gap-1"><button type="button" onclick="editPieceworkRate('${r.id}')" class="p-1.5 border rounded text-blue-600 bg-white"><i data-lucide="edit-2" class="w-4 h-4"></i></button><button type="button" onclick="deletePieceworkRate('${r.id}')" class="p-1.5 border rounded text-red-500 bg-white"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></td></tr>`;}).join(''):'<tr><td colspan="6" class="p-8 text-center text-gray-400">No saved piecework rates. Add PP, HI or any work type above.</td></tr>';document.getElementById('pr-count').textContent=`${rows.length} Rate${rows.length===1?'':'s'}`;lucide.createIcons();}
+        function editPieceworkRate(id){const r=safeArray(sysData.pieceworkRates).find(x=>String(x.id)===String(id));if(!r)return;const q=r.parsedJson||{};document.getElementById('pr-id').value=r.id;document.getElementById('pr-type').value=q.type||'';document.getElementById('pr-rate').value=q.ratePerKg||'';document.getElementById('pr-effective').value=q.effectiveFrom||String(r.date||'').substring(0,10);document.getElementById('pr-status').value=q.status||r.status||'Active';document.getElementById('pr-notes').value=q.notes||'';document.getElementById('pr-type').focus();}
+        document.getElementById('piecework-rate-form').onsubmit=async(e)=>{e.preventDefault();const id=document.getElementById('pr-id').value.trim(),type=document.getElementById('pr-type').value.trim(),rate=parseFloat(document.getElementById('pr-rate').value)||0;if(!type||rate<=0)return showToast('Enter a valid type and rate per Kg','error');const data={type,ratePerKg:rate,effectiveFrom:document.getElementById('pr-effective').value,status:document.getElementById('pr-status').value,notes:document.getElementById('pr-notes').value.trim()};showLoader(true,id?'Updating piecework rate...':'Saving piecework rate...');const res=await apiPost({action:id?'update_piecework_rate':'add_piecework_rate',data:{id:id||undefined,parsedJson:data,date:data.effectiveFrom}});showLoader(false);if(res?.status==='success'){showToast(id?'Piecework rate updated':'Piecework rate saved');await fetchData(true);resetPieceworkRateForm();renderPieceworkRates();}else showToast(res?.message||'Failed to save rate','error');};
+        async function deletePieceworkRate(id){const r=safeArray(sysData.pieceworkRates).find(x=>String(x.id)===String(id)),name=r?.parsedJson?.type||'this rate';const c=await customPrompt(`Type DELETE to remove ${name} from the future rate master. Historical conversion records will keep their saved rate snapshot.`);if(c!=='DELETE')return;showLoader(true,'Removing rate...');const res=await apiPost({action:'delete_piecework_rate',data:{id}});showLoader(false);if(res?.status==='success'){showToast('Piecework rate removed');await fetchData(true);renderPieceworkRates();}else showToast(res?.message||'Failed','error');}
+
+        // PRODUCTION LOGIC
+        function openProdModal(editId) {
+            editingProdId = editId;
+            editingProdRefId = null;
+            let mTit = document.getElementById('prod-modal-title'); if(mTit) mTit.innerText = editId ? "Edit Manufacturing Run" : "Log Manufacturing Run";
+            
+            // Recalculate stock so editing item's RM usage is released
+            updateUI();
+
+            if(editId) {
+                let row = sysData.production.find(r => r.id === editId);
+                if(!row) return showToast("Cannot find log", "error");
+                let p = row.parsedJson;
+                editingProdRefId = row.refId;
+
+                document.getElementById('f-date').value = row.date?.substring(0,10) || '';
+                document.getElementById('f-shift').value = p.shift || 'Day Shift';
+                document.getElementById('f-machine').value = p.machine || '';
+                document.getElementById('f-op').value = p.operator?.employeeId || '';
+                document.getElementById('f-hours').value = p.workingHours || '';
+                document.getElementById('f-rm-name').value = p.rawMaterial?.name || '';
+                document.getElementById('f-rm-kg').value = p.rawMaterial?.kg || '';
+                document.getElementById('f-rm-cost').value = p.rawMaterial?.cost || '';
+                document.getElementById('f-item').value = p.item?.name || '';
+                document.getElementById('f-qty').value = p.item?.qty || '';
+                // Removed unused production cost field; old records keep compatibility.
+                document.getElementById('f-over').value = p.costing?.overheadCost || '';
+                
+                autoFillRMCost(); // Trigger UI checks
+            } else {
+                document.getElementById('add-form').reset();
+                document.getElementById('f-date').valueAsDate = new Date();
+                document.getElementById('f-tot').innerText = 'Rs. 0.00';
+                document.getElementById('f-unit').innerText = 'Rs. 0.00';
+                document.getElementById('live-rm-stock').innerText = 'Avail: -- Kg';
+                document.getElementById('live-rm-stock').className = 'text-[9px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded';
+            }
+
+            let m = document.getElementById('add-modal'); if(m) m.classList.remove('hidden');
+        }
+
+        function closeProdModal() {
+            editingProdId = null;
+            editingProdRefId = null;
+            let m = document.getElementById('add-modal'); if(m) m.classList.add('hidden');
+            updateUI(); // restore normal stock numbers
+        }
+
+        function autoFillRMCost() {
+            let nmEl = document.getElementById('f-rm-name'); let nm = nmEl ? nmEl.value : '';
+            let kgEl = document.getElementById('f-rm-kg'); let kg = kgEl ? (parseFloat(kgEl.value)||0) : 0;
+            let rcEl = document.getElementById('f-rm-cost');
+            let stEl = document.getElementById('live-rm-stock');
+
+            if(chipInventory[nm]) {
+                let r = chipInventory[nm];
+                if(rcEl) rcEl.value = (kg * r.avgCost).toFixed(2);
+                
+                if(stEl) {
+                    stEl.innerText = `Avail: ${r.currentStock.toFixed(2)} Kg`;
+                    stEl.className = r.currentStock >= kg ? 'text-[9px] font-bold text-green-700 bg-green-100 px-2 py-1 rounded border border-green-200' : 'text-[9px] font-bold text-red-700 bg-red-100 px-2 py-1 rounded border border-red-200 animate-pulse';
+                }
+            } else {
+                if(rcEl) rcEl.value = '';
+                if(stEl) {
+                    stEl.innerText = 'Avail: -- Kg';
+                    stEl.className = 'text-[9px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded';
+                }
+            }
+            calcCost();
+        }
+
+        function calcCost() {
+            let q=parseFloat(document.getElementById('f-qty')?.value)||0;
+            let rc=parseFloat(document.getElementById('f-rm-cost')?.value)||0;
+            let lc = 0;
+            let oc=parseFloat(document.getElementById('f-over')?.value)||0;
+            let tot = rc+lc+oc; 
+            let uc = q>0 ? tot/q : 0;
+            
+            let ft = document.getElementById('f-tot'); if(ft) ft.innerText = 'Rs. ' + formatMoney(tot); 
+            let fu = document.getElementById('f-unit'); if(fu) fu.innerText = 'Rs. ' + formatMoney(uc);
+        }
+
+        document.getElementById('add-form').onsubmit = async (e) => {
+            e.preventDefault();
+            let opEl = document.getElementById('f-op');
+            if(!opEl.value) return showToast("You must select an active operator.", "error");
+
+            let rmName = document.getElementById('f-rm-name').value;
+            let rk=parseFloat(document.getElementById('f-rm-kg').value)||0;
+            let rmStock = chipInventory[rmName]?.currentStock || 0;
+
+            if(!chipInventory[rmName]) return showToast("Production can use converted chip stock only.", "error");
+            if(rk > rmStock) return showToast(`Insufficient converted chip stock. Available ${rmStock.toFixed(2)} Kg.`, "error");
+
+            let q=parseFloat(document.getElementById('f-qty').value)||0;
+            let rc=parseFloat(document.getElementById('f-rm-cost').value)||0;
+            let lc = 0;
+            let oc=parseFloat(document.getElementById('f-over').value)||0;
+            let tot=rc+lc+oc, uc=q>0?tot/q:0;
+            if(q<=0) return showToast("Produced Quantity must be greater than zero.", "error");
+            
+            let confirmSave = await customConfirm("Are you sure you want to permanently log this production run and post Cost Accounting Ledgers?");
+            if(!confirmSave) return;
+
+            let btn = document.getElementById('btn-prod-submit');
+            let ogHtml = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i> Processing Ledger Integration...`;
+            btn.disabled = true;
+
+            let data = {
+                date: document.getElementById('f-date').value,
+                shift: document.getElementById('f-shift').value,
+                machine: document.getElementById('f-machine').value,
+                operator: { employeeId: opEl.value, name: opEl.options[opEl.selectedIndex].text.split('(')[0].trim() },
+                workingHours: parseFloat(document.getElementById('f-hours').value)||0,
+                item: { name: document.getElementById('f-item').value, qty: q, unitCost: uc, finishedGoodsValue: tot },
+                rawMaterial: { name: rmName, kg: rk, cost: rc, stage: 'CHIP' },
+                costing: { laborCost: lc, overheadCost: oc, totalCost: tot }
+            };
+
+            showLoader(true, "Committing Data & Posting Finance...");
+            try {
+                const prodAction = editingProdId ? 'update_production' : 'add_production';
+                let res = await apiPost({ action: prodAction, data: { id: editingProdId || undefined, refId: editingProdRefId || undefined, parsedJson: data, date: data.date } });
+                
+                if(res?.status==='success') { 
+                    showToast("Production Logged & Financed!"); 
+                    closeProdModal();
+                    await fetchData(true); 
+                } else throw new Error(res?.message || "Save rejected");
+            } catch(err) {
+                showToast("Failed to log production", "error");
+            } finally {
+                btn.innerHTML = ogHtml;
+                btn.disabled = false;
+                showLoader(false);
+            }
+        };
+
+        async function delProd(id, refId) {
+            let conf = await customPrompt("CRITICAL: Deleting this log removes Inventory and reverses Cost Accounting (RM, FG, Overhead)!\n\nType DELETE to confirm.");
+            if(conf !== "DELETE") { showToast("Deletion cancelled.", "info"); return; }
+            showLoader(true, "Reversing Ledgers & Deleting Data...");
+            let res = await apiPost({ action: 'delete_production', data: { id: id, refId: refId } });
+            if(res?.status==='success') { showToast("Log and Finances Cleared"); await fetchData(true); } else showToast(res?.message || "Deletion Failed", "error");
+            showLoader(false);
+        }
+
+        async function generateDailyPDF() {
+            let dEl = document.getElementById('l-date');
+            let targetDate = dEl && dEl.value ? dEl.value : new Date().toISOString().substring(0,10);
+            
+            let tQty=0, tRm=0, tCost=0, html='';
+            
+            safeArray(sysData.production).filter(r => r.date && r.date.substring(0,10) === targetDate).forEach(r => {
+                let p = r.parsedJson; if(!p)return;
+                let q = parseFloat(p.item?.qty)||0;
+                let rm = parseFloat(p.rawMaterial?.kg)||0;
+                let tc = parseFloat(p.costing?.totalCost)||0;
+                let uc = parseFloat(p.item?.unitCost)||0;
+
+                tQty+=q; tRm+=rm; tCost+=tc;
+
+                html += `<tr>
+                    <td style="padding:14px 10px; border-bottom:1px solid #f1f5f9; font-weight:700; font-size:12px;">${p.item?.name}</td>
+                    <td style="padding:14px 10px; border-bottom:1px solid #f1f5f9; font-size:11px;">${p.machine}<br><span style="font-size:9px; color:#6b7280; text-transform:uppercase; font-weight:700; margin-top:2px; display:block;">${p.operator?.name}</span></td>
+                    <td style="padding:14px 10px; border-bottom:1px solid #f1f5f9; text-align:center; font-family:monospace; font-size:12px; color:#4b5563;">${rm.toFixed(2)}</td>
+                    <td style="padding:14px 10px; border-bottom:1px solid #f1f5f9; text-align:center; font-family:monospace; font-size:13px; font-weight:700; color:#2563eb;">${q}</td>
+                    <td style="padding:14px 10px; border-bottom:1px solid #f1f5f9; text-align:right; font-family:monospace; font-size:12px;">${formatMoney(tc)}</td>
+                    <td style="padding:14px 10px; border-bottom:1px solid #f1f5f9; text-align:right; font-family:monospace; font-size:12px;">${formatMoney(uc)}</td>
+                </tr>`;
+            });
+
+            if(tQty === 0) return showToast("No production data found for selected date.", "error");
+
+            document.getElementById('pdf-header-date').innerText = targetDate;
+            document.getElementById('pdf-tot-qty').innerText = tQty.toLocaleString();
+            document.getElementById('pdf-tot-rm').innerText = tRm.toLocaleString(undefined, {minimumFractionDigits:2});
+            document.getElementById('pdf-tot-val').innerText = 'Rs. ' + formatMoney(tCost);
+            document.getElementById('pdf-items-body').innerHTML = html;
+
+            let pdfEl = document.getElementById('pdf-template');
+            pdfEl.classList.remove('hidden');
+            showLoader(true, "Structuring Stripe-Style Daily PDF Report...");
+            
+            try {
+                await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js','html2pdf');
+                let opt = { 
+                    margin: 0, 
+                    filename: `Production_Report_${targetDate}.pdf`, 
+                    image: {type: 'jpeg', quality: 1}, 
+                    html2canvas: {scale: 2, useCORS: true}, 
+                    pagebreak: { mode: 'avoid-all', before: '.page-break' },
+                    jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'} 
+                };
+
+                await html2pdf().set(opt).from(pdfEl).toPdf().get('pdf').then(function (pdf) {
+                    window.open(pdf.output('bloburl'), '_blank');
+                });
+                showToast("Daily Report Generated!");
+            } catch (err) {
+                showToast("Failed to generate PDF", "error");
+            } finally {
+                pdfEl.classList.add('hidden');
+                showLoader(false);
+            }
+        }
+
+        // Init
+        let __lastForegroundSync = 0;
+        function syncFreshOnForeground(){
+            if(!backendUrl || document.visibilityState === 'hidden') return;
+            const now=Date.now(); if(now-__lastForegroundSync < 15000) return;
+            __lastForegroundSync=now; fetchData(true);
+        }
+        window.addEventListener('focus', syncFreshOnForeground);
+        document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') syncFreshOnForeground(); });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if(!checkAuth()) return;
+            if(backendUrl) fetchData();
+        });
+    </script>
+</body>
+</html>

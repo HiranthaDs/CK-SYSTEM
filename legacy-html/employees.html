@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enterprise ERP | Staff & Payroll Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf is lazy-loaded only when a payslip is requested -->
+    <style>
+        :root { --mac-bg: #f5f5f7; --mac-window: #ffffff; --mac-sidebar: rgba(245, 245, 247, 0.85); --mac-border: #e5e5e5; --mac-text: #1d1d1f; }
+        body { background-color: var(--mac-bg); color: var(--mac-text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; overscroll-behavior-y: none; }
+        
+        .mac-window { background: var(--mac-window); box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); overflow: hidden; }
+        @media (min-width: 768px) { .mac-window { border-radius: 12px; } }
+        
+        .mac-titlebar { background: linear-gradient(to bottom, #ffffff, #f6f6f6); border-bottom: 1px solid var(--mac-border); height: 40px; display: flex; align-items: center; padding: 0 16px; user-select: none; }
+        .mac-traffic-lights { display: flex; gap: 8px; } .traffic-light { width: 12px; height: 12px; border-radius: 50%; } .tl-red { background-color: #ff5f56; } .tl-yellow { background-color: #ffbd2e; } .tl-green { background-color: #27c93f; }
+        
+        .glass-panel { background: var(--mac-sidebar); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .nav-item { border-radius: 8px; transition: all 0.2s ease; } .nav-item:hover, .nav-item.active { background-color: rgba(0, 0, 0, 0.05); } .nav-item.active { background-color: #007aff; color: white !important; }
+        
+        .mobile-nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #8e8e93; transition: color 0.2s; padding: 4px 0; width: 20%; } .mobile-nav-item.active { color: #007aff; } .mobile-nav-item span { font-size: 10px; margin-top: 4px; font-weight: 500; }
+        
+        .mac-input { border: 1px solid #d1d1d6; border-radius: 8px; padding: 12px 14px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff; font-size: 14px; width: 100%;} .mac-input:focus { outline: none; border-color: #007aff; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2); }
+        .tab-btn { border-bottom: 2px solid transparent; transition: all 0.2s; } .tab-btn.active { border-bottom-color: #007aff; color: #007aff; font-weight: bold; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Stripe-like PDF Styles */
+        .stripe-table th { background-color: #f7fafc; color: #6b7280; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px; border-bottom: 1px solid #e5e7eb; }
+        .stripe-table td { padding: 12px; border-bottom: 1px solid #f3f4f6; color: #374151; font-size: 12px; }
+        .stripe-table tr:last-child td { border-bottom: none; }
+    
+
+        /* ==============================================================
+           HICH FIX PACK V7 - Professional responsive ERP shell
+           ============================================================== */
+        html, body { width: 100%; height: 100%; min-height: 100dvh; overflow: hidden; background: #f3f4f6 !important; }
+        body { display: block !important; padding: 0 !important; }
+        .mac-window { width: 100% !important; height: 100dvh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; border: 0 !important; box-shadow: none !important; }
+        .mac-titlebar { height: 56px !important; background: #ffffff !important; border-bottom: 1px solid #e5e7eb !important; box-shadow: none !important; }
+        .mac-traffic-lights, .traffic-light { display: none !important; }
+        .glass-panel { background: #ffffff !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+        .nav-item { border-radius: 10px !important; }
+        .nav-item.active { background: #111827 !important; color: #ffffff !important; }
+        .nav-item.active svg { color: #ffffff !important; }
+        .mac-input { min-height: 42px; border-radius: 10px !important; }
+        .admin-scroll, .overflow-x-auto { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+        table { border-collapse: separate; border-spacing: 0; }
+        main { min-width: 0 !important; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+        @media (min-width: 768px) {
+            .mac-window > .flex.flex-1 { height: calc(100dvh - 56px) !important; min-height: 0 !important; }
+            aside { height: calc(100dvh - 56px) !important; }
+            main { height: 100% !important; }
+            .mobile-only { display: none !important; }
+        }
+
+        @media (max-width: 767px) {
+            html, body { height: 100dvh !important; overflow: hidden !important; }
+            .mac-window { height: 100dvh !important; min-height: 100dvh !important; overflow: hidden !important; }
+            .mac-window > .flex.flex-1 { height: calc(100dvh - 68px - env(safe-area-inset-bottom)) !important; min-height: 0 !important; padding-bottom: 0 !important; overflow: hidden !important; }
+            main { height: 100% !important; overflow-y: auto !important; overflow-x: hidden !important; padding: 12px !important; -webkit-overflow-scrolling: touch; }
+            .mac-input, input, select, textarea { font-size: 16px !important; min-height: 44px !important; }
+            .fixed.inset-0 { padding: 10px !important; }
+            .fixed.inset-0 > .bg-white, .fixed.inset-0 .rounded-2xl { max-height: 92dvh !important; overflow-y: auto !important; }
+            table { min-width: 720px; }
+            .text-4xl { font-size: 1.75rem !important; line-height: 2rem !important; }
+            .text-3xl { font-size: 1.5rem !important; line-height: 1.9rem !important; }
+            .text-2xl { font-size: 1.25rem !important; line-height: 1.65rem !important; }
+            .mobile-nav-item { min-height: 60px; color: #6b7280 !important; }
+            .mobile-nav-item.active { color: #111827 !important; font-weight: 800 !important; }
+            .mobile-nav-item span { font-size: 10px !important; }
+            #toast { width: calc(100vw - 24px) !important; justify-content: center; border-radius: 14px !important; }
+        }
+
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center md:p-6 pb-0 overflow-hidden bg-gray-100">
+
+    <!-- Microsoft Login Overlay (Password Only) -->
+    <div id="ms-login-overlay" class="fixed inset-0 bg-[#f3f2f1] z-[99999] flex flex-col items-center justify-center hidden">
+        <div class="bg-white p-10 w-full max-w-[440px] shadow-[0_2px_6px_rgba(0,0,0,0.2)]">
+            <div class="flex items-center gap-2 mb-6">
+                <svg viewBox="0 0 23 23" class="w-6 h-6"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+                <span class="text-xl font-semibold text-[#737373]">Microsoft</span>
+            </div>
+            <h2 class="text-2xl font-semibold text-[#1b1b1b] mb-4 tracking-tight">Sign in</h2>
+            <p class="text-sm text-gray-500 mb-6 font-medium">to continue to Enterprise ERP</p>
+            <form onsubmit="doLogin(event)" class="space-y-4">
+                <p id="ms-err" class="text-[#e81123] text-[13px] hidden">Incorrect password. Please try again.</p>
+                <div>
+                    <input type="password" id="ms-pass" placeholder="Enter Access Password" required class="w-full border-b border-black outline-none py-2 focus:border-b-2 focus:border-[#0067b8] text-[15px] transition-all bg-transparent placeholder-gray-600">
+                </div>
+                <p class="text-[13px] text-[#0067b8] hover:text-[#333] cursor-pointer mt-4 inline-block">Can't access your account?</p>
+                <div class="flex justify-end mt-8">
+                    <button type="submit" class="bg-[#0067b8] hover:bg-[#005da6] text-white px-8 py-2 font-semibold text-[15px] transition-colors">Sign in</button>
+                </div>
+            </form>
+        </div>
+        <div class="mt-8 text-center text-xs text-gray-500 font-mono">
+            <p>Super Admin Pass: superadmin123</p>
+            <p>Admin Pass: admin123</p>
+        </div>
+        <div class="fixed bottom-4 flex gap-4 text-xs text-gray-500">
+            <a href="#" class="hover:underline">Terms of use</a>
+            <a href="#" class="hover:underline">Privacy & cookies</a>
+            <span>...</span>
+        </div>
+    </div>
+
+    <!-- Global Loading Overlay -->
+    <div id="loader" class="hidden fixed inset-0 bg-white/90 backdrop-blur-sm z-[500] flex flex-col items-center justify-center transition-opacity">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"></div>
+        <p class="text-sm font-bold text-gray-800 tracking-wider uppercase" id="loader-msg">Loading System...</p>
+    </div>
+    
+    <!-- Global Toast Notification -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 -translate-y-20 opacity-0 transition-all duration-300 bg-gray-900 text-white px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 z-[600]">
+        <i data-lucide="info" class="w-5 h-5 text-blue-400" id="toast-icon"></i>
+        <span id="toast-msg" class="text-sm font-bold"></span>
+    </div>
+
+    <!-- Main Window Interface -->
+    <div class="mac-window w-full h-full md:max-w-7xl md:max-h-[900px] flex flex-col relative bg-white">
+        
+        <!-- Top Window Controls -->
+        <div class="mac-titlebar hidden md:flex justify-between shrink-0">
+            <div class="mac-traffic-lights items-center">
+                <div class="traffic-light tl-red"></div>
+                <div class="traffic-light tl-yellow"></div>
+                <div class="traffic-light tl-green"></div>
+            </div>
+            <div class="text-xs font-semibold text-gray-600 absolute left-1/2 transform -translate-x-1/2 uppercase tracking-widest">
+                Advanced Staff & Payroll Engine
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="user-role-badge" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-gray-100 text-gray-600 border border-gray-200 rounded shadow-inner hidden md:inline-block"></span>
+                <span id="sync-status" class="text-[10px] uppercase tracking-widest font-bold px-2 py-1 bg-green-50 text-green-600 border border-green-200 rounded shadow-inner">Online</span>
+                <button onclick="doLogout()" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded shadow-inner hover:bg-red-100 transition flex items-center gap-1"><i data-lucide="log-out" class="w-3 h-3"></i> Logout</button>
+            </div>
+        </div>
+
+        <div class="flex flex-1 overflow-hidden flex-col md:flex-row pb-16 md:pb-0">
+            
+            <!-- Desktop Sidebar -->
+            <aside class="glass-panel w-64 flex-shrink-0 hidden md:flex flex-col p-4 border-r border-gray-200">
+                <div class="mb-6">
+                    <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-2">Enterprise Modules</h2>
+                    <nav class="space-y-1">
+                        <a href="index.html" id="nav-acc-link" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="pie-chart" class="w-4 h-4"></i> Accounting / Reports</a>
+                        <a href="production.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="factory" class="w-4 h-4"></i> Production</a>
+                        <a href="sales.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Sales & Invoices</a>
+                        <a href="inventory.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="package" class="w-4 h-4"></i> Inventory</a>
+                        <a href="employees.html" class="nav-item active w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="users" class="w-4 h-4 text-indigo-500"></i> Staff & Payroll</a>
+                    </nav>
+                </div>
+                <div class="mt-auto space-y-3">
+                    <button onclick="openEmployeeModal()" class="w-full bg-white border border-gray-200 text-gray-800 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm hover:shadow transition">
+                        <i data-lucide="user-plus" class="w-4 h-4 inline mr-1"></i> Register Employee
+                    </button>
+                    <button onclick="openDailyWork()" class="w-full bg-white border border-cyan-200 text-cyan-800 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm hover:bg-cyan-50 transition flex items-center justify-center gap-2">
+                        <i data-lucide="calendar-check" class="w-4 h-4"></i> Record Daily Work
+                    </button>
+                    <button onclick="openPayroll()" class="w-full bg-blue-600 text-white px-4 py-4 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <i data-lucide="banknote" class="w-4 h-4"></i> Run Finance Payroll
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Content Pane -->
+            <main class="flex-1 bg-gray-50 overflow-y-auto p-0 relative flex flex-col">
+                <div class="bg-white p-3 border-b border-gray-200 shrink-0 flex justify-between items-center rounded-t-xl">
+                    <div class="flex gap-4 md:gap-6 px-2">
+                        <button onclick="switchView('staff-view')" id="btn-staff-view" class="tab-btn active pb-1 text-sm font-bold text-gray-500 whitespace-nowrap tracking-wide">Staff Directory</button>
+                        <button onclick="switchView('pay-view')" id="btn-pay-view" class="tab-btn pb-1 text-sm font-bold text-gray-500 whitespace-nowrap tracking-wide">Payroll History</button>
+                    </div>
+                    <div class="md:hidden flex gap-2">
+                        <button onclick="openEmployeeModal()" class="bg-gray-200 px-3 py-1.5 rounded-lg text-[10px] font-bold">Add</button>
+                        <button onclick="openDailyWork()" class="bg-cyan-100 text-cyan-800 px-3 py-1.5 rounded-lg text-[10px] font-bold">Daily</button>
+                        <button onclick="openPayroll()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold">Payroll</button>
+                    </div>
+                </div>
+
+                <!-- STAFF DIRECTORY VIEW -->
+                <div id="staff-view" class="p-4 md:p-6 flex-1 flex flex-col overflow-hidden">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 shrink-0">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center">
+                            <h3 class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Staff</h3>
+                            <p class="text-2xl font-black mt-1 text-gray-800" id="dash-tot">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-1 h-full bg-green-500"></div>
+                            <h3 class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Active Operatives</h3>
+                            <p class="text-2xl font-black text-green-700 mt-1" id="dash-act">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center relative overflow-hidden">
+                            <div class="absolute right-0 top-0 w-1 h-full bg-red-500"></div>
+                            <h3 class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Inactive / Left</h3>
+                            <p class="text-2xl font-black text-red-700 mt-1" id="dash-inact">0</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-sm flex flex-col justify-center">
+                            <h3 class="text-[9px] font-black text-blue-600 uppercase tracking-widest">Lifetime Payroll</h3>
+                            <p class="text-xl md:text-2xl font-black text-blue-800 mt-1 font-mono tracking-tight" id="dash-pay">0.00</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col overflow-hidden">
+                        <div class="p-2 md:p-3 bg-gray-50 border-b flex shrink-0 rounded-t-xl">
+                            <div class="relative flex-1 max-w-md">
+                                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+                                <input type="text" id="e-search" placeholder="Search by name, role, or NIC..." class="mac-input py-2 pl-9 text-xs w-full shadow-inner" onkeyup="updateUI()">
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto overflow-y-auto flex-1 bg-white rounded-b-xl">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
+                                <thead class="bg-white sticky top-0 shadow-sm border-b text-[9px] uppercase text-gray-500 tracking-widest font-black z-10">
+                                    <tr>
+                                        <th class="p-3 bg-white">Employee Details</th>
+                                        <th class="p-3 bg-white">Contact & Shift</th>
+                                        <th class="p-3 bg-white">Pay Model</th>
+                                        <th class="p-3 bg-white text-right">Rates (Rs)</th>
+                                        <th class="p-3 bg-white text-center">Status</th>
+                                        <th class="p-3 bg-white text-center">Act</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="emp-body" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                            <div id="emp-empty" class="hidden p-8 text-center text-sm text-gray-400 italic">No employees found.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAYROLL HISTORY VIEW -->
+                <div id="pay-view" class="p-4 md:p-6 flex-1 flex flex-col overflow-hidden hidden">
+                    
+                    <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl mb-4 text-sm text-indigo-900 shrink-0 shadow-inner flex flex-col md:flex-row gap-3 items-start md:items-center">
+                        <i data-lucide="info" class="w-6 h-6 shrink-0 text-indigo-500 mt-0.5"></i>
+                        <div>
+                            <p class="leading-relaxed"><strong>Payroll Accounting Integration:</strong> Running payroll dynamically posts Gross Salaries to your Expense Ledgers and Cash/Bank to your Asset Ledgers accurately.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col overflow-hidden">
+                        <div class="p-2 md:p-3 bg-gray-50 border-b flex gap-2 shrink-0 rounded-t-xl">
+                            <div class="relative flex-1 max-w-md">
+                                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+                                <input type="text" id="p-search" placeholder="Filter records by Name or NIC..." class="mac-input py-2 pl-9 text-xs w-full shadow-inner" onkeyup="updateUI()">
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto overflow-y-auto flex-1 bg-white rounded-b-xl">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[900px]">
+                                <thead class="bg-white sticky top-0 shadow-sm border-b text-[9px] uppercase text-gray-500 tracking-widest font-black z-10">
+                                    <tr>
+                                        <th class="p-3 bg-white">Issue Date</th>
+                                        <th class="p-3 bg-white">Employee (NIC)</th>
+                                        <th class="p-3 bg-white text-right">Gross Earnings</th>
+                                        <th class="p-3 bg-white text-right text-red-500">Deductions</th>
+                                        <th class="p-3 bg-blue-50 text-blue-800 border-l border-r border-blue-100 text-right font-bold">Net Paid</th>
+                                        <th class="p-3 bg-white text-center">Acc. Status</th>
+                                        <th class="p-3 bg-white text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pay-body" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                            <div id="pay-empty" class="hidden p-8 text-center text-sm text-gray-400 italic">No payroll records found.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <!-- Mobile Navigation Bottom -->
+        <nav class="md:hidden glass-panel fixed bottom-0 w-full border-t border-gray-200 flex justify-around items-center z-50 h-[65px] pb-safe">
+            <a href="index.html" id="mobile-nav-acc-link" class="mobile-nav-item"><i data-lucide="pie-chart" class="w-6 h-6"></i><span>Finance</span></a>
+            <a href="production.html" class="mobile-nav-item"><i data-lucide="factory" class="w-6 h-6"></i><span>Prod</span></a>
+            <a href="sales.html" class="mobile-nav-item"><i data-lucide="shopping-cart" class="w-6 h-6"></i><span>Sales</span></a>
+            <a href="inventory.html" class="mobile-nav-item"><i data-lucide="package" class="w-6 h-6"></i><span>Inv</span></a>
+            <a href="employees.html" class="mobile-nav-item active"><i data-lucide="users" class="w-6 h-6 text-indigo-500"></i><span>Staff</span></a>
+        </nav>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div id="emp-modal" class="hidden fixed inset-0 bg-black/70 z-[300] flex items-center justify-center p-2 md:p-4 backdrop-blur-md transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[95vh] overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center shrink-0">
+                <div>
+                    <h2 id="emp-modal-title" class="text-xl font-black text-gray-900 tracking-tight">Register Staff Member</h2>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mt-1">Details are used for payroll, OT, daily work, piecework allocation and WhatsApp comms.</p>
+                </div>
+                <button type="button" onclick="document.getElementById('emp-modal').classList.add('hidden')" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300 transition"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-100">
+                <form id="emp-form" class="space-y-6"><input type="hidden" id="e-id">
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-gray-100 pb-2 mb-4">Personal Details</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Full Name</label><input type="text" id="e-name" required class="mac-input w-full bg-gray-50 focus:bg-white font-bold"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">NIC Number</label><input type="text" id="e-nic" required class="mac-input w-full bg-gray-50 focus:bg-white font-mono"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">WhatsApp / Phone</label><input type="text" id="e-phone" placeholder="e.g. 0771234567" class="mac-input w-full bg-gray-50 focus:bg-white font-mono"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Home Address</label><input type="text" id="e-address" class="mac-input w-full bg-gray-50 focus:bg-white"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">EPF Member No. (Optional)</label><input type="text" id="e-epf-no" class="mac-input w-full bg-gray-50 focus:bg-white font-mono" placeholder="Employee EPF reference"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">ETF / Statutory Ref. (Optional)</label><input type="text" id="e-etf-ref" class="mac-input w-full bg-gray-50 focus:bg-white font-mono" placeholder="ETF/member reference"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Joined Date</label><input type="date" id="e-joined-date" class="mac-input w-full bg-gray-50 focus:bg-white"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Left Date (Optional)</label><input type="date" id="e-left-date" class="mac-input w-full bg-gray-50 focus:bg-white"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-[10px] font-black text-indigo-600 uppercase tracking-widest border-b border-gray-100 pb-2 mb-4">Employment & Pay Profile</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Job Role</label><input type="text" id="e-role" placeholder="Operator, Manager..." required class="mac-input w-full bg-gray-50 focus:bg-white font-bold" list="role-hints"></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Employment Type</label><select id="e-employment-type" class="mac-input w-full bg-gray-50 font-bold text-gray-700"><option>Permanent</option><option>Manpower</option><option>Contract</option><option>Casual / Temporary</option></select></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Assigned Shift</label><select id="e-shift" class="mac-input w-full bg-gray-50 font-bold text-gray-700"><option>Day Shift</option><option>Night Shift</option><option>Flex / Admin</option></select></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">System Status</label><select id="e-status" class="mac-input w-full font-bold text-green-700 bg-green-50 border-green-200"><option>Active</option><option>Inactive</option></select></div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                            <div><label class="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1">Pay Model</label><select id="e-pay-model" class="mac-input font-bold"><option value="Monthly">Monthly</option><option value="Daily">Daily</option><option value="Piecework">Piecework / Conversion</option><option value="Mixed">Mixed / Variable</option></select></div>
+                            <div><label class="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1">Monthly Rate (Rs)</label><input type="number" step="0.01" id="e-base" class="mac-input font-mono font-bold" placeholder="Optional"></div>
+                            <div><label class="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1">Daily Rate (Rs)</label><input type="number" step="0.01" id="e-daily" class="mac-input font-mono font-bold" placeholder="Optional"></div>
+                            <div><label class="text-[9px] font-black text-gray-600 uppercase tracking-widest block mb-1">OT Rate / Hr (Rs)</label><input type="number" step="0.01" id="e-ot" class="mac-input font-mono font-bold" placeholder="Optional"></div>
+                        </div>
+                        <label class="flex items-start gap-3 bg-cyan-50 border border-cyan-100 rounded-xl p-3 mb-4 cursor-pointer"><input type="checkbox" id="e-daily-on-conversion" class="mt-0.5 w-4 h-4" checked><span><strong class="block text-[10px] uppercase tracking-widest text-cyan-800">Daily base pay on conversion work day</strong><span class="text-[10px] text-cyan-700">When this employee is allocated to Bulk Plastic → Chip Conversion, record one daily work unit automatically (once per employee/date) and add conversion piecework on top. Recommended for Daily/Mixed/Manpower staff.</span></span></label>
+                        <p class="text-[10px] text-gray-500 mb-4">No fixed salary is required. Monthly, daily, overtime and conversion-piecework amounts can all be combined in the salary sheet. Daily work records are saved separately for audit and monthly/annual reporting.</p>
+                        <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Bank Details (Optional)</label><input type="text" id="e-bank" placeholder="Bank Name, Branch, Acc No." class="mac-input w-full bg-gray-50 focus:bg-white"></div>
+                    </div>
+                    
+                    <button id="emp-submit-btn" type="submit" class="w-full bg-gray-900 text-white py-5 rounded-xl font-black text-sm uppercase tracking-widest shadow-xl hover:bg-black transition transform active:scale-95 flex items-center justify-center gap-2"><i data-lucide="save" class="w-5 h-5"></i> Register Employee Profile</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Variable Payroll Modal -->
+    <div id="pay-modal" class="hidden fixed inset-0 bg-black/70 z-[300] flex items-center justify-center p-2 md:p-4 backdrop-blur-md">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col max-h-[96vh] overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center"><div><h2 class="text-xl font-black text-gray-900">Advanced Salary Sheet</h2><p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Monthly + daily + OT + multiple increments/earnings + multiple deductions + chip conversion piecework.</p></div><button type="button" onclick="document.getElementById('pay-modal').classList.add('hidden')" class="bg-gray-200 p-2 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+            <div class="p-5 overflow-y-auto flex-1 bg-gray-100"><form id="pay-form" class="space-y-5">
+                <div class="bg-white p-5 rounded-xl border grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div><label class="text-[9px] font-black uppercase text-gray-500">Issue Date</label><input type="date" id="p-date" required class="mac-input" onchange="autoFillPayroll()"></div>
+                    <div><label class="text-[9px] font-black uppercase text-gray-500">Salary Month</label><input type="month" id="p-month" required class="mac-input" onchange="renderDailyPay();calcP()"></div>
+                    <div><label class="text-[9px] font-black uppercase text-blue-600">Employee</label><input type="text" id="p-emp-search" required class="mac-input font-bold border-blue-300 bg-blue-50" list="active-emp-hints" placeholder="Type employee name..." onchange="autoFillPayroll()" oninput="autoFillPayroll()"><span id="p-nic-hint" class="text-[10px] font-mono font-bold text-gray-500 mt-1 block">NIC: --</span></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-xl border"><h3 class="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-3">Monthly Salary</h3><input type="number" step="0.01" id="p-base" class="mac-input font-mono text-xl font-black text-right" oninput="calcP()" placeholder="0.00"><p id="p-base-hint" class="text-[9px] text-gray-400 mt-1">Profile monthly rate</p></div>
+                    <div class="bg-white p-5 rounded-xl border"><h3 class="text-[10px] font-black uppercase tracking-widest text-cyan-700 mb-3">Loaded Daily Work</h3><div class="grid grid-cols-2 gap-2"><input type="number" step="0.5" id="p-days" class="mac-input font-mono text-right bg-gray-50" placeholder="Days" readonly><input type="number" step="0.01" id="p-daily-rate" class="mac-input font-mono text-right bg-gray-50" placeholder="Profile Rate" readonly></div><p id="p-daily-amount" class="text-right font-mono font-black text-cyan-800 mt-2">Rs. 0.00</p><p class="text-[9px] text-gray-400 mt-1">Loaded from saved Daily Pay records for this salary month.</p></div>
+                    <div class="bg-white p-5 rounded-xl border"><h3 class="text-[10px] font-black uppercase tracking-widest text-blue-700 mb-3">Overtime</h3><div class="grid grid-cols-2 gap-2"><input type="number" step="0.5" id="p-ot-hr" class="mac-input font-mono text-right" placeholder="Hours" oninput="calcP()"><input type="number" step="0.01" id="p-ot-rate" class="mac-input font-mono text-right" placeholder="Rate" oninput="calcP()"></div><p id="p-ot-amount" class="text-right font-mono font-black text-blue-800 mt-2">Rs. 0.00</p></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <div class="bg-white p-5 rounded-xl border"><div class="flex justify-between items-center mb-3"><div><h3 class="text-[10px] font-black uppercase tracking-widest text-green-700">Additional Earnings / Increments</h3><p class="text-[10px] text-gray-500">Add any number of monthly increments, allowances, bonuses or corrections.</p></div><button type="button" onclick="addEarningRow()" class="bg-green-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">+ Earning</button></div><div class="overflow-x-auto"><table class="w-full min-w-[520px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-2">Type</th><th class="p-2">Description</th><th class="p-2 text-right">Amount</th><th></th></tr></thead><tbody id="earning-rows"></tbody></table></div></div>
+                    <div class="bg-white p-5 rounded-xl border"><div class="flex justify-between items-center mb-3"><div><h3 class="text-[10px] font-black uppercase tracking-widest text-red-700">Deductions</h3><p class="text-[10px] text-gray-500">Add advances, EPF, loans, absences or any separate deduction.</p></div><button type="button" onclick="addDeductionRow()" class="bg-red-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">+ Deduction</button></div><div class="overflow-x-auto"><table class="w-full min-w-[520px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-2">Type</th><th class="p-2">Description</th><th class="p-2 text-right">Amount</th><th></th></tr></thead><tbody id="deduction-rows"></tbody></table></div></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-indigo-100"><div class="flex justify-between items-center mb-3"><div><h3 class="text-[10px] font-black uppercase tracking-widest text-indigo-700">Employer Contributions · EPF / ETF / Benefits</h3><p class="text-[10px] text-gray-500">These are employer costs and do not reduce the employee's net salary. Enter the actual contribution amount for this payroll month.</p></div><button type="button" onclick="addContributionRow()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">+ Contribution</button></div><div class="overflow-x-auto"><table class="w-full min-w-[650px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-2">Type</th><th class="p-2">Description</th><th class="p-2 text-right">Amount</th><th></th></tr></thead><tbody id="contribution-rows"></tbody></table></div><p id="employer-contribution-total" class="text-right font-mono font-black text-indigo-800 mt-3">Employer Contributions: Rs. 0.00</p></div>
+                <div class="bg-violet-50 p-5 rounded-xl border border-violet-200"><div class="flex justify-between"><div><h3 class="text-[10px] font-black uppercase tracking-widest text-violet-700">Daily Pay Check · Base Wage + Conversion Piecework</h3><p class="text-[10px] text-violet-700/70 mt-1">Each saved day shows the daily base wage once plus every chip-conversion allocation for that date. Selected days are cleared through this monthly payroll.</p></div><p id="piecework-total" class="font-mono font-black text-violet-900 text-xl">Rs. 0.00</p></div><div id="piecework-list" class="mt-3 grid gap-2"></div></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
+                    <div class="bg-white p-5 rounded-xl border"><label class="text-[9px] font-black uppercase text-gray-500">Accounting Status</label><select id="p-stat" class="mac-input font-bold mt-1"><option value="Paid">Paid Now</option><option value="Payable">Payable / Accrued</option></select></div>
+                    <div class="bg-white p-5 rounded-xl border"><label class="text-[9px] font-black uppercase text-gray-500">Payment Medium</label><select id="p-meth" class="mac-input font-bold mt-1"><option>Bank Transfer</option><option>Cash</option><option>Cheque</option></select></div>
+                    <div class="bg-gray-900 text-white p-5 rounded-xl"><p class="text-[9px] uppercase tracking-widest text-gray-400 font-black">Net Payable</p><p id="p-net" class="text-3xl font-mono font-black text-green-400 mt-1">Rs. 0.00</p><p id="p-gross-note" class="text-[10px] text-gray-400 mt-1">Gross Rs. 0.00 | Deductions Rs. 0.00</p></div>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-5 rounded-xl text-lg font-black shadow-xl hover:bg-blue-700 uppercase tracking-widest">Approve Salary Sheet & Post Balanced Ledgers</button>
+            </form></div>
+        </div>
+    </div>
+
+    <!-- SUCCESS & WHATSAPP MODAL -->
+    <div id="success-modal" class="hidden fixed inset-0 bg-black/60 z-[500] flex items-center justify-center p-4 backdrop-blur-md transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col text-center p-8 relative overflow-hidden transform transition-all scale-100">
+            <div class="absolute top-0 left-0 w-full h-2 bg-green-500"></div>
+            <div class="mx-auto bg-green-100 p-4 rounded-full mb-4 text-green-600 shadow-inner">
+                <i data-lucide="check-circle" class="w-12 h-12"></i>
+            </div>
+            <h2 class="text-2xl font-black text-gray-800 mb-2 tracking-tight">Payroll Posted!</h2>
+            <p class="text-sm text-gray-500 mb-8 leading-relaxed font-medium">The salary has been accurately recorded and all financial double-entry ledgers have been updated securely.</p>
+            
+            <a id="whatsapp-btn" href="#" target="_blank" class="w-full bg-green-500 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-green-600 transition flex justify-center items-center gap-2 mb-3 transform active:scale-95">
+                <i data-lucide="message-circle" class="w-5 h-5"></i> Send WhatsApp Statement
+            </a>
+            
+            <button onclick="closeSuccessModal()" class="w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-200 transition">
+                Close Dialog
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden Datalists -->
+    <datalist id="role-hints"><option value="Machine Operator"><option value="Floor Supervisor"><option value="Technician"><option value="Admin Staff"></datalist>
+    <datalist id="active-emp-hints"></datalist>
+
+
+    <!-- DAILY WORK / DAILY PAY MODAL -->
+    <div id="daily-work-modal" class="hidden fixed inset-0 bg-black/70 z-[360] flex items-center justify-center p-2 md:p-4 backdrop-blur-md">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[96vh] flex flex-col">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center"><div><h2 class="text-xl font-black text-gray-900">Record Daily Work</h2><p class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mt-1">Daily wage + manual employee chip-conversion earnings. Manual chip pay updates payroll only and does not change physical chip stock.</p></div><button type="button" onclick="closeDailyWork()" class="bg-gray-200 p-2 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+            <form id="daily-work-form" class="p-5 bg-gray-100 space-y-4 overflow-y-auto">
+                <div id="dw-lock-notice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 font-bold"></div>
+                <div class="bg-white rounded-xl border p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="text-[9px] font-black uppercase text-gray-500">Date</label><input type="date" id="dw-date" required class="mac-input" onchange="loadDailyWorkExisting()"></div>
+                    <div><label class="text-[9px] font-black uppercase text-blue-600">Employee</label><select id="dw-employee" required class="mac-input font-bold" onchange="fillDailyWorkRate();loadDailyWorkExisting()"></select></div>
+                    <div><label class="text-[9px] font-black uppercase text-gray-500">Work Units / Days</label><input type="number" id="dw-units" min="0" max="2" step="0.25" value="1" class="mac-input font-mono text-right" oninput="calcDailyWorkPreview()"><p class="text-[9px] text-gray-400 mt-1">1 = full day, 0.5 = half day. Use 0 for piecework-only employees.</p></div>
+                    <div><label class="text-[9px] font-black uppercase text-gray-500">Daily Rate (Rs)</label><input type="number" id="dw-rate" min="0" step="0.01" class="mac-input font-mono text-right" oninput="calcDailyWorkPreview()"><p class="text-[9px] text-gray-400 mt-1">Defaults to employee profile; this date can use an override.</p></div>
+                </div>
+                <div class="bg-white rounded-xl border border-violet-200 p-4">
+                    <div class="flex justify-between items-start gap-3 mb-3"><div><h3 class="text-[10px] font-black uppercase tracking-widest text-violet-700">Manual Chip Conversion Earnings</h3><p class="text-[10px] text-gray-500 mt-1">Add PP, HI or any task manually for this employee. Enter Kg + rate, or enter the final amount directly. This is salary/payroll data only; physical stock is changed only from Production → Chip Conversion.</p></div><button type="button" onclick="addDailyPieceworkRow()" class="bg-violet-600 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase whitespace-nowrap">+ Conversion Pay</button></div>
+                    <div class="overflow-x-auto"><table class="w-full min-w-[760px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-2 text-left">Type / Task</th><th class="p-2 text-right">Kg</th><th class="p-2 text-right">Rate / Kg</th><th class="p-2 text-right">Manual Amount</th><th></th></tr></thead><tbody id="dw-piecework-rows"></tbody></table></div>
+                    <p id="dw-piecework-empty" class="text-xs text-gray-400 py-3">No manual chip-conversion earning lines.</p>
+                </div>
+                <div id="dw-auto-conversion-box" class="hidden bg-indigo-50 border border-indigo-100 rounded-xl p-4"><p class="text-[9px] font-black uppercase tracking-widest text-indigo-700">Production Conversion Allocations Already Recorded</p><div id="dw-auto-conversion-list" class="mt-2 grid gap-1 text-xs text-indigo-900"></div></div>
+                <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-center"><div><p class="text-[9px] font-black uppercase tracking-widest text-cyan-700">Daily Base</p><p id="dw-preview-base" class="text-xl font-mono font-black text-cyan-900">Rs. 0.00</p></div><div><p class="text-[9px] font-black uppercase tracking-widest text-violet-700">Manual Conversion Pay</p><p id="dw-preview-piecework" class="text-xl font-mono font-black text-violet-900">Rs. 0.00</p></div><div class="md:text-right"><p class="text-[9px] font-black uppercase tracking-widest text-gray-700">Manual Day Total</p><p id="dw-preview" class="text-2xl font-mono font-black text-gray-900">Rs. 0.00</p></div></div>
+                <div><label class="text-[9px] font-black uppercase text-gray-500">Notes</label><textarea id="dw-notes" rows="2" class="mac-input" placeholder="Attendance, shift, manual conversion note, special work, etc."></textarea></div>
+                <button id="dw-submit-btn" type="submit" class="w-full bg-cyan-700 text-white py-4 rounded-xl font-black uppercase tracking-widest shadow-lg">Save Daily Work, Conversion Pay & Accounting Accrual</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- EMPLOYEE MONTHLY / ANNUAL PAY REPORT -->
+    <div id="pay-report-modal" class="hidden fixed inset-0 bg-black/70 z-[380] flex items-center justify-center p-2 md:p-4 backdrop-blur-md">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col max-h-[96vh] overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center"><div><h2 class="text-xl font-black text-gray-900">Employee Pay Sheet</h2><p id="report-employee-title" class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mt-1">Monthly, annual & all-time payroll / EPF / ETF report</p></div><button type="button" onclick="closePayReport()" class="bg-gray-200 p-2 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button></div>
+            <div class="p-4 border-b bg-white grid grid-cols-2 md:grid-cols-7 gap-3 items-end">
+                <input type="hidden" id="report-employee-id">
+                <div><label class="text-[9px] font-black uppercase text-gray-500">Year</label><input type="number" id="report-year" min="2020" max="2100" class="mac-input font-mono" onchange="loadPayReport()"></div>
+                <div><label class="text-[9px] font-black uppercase text-gray-500">Period</label><select id="report-month" class="mac-input font-bold" onchange="toggleReportYear();loadPayReport()"><option value="ALL_TIME">All Time / Employment History</option><option value="ALL">Full Year / Annual</option><option value="01">January</option><option value="02">February</option><option value="03">March</option><option value="04">April</option><option value="05">May</option><option value="06">June</option><option value="07">July</option><option value="08">August</option><option value="09">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></div>
+                <button onclick="loadPayReport()" class="bg-gray-900 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest">Refresh</button>
+                <button onclick="sendPayReportWhatsApp()" class="bg-green-600 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-1"><i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp</button>
+                <button onclick="printPayReport()" class="bg-gray-700 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-1"><i data-lucide="printer" class="w-4 h-4"></i> Print</button>
+                <button onclick="downloadPayCsv()" class="bg-cyan-700 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-1"><i data-lucide="sheet" class="w-4 h-4"></i> CSV</button>
+                <button onclick="downloadPayReport()" class="bg-indigo-600 text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-1"><i data-lucide="file-down" class="w-4 h-4"></i> PDF</button>
+            </div>
+            <div id="pay-report-content" class="p-5 overflow-y-auto bg-gray-100 flex-1"><p class="text-center text-gray-400 py-12">Select an employee report.</p></div>
+        </div>
+    </div>
+
+    <div id="employee-report-print" class="hidden bg-white" style="width:210mm;min-height:297mm;padding:40px 45px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111827;"></div>
+
+    <!-- STRIPE STYLE PAYSLIP TEMPLATE -->
+    <div id="payslip-template" class="hidden bg-white" style="width: 210mm; min-height: 297mm; padding: 50px 60px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #111827;">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-end border-b-2 border-gray-900 pb-6 mb-8">
+            <div>
+                <h1 class="text-4xl font-black text-gray-900 tracking-tighter">AR PLASTIC DATA</h1>
+                <p class="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">Enterprise Manufacturing Solutions</p>
+            </div>
+            <div class="text-right">
+                <h2 class="text-3xl font-light text-gray-400 uppercase tracking-widest mb-1">Payslip</h2>
+                <p class="text-xs font-bold text-gray-800">Date: <span id="ps-date" class="font-mono text-gray-600 font-normal"></span></p>
+                <p class="text-xs font-bold text-gray-800 mt-0.5">Ref: <span id="ps-id" class="font-mono text-gray-600 font-normal"></span></p>
+            </div>
+        </div>
+
+        <!-- Employee Info Block -->
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-5 mb-8 flex justify-between items-center">
+            <div>
+                <h3 class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Prepared For</h3>
+                <p class="text-xl font-bold text-gray-900" id="ps-name"></p>
+                <p class="text-xs text-gray-600 font-medium mt-0.5" id="ps-role"></p>
+            </div>
+            <div class="text-right">
+                <p class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-1">Identification & Status</p>
+                <p class="text-sm text-gray-800 font-mono font-bold" id="ps-nic"></p>
+                <p class="text-xs text-gray-600 mt-1">Method: <span id="ps-meth" class="font-bold"></span></p>
+                <p class="text-xs text-gray-600 mt-1">Status: <span id="ps-badge" class="font-bold"></span></p>
+            </div>
+        </div>
+
+        <!-- Advanced Clean Tables -->
+        <table class="w-full text-left stripe-table mb-8 border-collapse border border-gray-200 rounded-lg overflow-hidden">
+            <thead>
+                <tr>
+                    <th class="w-1/2 bg-gray-50 text-gray-500 p-3 text-[10px] uppercase tracking-widest font-bold border-b border-gray-200">Earnings Description</th>
+                    <th class="text-right bg-gray-50 text-gray-500 p-3 text-[10px] uppercase tracking-widest font-bold border-b border-gray-200">Qty / Hrs</th>
+                    <th class="text-right bg-gray-50 text-gray-500 p-3 text-[10px] uppercase tracking-widest font-bold border-b border-gray-200">Amount (Rs)</th>
+                </tr>
+            </thead>
+            <tbody id="ps-earnings-body"></tbody>
+            <tfoot><tr class="bg-gray-50"><td colspan="2" class="p-3 text-right font-bold text-gray-900 text-xs uppercase tracking-widest">Gross Earnings</td><td class="p-3 text-right font-mono font-black text-gray-900 text-base" id="ps-gross"></td></tr></tfoot>
+        </table>
+
+        <table class="w-full text-left stripe-table mb-12 border-collapse border border-gray-200 rounded-lg overflow-hidden">
+            <thead>
+                <tr>
+                    <th class="w-3/4 bg-red-50 text-red-700 p-3 text-[10px] uppercase tracking-widest font-bold border-b border-red-100">Deductions Description</th>
+                    <th class="text-right bg-red-50 text-red-700 p-3 text-[10px] uppercase tracking-widest font-bold border-b border-red-100">Amount (Rs)</th>
+                </tr>
+            </thead>
+            <tbody id="ps-deductions-body"></tbody>
+        </table>
+
+        <!-- Grand Total & YTD -->
+        <div class="flex justify-between items-center mb-16 bg-gray-900 text-white p-6 rounded-xl shadow-md border border-gray-800">
+            <div>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">Year-To-Date (YTD) Summary</p>
+                <p class="text-xs text-gray-300 font-medium">Total Net Paid this year: <span id="ps-ytd" class="font-mono text-white font-bold ml-1"></span></p>
+            </div>
+            <div class="text-right border-l border-gray-700 pl-6">
+                <span class="block text-[10px] text-green-400 uppercase tracking-widest font-bold mb-1">Net Payable Amount</span>
+                <span class="text-4xl font-mono font-black text-white tracking-tight" id="ps-net"></span>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-between items-end border-t border-gray-200 pt-6 mt-auto">
+            <div>
+                <p class="text-[10px] text-gray-400 max-w-xs leading-relaxed uppercase tracking-wider font-bold">This is a system generated document.</p>
+                <p class="text-[9px] text-gray-400 mt-1">For payroll inquiries, please contact the finance department immediately.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-48 border-b-2 border-gray-800 mb-2"></div>
+                <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Authorized Employer Signature</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let backendUrl = localStorage.getItem('erp_backend_url') || 'https://script.google.com/macros/s/AKfycbyXl2ysDYn0ROMdTyWXPJ6FGmJAPiexRe3WwDGfXLyOVP9Rw-IREhZmFEYYsRkX5TKj_g/exec';
+        let sysData = { employees: [], payroll: [] };
+        let payrollOverviewSummary = { lifetimePaid:0, lifetimeNet:0, lifetimeGross:0, totalPayrolls:0 };
+        let payrollDailyRows = [];
+        let currentDailyWorkRow = null;
+        
+        let activeEmpData = {}; 
+        
+        lucide.createIcons(); 
+        document.getElementById('p-date').valueAsDate = new Date();
+        document.getElementById('p-month').value = new Date().toISOString().substring(0,7);
+
+        // --- AUTHENTICATION ENGINE ---
+        const authOverlay = document.getElementById('ms-login-overlay');
+        
+        function checkAuth() {
+            const userStr = localStorage.getItem('erp_user');
+            const path = window.location.pathname.toLowerCase();
+            const isAccounting = path.includes('index.html') || path.endsWith('/');
+
+            if (!userStr) {
+                if(authOverlay) authOverlay.classList.remove('hidden');
+                return false;
+            }
+
+            const user = JSON.parse(userStr);
+            if (user.role === 'Admin' && isAccounting) {
+                window.location.href = 'production.html';
+                return false;
+            }
+
+            if(authOverlay) authOverlay.classList.add('hidden');
+            
+            let roleBadge = document.getElementById('user-role-badge');
+            if(roleBadge) {
+                roleBadge.innerText = user.role;
+                roleBadge.classList.remove('hidden');
+            }
+
+            // Restrict UI for Admin
+            if(user.role === 'Admin') {
+                let n1 = document.getElementById('nav-acc-link'); if(n1) n1.classList.add('hidden');
+                let n2 = document.getElementById('mobile-nav-acc-link'); if(n2) n2.classList.add('hidden');
+            }
+            
+            return true;
+        }
+
+        function doLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('ms-pass').value;
+            const err = document.getElementById('ms-err');
+
+            if (pass === 'superadmin123') {
+                localStorage.setItem('erp_user', JSON.stringify({ role: 'Super Admin' }));
+                window.location.reload();
+            } else if (pass === 'admin123') {
+                localStorage.setItem('erp_user', JSON.stringify({ role: 'Admin' }));
+                window.location.reload();
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function doLogout() {
+            localStorage.removeItem('erp_user');
+            window.location.href = 'index.html'; 
+        }
+
+        // --- CUSTOM MODALS ---
+        function customConfirm(msg) {
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm px-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-gray-200">
+                        <div class="flex items-center gap-3 mb-4 text-amber-600">
+                            <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                            <h3 class="text-lg font-black tracking-tight text-gray-900">Confirmation Required</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-6 font-medium leading-relaxed">${msg}</p>
+                        <div class="flex gap-3 justify-end">
+                            <button id="cc-cancel" class="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition text-sm">Cancel</button>
+                            <button id="cc-ok" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow-md">Confirm Action</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                lucide.createIcons();
+                document.getElementById('cc-cancel').onclick = () => { modal.remove(); resolve(false); };
+                document.getElementById('cc-ok').onclick = () => { modal.remove(); resolve(true); };
+            });
+        }
+
+        function customPrompt(msg) {
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm px-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-red-200">
+                        <div class="flex items-center gap-3 mb-4 text-red-600">
+                            <i data-lucide="alert-octagon" class="w-6 h-6"></i>
+                            <h3 class="text-lg font-black tracking-tight text-gray-900">Critical Action</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4 font-medium leading-relaxed">${msg.replace(/\n/g, '<br>')}</p>
+                        <input type="text" id="cp-input" class="w-full border border-gray-300 rounded-xl p-3 mb-6 focus:ring-2 focus:ring-red-500 outline-none transition" placeholder="Type here...">
+                        <div class="flex gap-3 justify-end">
+                            <button id="cp-cancel" class="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition text-sm">Cancel</button>
+                            <button id="cp-ok" class="px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition text-sm shadow-md">Execute</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                lucide.createIcons();
+                document.getElementById('cp-input').focus();
+                document.getElementById('cp-cancel').onclick = () => { modal.remove(); resolve(null); };
+                document.getElementById('cp-ok').onclick = () => { resolve(document.getElementById('cp-input').value); modal.remove(); };
+            });
+        }
+
+        function switchView(vid) {
+            document.getElementById('staff-view').classList.add('hidden');
+            document.getElementById('pay-view').classList.add('hidden');
+            document.getElementById('btn-staff-view').classList.remove('active');
+            document.getElementById('btn-pay-view').classList.remove('active');
+            document.getElementById(vid).classList.remove('hidden');
+            document.getElementById('btn-' + vid).classList.add('active');
+        }
+
+        function showLoader(show, msg="Processing...") { 
+            let loader = document.getElementById('loader');
+            if(!loader) return;
+            document.getElementById('loader-msg').innerText = msg; 
+            if(show) {
+                loader.classList.remove('hidden');
+                setTimeout(() => loader.classList.remove('opacity-0'), 10);
+            } else {
+                loader.classList.add('opacity-0');
+                setTimeout(() => loader.classList.add('hidden'), 300); 
+            }
+        }
+
+        function showToast(msg, type="success") { 
+            let t=document.getElementById('toast'), i=document.getElementById('toast-icon'); 
+            if(!t || !i) return;
+            document.getElementById('toast-msg').innerText=msg; 
+            t.className=`fixed top-4 left-1/2 transform -translate-x-1/2 transition-all duration-300 px-6 py-4 rounded-full shadow-2xl flex items-center gap-3 z-[1000] translate-y-0 opacity-100 ${type==='error'?'bg-red-600 text-white':'bg-gray-900 text-white'}`; 
+            i.setAttribute('data-lucide', type==='error'?'alert-circle':'check-circle'); 
+            lucide.createIcons(); 
+            setTimeout(() => { t.classList.replace('translate-y-0', '-translate-y-20'); t.classList.replace('opacity-100', 'opacity-0'); }, 3000); 
+        }
+
+        async function apiGet(force=false) { 
+            try { 
+                const joiner=backendUrl.includes('?')?'&':'?';
+                let res = await fetch(backendUrl + joiner + 'modules=employees' + (force?'&refresh=true&_ts='+Date.now():''), {cache:'no-store'}); 
+                if(!res.ok) throw new Error("HTTP Error");
+                return await res.json(); 
+            } catch(e) { 
+                return null; 
+            } 
+        }
+        
+        async function apiPost(payload) { 
+            try { 
+                let res = await fetch(backendUrl, { method:'POST', body:JSON.stringify(payload) }); 
+                if(!res.ok) throw new Error("HTTP Error");
+                return await res.json(); 
+            } catch(e) { 
+                return null; 
+            } 
+        }
+
+        function safeArray(arr) { return Array.isArray(arr) ? arr : []; }
+        function formatMoney(num) { 
+            let n = parseFloat(num);
+            if(isNaN(n)) n = 0;
+            return new Intl.NumberFormat('en-LK', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(n); 
+        }
+        function loadScriptOnce(src, key){ return new Promise((resolve,reject)=>{ if(key && window[key]) return resolve(); let el=document.querySelector(`script[data-lazy="${src}"]`); if(el){el.addEventListener('load',resolve,{once:true});return;} let sc=document.createElement('script');sc.src=src;sc.async=true;sc.dataset.lazy=src;sc.onload=resolve;sc.onerror=reject;document.head.appendChild(sc);}); }
+        function normalizeRows(rows){return safeArray(rows).map(r=>{if(typeof r.parsedJson==='string'){try{r.parsedJson=JSON.parse(r.parsedJson)}catch(e){}}return r;});}
+        function normalizeSysData(){sysData.employees=normalizeRows(sysData.employees);sysData.payroll=normalizeRows(sysData.payroll);}
+
+        async function fetchData(force=false) {
+            showLoader(true, "Syncing Workforce Data...");
+            let res = await apiGet(force);
+            if(res?.status==='success') {
+                sysData={employees:normalizeRows(res.data?.employees),payroll:[]};
+                const ov=await apiPost({action:'get_payroll_overview',data:{limit:300}});
+                if(ov?.status==='success'){sysData.payroll=normalizeRows(ov.rows);payrollOverviewSummary=ov.summary||payrollOverviewSummary;}
+                normalizeSysData();
+                try { localStorage.setItem('cksys_v2_employees_v13_final', JSON.stringify({sysData,payrollOverviewSummary})); } catch(e){}
+                updateUI();
+            } else {
+                let c=localStorage.getItem('cksys_v2_employees_v13_final');
+                if(c){try {const saved=JSON.parse(c);sysData=saved.sysData||saved;payrollOverviewSummary=saved.payrollOverviewSummary||payrollOverviewSummary;normalizeSysData();updateUI();showToast("Offline Mode: Cached Data", "info");} catch(e) {localStorage.removeItem('cksys_v2_employees_v13_final');updateUI();}}
+                else showToast("Failed to connect", "error");
+            }
+            showLoader(false);
+        }
+
+        function profileRates(pd){ const pp=pd.payProfile||{}; return {model:pp.model||pd.payModel||((pd.base||0)>0?'Monthly':'Variable'), monthly:parseFloat(pp.monthlyRate ?? pd.base)||0, daily:parseFloat(pp.dailyRate ?? pd.daily)||0, ot:parseFloat(pp.otRate ?? pd.ot)||0, dailyOnConversion:pp.dailyOnConversion!==false}; }
+        function payrollSettlement(p){const ps=p.paymentSummary||{};const net=Number(p.netPay)||0,paid=ps.paid!==undefined?Number(ps.paid)||0:(String(p.status).toLowerCase()==='paid'?net:0),due=ps.due!==undefined?Number(ps.due)||0:Math.max(0,net-paid);return{paid,due,status:due<=0.01?'Paid':'Payable'};}
+        function dailyClaimedIds(){const m=new Set();safeArray(sysData.payroll).forEach(r=>safeArray(r.parsedJson?.dailyPayClaims).forEach(x=>x.id&&m.add(String(x.id))));return m;}
+        function employeeDailyRows(){return payrollDailyRows.slice();}
+
+        function updateUI() {
+            let eh='',ph='',a=0,i=0,tp=0,countEmp=0,countPay=0,pList=''; activeEmpData={}; const eq=(document.getElementById('e-search')?.value||'').toLowerCase(), pq=(document.getElementById('p-search')?.value||'').toLowerCase();
+            safeArray(sysData.employees).forEach(e=>{const pd=e.parsedJson||{},r=profileRates(pd);if(pd.status==='Active'){a++;pList+=`<option value="${pd.name}">`;activeEmpData[pd.name]={id:e.id,...pd,payProfile:{model:r.model,monthlyRate:r.monthly,dailyRate:r.daily,otRate:r.ot,dailyOnConversion:r.dailyOnConversion}};}else i++;if(eq&&!(pd.name||'').toLowerCase().includes(eq)&&!(pd.role||'').toLowerCase().includes(eq)&&!(pd.nic||'').toLowerCase().includes(eq))return;countEmp++;eh+=`<tr class="hover:bg-blue-50 border-b"><td class="p-3"><span class="font-bold block">${pd.name||'-'}</span><span class="text-[10px] font-mono text-gray-500">${pd.nic||'-'}</span></td><td class="p-3"><span class="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">${pd.role||'-'}</span><span class="block text-[10px] text-gray-400 mt-1">${pd.phone||'-'} | ${pd.shift||'-'}</span></td><td class="p-3"><span class="font-bold">${r.model}</span><span class="block text-[9px] text-cyan-700 mt-1">${pd.employmentType||'Permanent'}${r.dailyOnConversion?' · Auto Daily':''}</span></td><td class="p-3 text-right font-mono text-xs"><span class="block">M: ${formatMoney(r.monthly)}</span><span class="block">D: ${formatMoney(r.daily)}</span><span class="block">OT: ${formatMoney(r.ot)}</span></td><td class="p-3 text-center"><span class="px-2 py-1 rounded text-[9px] font-bold ${pd.status==='Active'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${pd.status||'-'}</span></td><td class="p-3 text-center"><div class="flex justify-center gap-1"><button onclick="openDailyWork('${e.id}')" class="p-1.5 border rounded text-cyan-600" title="Record daily work"><i data-lucide="calendar-check" class="w-4 h-4"></i></button><button onclick="openPayReport('${e.id}')" class="p-1.5 border rounded text-violet-600" title="Monthly / annual pay sheet"><i data-lucide="file-bar-chart" class="w-4 h-4"></i></button><button onclick="editEmp('${e.id}')" class="p-1.5 border rounded text-indigo-500 hover:text-indigo-700" title="Edit / Set Inactive"><i data-lucide="pencil" class="w-4 h-4"></i></button><button onclick="delEmp('${e.id}')" class="p-1.5 border rounded text-gray-400 hover:text-red-600" title="Delete if no posted history"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></td></tr>`;});
+            document.getElementById('emp-body').innerHTML=eh;document.getElementById('emp-empty').classList.toggle('hidden',countEmp>0);document.getElementById('active-emp-hints').innerHTML=pList;document.getElementById('dash-tot').innerText=a+i;document.getElementById('dash-act').innerText=a;document.getElementById('dash-inact').innerText=i;
+            safeArray(sysData.payroll).sort((x,y)=>new Date(y.date)-new Date(x.date)).forEach(r=>{const p=r.parsedJson||{},gross=Number(p.grossPay)||0,ded=Number(p.deduct)||safeArray(p.deductions).reduce((s,x)=>s+(Number(x.amount)||0),0),net=Number(p.netPay)||0,settle=payrollSettlement(p);tp+=settle.paid;if(pq&&!(p.employeeName||'').toLowerCase().includes(pq)&&!(p.nic||'').toLowerCase().includes(pq))return;countPay++;ph+=`<tr class="hover:bg-blue-50 border-b"><td class="p-3 text-xs font-mono text-gray-500">${String(r.date||'').substring(0,10)}<span class="block text-[9px]">${p.salaryMonth||''}</span></td><td class="p-3"><span class="block font-bold">${p.employeeName||'-'}</span><span class="text-[9px] font-mono text-gray-400">${p.nic||'-'} · ${p.employmentType||''}</span></td><td class="p-3 text-right font-mono font-bold">${formatMoney(gross)}<span class="block text-[9px] text-cyan-700">Daily ${formatMoney(p.dailyBaseTotal||0)} · ${p.workDays||0} day(s)</span><span class="block text-[9px] text-violet-600">Piecework ${formatMoney(p.pieceworkTotal||0)} · ${p.conversionKg||0} Kg</span></td><td class="p-3 text-right font-mono font-bold text-red-500">-${formatMoney(ded)}</td><td class="p-3 text-right font-mono font-black text-blue-800 bg-blue-50">${formatMoney(net)}<span class="block text-[9px] ${settle.due>0?'text-amber-700':'text-green-700'}">Paid ${formatMoney(settle.paid)}${settle.due>0?' · Due '+formatMoney(settle.due):''}</span></td><td class="p-3 text-center"><span class="px-2 py-1 rounded text-[9px] font-bold ${settle.due<=0.01?'bg-green-100 text-green-700':'bg-yellow-100 text-yellow-800'}">${settle.status}</span></td><td class="p-3 text-center"><div class="flex gap-1 justify-center"><button onclick="openPayReport('${p.employeeId}','${p.salaryMonth||''}')" class="p-1.5 border rounded text-violet-600" title="Detailed Salary Sheet"><i data-lucide="file-bar-chart" class="w-4 h-4"></i></button><button onclick="downloadPayslip('${r.id}')" class="p-1.5 border rounded text-indigo-500" title="Payslip PDF"><i data-lucide="file-down" class="w-4 h-4"></i></button><button onclick="sharePayrollWhatsApp('${r.id}')" class="p-1.5 border rounded text-green-600" title="WhatsApp Salary Summary"><i data-lucide="message-circle" class="w-4 h-4"></i></button>${settle.due>0.01?`<button onclick="settlePayroll('${r.id}')" class="p-1.5 border rounded text-green-600" title="Pay outstanding"><i data-lucide="badge-dollar-sign" class="w-4 h-4"></i></button>`:''}<button onclick="delPay('${r.id}','${r.refId}')" class="p-1.5 border rounded text-gray-400 hover:text-red-600" title="Reverse payroll"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></td></tr>`;});
+            document.getElementById('pay-body').innerHTML=ph;document.getElementById('pay-empty').classList.toggle('hidden',countPay>0);document.getElementById('dash-pay').innerText=formatMoney(payrollOverviewSummary.lifetimePaid||tp);lucide.createIcons();
+        }
+
+        function openEmployeeModal(){document.getElementById('emp-form').reset();document.getElementById('e-id').value='';document.getElementById('e-joined-date').value=new Date().toISOString().substring(0,10);document.getElementById('e-employment-type').value='Permanent';document.getElementById('e-daily-on-conversion').checked=true;document.getElementById('emp-modal-title').innerText='Register Staff Member';document.getElementById('emp-submit-btn').innerHTML='<i data-lucide="save" class="w-5 h-5"></i> Register Employee Profile';document.getElementById('emp-modal').classList.remove('hidden');lucide.createIcons();}
+        function editEmp(id){const row=safeArray(sysData.employees).find(x=>String(x.id)===String(id));if(!row)return showToast('Employee not found','error');const d=row.parsedJson||{},r=profileRates(d);document.getElementById('e-id').value=row.id||'';document.getElementById('e-name').value=d.name||'';document.getElementById('e-nic').value=d.nic||'';document.getElementById('e-phone').value=d.phone||'';document.getElementById('e-address').value=d.address||'';document.getElementById('e-epf-no').value=d.epfNo||'';document.getElementById('e-etf-ref').value=d.etfRef||'';document.getElementById('e-joined-date').value=d.joinedDate||'';document.getElementById('e-left-date').value=d.leftDate||'';document.getElementById('e-role').value=d.role||'';document.getElementById('e-employment-type').value=d.employmentType||'Permanent';document.getElementById('e-shift').value=d.shift||'Day Shift';document.getElementById('e-status').value=d.status||'Active';document.getElementById('e-pay-model').value=r.model||'Mixed';document.getElementById('e-base').value=r.monthly||'';document.getElementById('e-daily').value=r.daily||'';document.getElementById('e-ot').value=r.ot||'';document.getElementById('e-daily-on-conversion').checked=r.dailyOnConversion;document.getElementById('e-bank').value=d.bank||'';document.getElementById('emp-modal-title').innerText='Edit Staff Member';document.getElementById('emp-submit-btn').innerHTML='<i data-lucide="save" class="w-5 h-5"></i> Save Employee Changes';document.getElementById('emp-modal').classList.remove('hidden');lucide.createIcons();}
+        document.getElementById('emp-form').onsubmit=async(e)=>{e.preventDefault();const id=document.getElementById('e-id').value.trim();if(!await customConfirm(id?'Save changes to this employee profile?':'Register this employee and pay profile?'))return;const monthly=parseFloat(document.getElementById('e-base').value)||0,daily=parseFloat(document.getElementById('e-daily').value)||0,ot=parseFloat(document.getElementById('e-ot').value)||0,model=document.getElementById('e-pay-model').value;const data={name:document.getElementById('e-name').value,nic:document.getElementById('e-nic').value,phone:document.getElementById('e-phone').value,address:document.getElementById('e-address').value,epfNo:document.getElementById('e-epf-no').value,etfRef:document.getElementById('e-etf-ref').value,joinedDate:document.getElementById('e-joined-date').value,leftDate:document.getElementById('e-left-date').value,role:document.getElementById('e-role').value,employmentType:document.getElementById('e-employment-type').value,shift:document.getElementById('e-shift').value,payModel:model,payProfile:{model,monthlyRate:monthly,dailyRate:daily,otRate:ot,dailyOnConversion:document.getElementById('e-daily-on-conversion').checked},base:monthly,daily,ot,bank:document.getElementById('e-bank').value,status:document.getElementById('e-status').value};showLoader(true,id?'Updating employee...':'Registering employee...');const res=await apiPost({action:id?'update_employee':'add_employee',data:{id:id||(crypto.randomUUID?crypto.randomUUID():'EMP-'+Date.now()),parsedJson:data}});showLoader(false);if(res?.status==='success'){showToast(id?'Employee updated':'Staff registered');document.getElementById('emp-modal').classList.add('hidden');document.getElementById('emp-form').reset();await fetchData(true);}else showToast(res?.message||'Failed','error');};
+        async function delEmp(id){const c=await customPrompt('Delete is allowed only when the employee has no daily work, payroll or conversion history. Employees with history should be set to Inactive.\n\nType DELETE to continue.');if(c!=='DELETE')return;showLoader(true,'Checking audit history...');const res=await apiPost({action:'delete_employee',data:{id}});showLoader(false);if(res?.status==='success'){showToast('Employee deleted');await fetchData(true);}else showToast(res?.message||'Failed','error');}
+
+        function activeEmployeeRows(){return safeArray(sysData.employees).filter(e=>e.parsedJson?.status==='Active');}
+        function addDailyPieceworkRow(pref={}){const tr=document.createElement('tr');tr.className='border-t';tr.dataset.workId=pref.workId||'';tr.innerHTML=`<td class="p-2"><input class="dw-pw-type mac-input py-2" placeholder="PP / HI / Sorting / Other" value="${String(pref.task||pref.rateType||'').replace(/"/g,'&quot;')}"></td><td class="p-2"><input type="number" min="0" step="0.01" class="dw-pw-kg mac-input py-2 text-right font-mono" value="${pref.qty||''}" oninput="calcDailyWorkPreview()"></td><td class="p-2"><input type="number" min="0" step="0.01" class="dw-pw-rate mac-input py-2 text-right font-mono" value="${pref.rate||''}" oninput="calcDailyWorkPreview()"></td><td class="p-2"><input type="number" min="0" step="0.01" class="dw-pw-amount mac-input py-2 text-right font-mono font-bold" value="${pref.amount||''}" placeholder="Auto or manual" oninput="calcDailyWorkPreview()"></td><td class="p-2"><button type="button" onclick="this.closest('tr').remove();toggleDailyPieceworkEmpty();calcDailyWorkPreview()" class="text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></td>`;document.getElementById('dw-piecework-rows').appendChild(tr);toggleDailyPieceworkEmpty();lucide.createIcons();calcDailyWorkPreview();}
+        function toggleDailyPieceworkEmpty(){document.getElementById('dw-piecework-empty').classList.toggle('hidden',document.querySelectorAll('#dw-piecework-rows tr').length>0);}
+        function collectDailyPiecework(){return Array.from(document.querySelectorAll('#dw-piecework-rows tr')).map(tr=>{const task=tr.querySelector('.dw-pw-type').value.trim()||'Manual Chip Conversion',qty=parseFloat(tr.querySelector('.dw-pw-kg').value)||0,rate=parseFloat(tr.querySelector('.dw-pw-rate').value)||0,typed=parseFloat(tr.querySelector('.dw-pw-amount').value)||0,amount=typed>0?typed:qty*rate;return{workId:tr.dataset.workId||'',task,rateType:task,qty,rate:rate>0?rate:(qty>0&&amount>0?amount/qty:0),amount};}).filter(x=>x.amount>0);}
+        function openDailyWork(empId=''){const sel=document.getElementById('dw-employee');sel.innerHTML='<option value="">Select employee...</option>'+activeEmployeeRows().map(e=>`<option value="${e.id}">${e.parsedJson?.name||'Employee'} · ${e.parsedJson?.employmentType||'Permanent'}</option>`).join('');document.getElementById('daily-work-form').reset();document.getElementById('dw-piecework-rows').innerHTML='';document.getElementById('dw-date').value=new Date().toISOString().substring(0,10);document.getElementById('dw-units').value='1';currentDailyWorkRow=null;if(empId)sel.value=empId;fillDailyWorkRate();document.getElementById('daily-work-modal').classList.remove('hidden');toggleDailyPieceworkEmpty();loadDailyWorkExisting();lucide.createIcons();}
+        function closeDailyWork(){document.getElementById('daily-work-modal').classList.add('hidden');}
+        function fillDailyWorkRate(){const id=document.getElementById('dw-employee').value,row=activeEmployeeRows().find(x=>String(x.id)===String(id)),r=row?profileRates(row.parsedJson||{}):{daily:0,model:'Variable'};if(!currentDailyWorkRow){document.getElementById('dw-rate').value=r.daily||'';document.getElementById('dw-units').value=/daily|mixed/i.test(r.model)?'1':'0';}calcDailyWorkPreview();}
+        function calcDailyWorkPreview(){const u=parseFloat(document.getElementById('dw-units')?.value)||0,r=parseFloat(document.getElementById('dw-rate')?.value)||0,base=u*r,piece=collectDailyPiecework().reduce((s,x)=>s+x.amount,0);document.getElementById('dw-preview-base').innerText='Rs. '+formatMoney(base);document.getElementById('dw-preview-piecework').innerText='Rs. '+formatMoney(piece);document.getElementById('dw-preview').innerText='Rs. '+formatMoney(base+piece);}
+        async function loadDailyWorkExisting(){const employeeId=document.getElementById('dw-employee')?.value,date=document.getElementById('dw-date')?.value;if(!employeeId||!date)return;currentDailyWorkRow=null;const res=await apiPost({action:'get_daily_pay_day',data:{employeeId,date}});const lock=document.getElementById('dw-lock-notice'),btn=document.getElementById('dw-submit-btn'),autoBox=document.getElementById('dw-auto-conversion-box'),autoList=document.getElementById('dw-auto-conversion-list');lock.classList.add('hidden');btn.disabled=false;btn.classList.remove('opacity-50','cursor-not-allowed');document.getElementById('dw-piecework-rows').innerHTML='';autoBox.classList.add('hidden');autoList.innerHTML='';if(res?.status!=='success'){showToast(res?.message||'Could not load daily work','error');toggleDailyPieceworkEmpty();return;}if(!res.row){fillDailyWorkRate();toggleDailyPieceworkEmpty();calcDailyWorkPreview();return;}const d=res.row;currentDailyWorkRow=d;document.getElementById('dw-units').value=d.manualWorkUnits!==null&&d.manualWorkUnits!==undefined?d.manualWorkUnits:0;document.getElementById('dw-rate').value=d.manualRate||d.dailyRateSnapshot||d.dailyRate||'';document.getElementById('dw-notes').value=d.notes||'';safeArray(d.manualPieceworkEntries).forEach(x=>addDailyPieceworkRow(x));const auto=safeArray(d.autoPieceworkEntries).length?safeArray(d.autoPieceworkEntries):safeArray(d.pieceworkEntries).filter(x=>!x.isManual&&x.source!=='Manual Daily Work');if(auto.length){autoBox.classList.remove('hidden');autoList.innerHTML=auto.map(x=>`<div class="flex justify-between gap-2"><span>${x.task||x.rateType||'Conversion'} · ${x.qty||0} Kg × Rs. ${formatMoney(x.rate||0)}</span><strong>Rs. ${formatMoney(x.amount||0)}</strong></div>`).join('');}if(res.locked){lock.innerText=`This day is locked because it is already included in payroll ${res.row.claimedPayrollRef}. Reverse that payroll before changing daily work.`;lock.classList.remove('hidden');btn.disabled=true;btn.classList.add('opacity-50','cursor-not-allowed');}toggleDailyPieceworkEmpty();calcDailyWorkPreview();}
+        document.getElementById('daily-work-form').onsubmit=async(e)=>{e.preventDefault();const employeeId=document.getElementById('dw-employee').value,row=activeEmployeeRows().find(x=>String(x.id)===String(employeeId));if(!row)return showToast('Select a valid employee','error');const manualPieceworkEntries=collectDailyPiecework(),data={employeeId,date:document.getElementById('dw-date').value,workUnits:parseFloat(document.getElementById('dw-units').value)||0,dailyRate:parseFloat(document.getElementById('dw-rate').value)||0,manualPieceworkEntries,notes:document.getElementById('dw-notes').value};const hasAutoConversion=safeArray(currentDailyWorkRow?.autoPieceworkEntries).length>0||safeArray(currentDailyWorkRow?.pieceworkEntries).some(x=>!x.isManual&&x.source!=='Manual Daily Work');if(data.workUnits<=0&&!manualPieceworkEntries.length&&!hasAutoConversion)return showToast('Enter work units or manual chip-conversion pay','error');if(!await customConfirm(`Save this daily work record?\n\nDaily Base: Rs. ${formatMoney(data.workUnits*data.dailyRate)}\nManual Chip Conversion: Rs. ${formatMoney(manualPieceworkEntries.reduce((s,x)=>s+x.amount,0))}\n\nThese amounts will flow into the employee monthly salary sheet.`))return;showLoader(true,'Saving daily work, conversion pay & accounting accrual...');const res=await apiPost({action:'record_daily_work',data:{date:data.date,parsedJson:data}});showLoader(false);if(res?.status==='success'){closeDailyWork();showToast('Daily work and conversion pay updated');await fetchData(true);}else showToast(res?.message||'Daily work failed','error');};
+
+        function addEarningRow(pref={}){const tr=document.createElement('tr');tr.className='border-t';tr.innerHTML=`<td class="p-2"><select class="pe-type mac-input py-2"><option>Increment</option><option>Allowance</option><option>Bonus</option><option>Correction</option><option>Other Earning</option></select></td><td class="p-2"><input class="pe-desc mac-input py-2" placeholder="Description"></td><td class="p-2"><input type="number" min="0" step="0.01" class="pe-amt mac-input py-2 text-right font-mono" oninput="calcP()"></td><td class="p-2"><button type="button" onclick="this.closest('tr').remove();calcP()" class="text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></td>`;document.getElementById('earning-rows').appendChild(tr);if(pref.type)tr.querySelector('.pe-type').value=pref.type;if(pref.description)tr.querySelector('.pe-desc').value=pref.description;if(pref.amount)tr.querySelector('.pe-amt').value=pref.amount;lucide.createIcons();}
+        function addDeductionRow(pref={}){const tr=document.createElement('tr');tr.className='border-t';tr.innerHTML=`<td class="p-2"><select class="pd-type mac-input py-2"><option>Salary Advance</option><option>EPF / Provident</option><option>ETF</option><option>Income Tax</option><option>Loan Recovery</option><option>No Pay / Absence</option><option>Damage / Shortage</option><option>Other Deduction</option></select></td><td class="p-2"><input class="pd-desc mac-input py-2" placeholder="Description"></td><td class="p-2"><input type="number" min="0" step="0.01" class="pd-amt mac-input py-2 text-right font-mono" oninput="calcP()"></td><td class="p-2"><button type="button" onclick="this.closest('tr').remove();calcP()" class="text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></td>`;document.getElementById('deduction-rows').appendChild(tr);if(pref.type)tr.querySelector('.pd-type').value=pref.type;if(pref.description)tr.querySelector('.pd-desc').value=pref.description;if(pref.amount)tr.querySelector('.pd-amt').value=pref.amount;lucide.createIcons();}
+        function addContributionRow(pref={}){const tr=document.createElement('tr');tr.className='border-t';tr.innerHTML=`<td class="p-2"><select class="pc-type mac-input py-2"><option>Employer EPF</option><option>Employer ETF</option><option>Insurance / Medical</option><option>Other Employer Contribution</option></select></td><td class="p-2"><input class="pc-desc mac-input py-2" placeholder="Description / statutory period"></td><td class="p-2"><input type="number" min="0" step="0.01" class="pc-amt mac-input py-2 text-right font-mono" oninput="calcP()"></td><td class="p-2"><button type="button" onclick="this.closest('tr').remove();calcP()" class="text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button></td>`;document.getElementById('contribution-rows').appendChild(tr);if(pref.type)tr.querySelector('.pc-type').value=pref.type;if(pref.description)tr.querySelector('.pc-desc').value=pref.description;if(pref.amount)tr.querySelector('.pc-amt').value=pref.amount;lucide.createIcons();calcP();}
+        function selectedDailyPay(){return Array.from(document.querySelectorAll('.dp-claim:checked')).map(x=>{try{return JSON.parse(x.dataset.json)}catch(e){return null}}).filter(Boolean);}
+        async function renderDailyPay(){const nm=document.getElementById('p-emp-search').value,emp=activeEmpData[nm],box=document.getElementById('piecework-list'),month=document.getElementById('p-month').value;if(!emp||!month){payrollDailyRows=[];box.innerHTML='<p class="text-xs text-gray-400">Select an employee and salary month to load saved daily pay.</p>';calcP();return;}box.innerHTML='<p class="text-xs text-gray-400">Loading saved daily pay...</p>';const res=await apiPost({action:'get_daily_pay',data:{employeeId:emp.id,salaryMonth:month,throughDate:(document.getElementById('p-date').value||new Date().toISOString().substring(0,10)),includeClaimed:false}});payrollDailyRows=res?.status==='success'?safeArray(res.rows):[];const rows=payrollDailyRows;box.innerHTML=rows.length?rows.map(x=>`<label class="bg-white border border-violet-200 rounded-lg p-3 flex justify-between items-center gap-3"><span class="flex items-start gap-2"><input type="checkbox" class="dp-claim mt-1" checked data-json='${JSON.stringify(x).replace(/'/g,"&#39;")}' onchange="calcP()"><span><strong>${x.date}</strong> · ${x.source||'Daily Work'}<span class="block text-[10px] text-gray-500">${x.workUnits||0} day(s) × Rs. ${formatMoney(x.dailyRate||0)} = Rs. ${formatMoney(x.baseDailyAmount||0)} · Conversion Rs. ${formatMoney(x.pieceworkTotal||0)} (${x.conversionKg||0} Kg)</span>${safeArray(x.pieceworkEntries).length?`<span class="block text-[9px] text-violet-600 mt-1">${safeArray(x.pieceworkEntries).map(w=>`${w.isManual?'Manual · ':''}${w.task}: ${w.qty||0} Kg${w.rate?` × ${formatMoney(w.rate)}`:''} = ${formatMoney(w.amount)}`).join(' · ')}</span>`:''}</span></span><span class="font-mono font-black text-violet-800">${formatMoney(x.grossDay||0)}</span></label>`).join(''):'<p class="text-xs text-gray-500">No open daily pay records for this employee/month. Record daily work, add manual chip-conversion earnings, or allocate the employee in Production → Chip Conversion.</p>';calcP();}
+        function openPayroll(){document.getElementById('pay-modal').classList.remove('hidden');document.getElementById('pay-form').reset();document.getElementById('p-date').value=new Date().toISOString().substring(0,10);document.getElementById('p-month').value=new Date().toISOString().substring(0,7);document.getElementById('earning-rows').innerHTML='';document.getElementById('deduction-rows').innerHTML='';document.getElementById('contribution-rows').innerHTML='';addDeductionRow({type:'EPF / Provident',description:'Employee EPF'});addContributionRow({type:'Employer EPF',description:'Employer EPF'});addContributionRow({type:'Employer ETF',description:'Employer ETF'});payrollDailyRows=[];document.getElementById('piecework-list').innerHTML='<p class="text-xs text-gray-400">Select an employee to load saved daily pay.</p>';document.getElementById('p-nic-hint').innerText='NIC: --';calcP();}
+        function autoFillPayroll(){const nm=document.getElementById('p-emp-search').value,emp=activeEmpData[nm];if(emp){const r=emp.payProfile||{};document.getElementById('p-nic-hint').innerText=`NIC: ${emp.nic||'--'} | ${emp.employmentType||'Permanent'} | ${r.model||'Variable'}`;document.getElementById('p-base').value=r.monthlyRate||'';document.getElementById('p-daily-rate').value=r.dailyRate||'';document.getElementById('p-ot-rate').value=r.otRate||'';renderDailyPay();}else{document.getElementById('p-nic-hint').innerText='NIC: --';renderDailyPay();}calcP();}
+        function calcP(){const base=parseFloat(document.getElementById('p-base')?.value)||0,hrs=parseFloat(document.getElementById('p-ot-hr')?.value)||0,otr=parseFloat(document.getElementById('p-ot-rate')?.value)||0,claims=selectedDailyPay(),days=claims.reduce((s,x)=>s+(Number(x.workUnits)||0),0),daily=claims.reduce((s,x)=>s+(Number(x.baseDailyAmount)||0),0),piece=claims.reduce((s,x)=>s+(Number(x.pieceworkTotal)||0),0),ot=hrs*otr,extra=Array.from(document.querySelectorAll('.pe-amt')).reduce((s,x)=>s+(parseFloat(x.value)||0),0),ded=Array.from(document.querySelectorAll('.pd-amt')).reduce((s,x)=>s+(parseFloat(x.value)||0),0),employer=Array.from(document.querySelectorAll('.pc-amt')).reduce((s,x)=>s+(parseFloat(x.value)||0),0),gross=base+daily+ot+extra+piece,net=gross-ded;document.getElementById('p-days').value=days||'';document.getElementById('p-daily-amount').innerText='Rs. '+formatMoney(daily);document.getElementById('p-ot-amount').innerText='Rs. '+formatMoney(ot);document.getElementById('piecework-total').innerText='Rs. '+formatMoney(piece);document.getElementById('employer-contribution-total').innerText='Employer Contributions: Rs. '+formatMoney(employer);document.getElementById('p-net').innerText='Rs. '+formatMoney(net);document.getElementById('p-gross-note').innerText=`Gross Rs. ${formatMoney(gross)} | Daily Rs. ${formatMoney(daily)} | Piecework Rs. ${formatMoney(piece)} | Deductions Rs. ${formatMoney(ded)} | Employer Contributions Rs. ${formatMoney(employer)}`;}
+        document.getElementById('pay-form').onsubmit=async(e)=>{e.preventDefault();const nm=document.getElementById('p-emp-search').value,emp=activeEmpData[nm];if(!emp)return showToast('Select a valid employee','error');if(!await customConfirm('Approve this monthly salary sheet? Saved daily wages and conversion piecework will be cleared from their payable accounts and the balanced payroll transaction will be posted.'))return;const earnings=[],base=parseFloat(document.getElementById('p-base').value)||0,hrs=parseFloat(document.getElementById('p-ot-hr').value)||0,otr=parseFloat(document.getElementById('p-ot-rate').value)||0;if(base>0)earnings.push({type:'Monthly Salary',description:'Monthly Salary',qty:1,rate:base,amount:base});if(hrs>0&&otr>0)earnings.push({type:'Overtime',description:'Overtime',qty:hrs,rate:otr,amount:hrs*otr});document.querySelectorAll('#earning-rows tr').forEach(tr=>{const amount=parseFloat(tr.querySelector('.pe-amt').value)||0;if(amount>0)earnings.push({type:tr.querySelector('.pe-type').value,description:tr.querySelector('.pe-desc').value||tr.querySelector('.pe-type').value,qty:1,rate:amount,amount});});const deductions=[];document.querySelectorAll('#deduction-rows tr').forEach(tr=>{const amount=parseFloat(tr.querySelector('.pd-amt').value)||0;if(amount>0)deductions.push({type:tr.querySelector('.pd-type').value,description:tr.querySelector('.pd-desc').value||tr.querySelector('.pd-type').value,amount});});const employerContributions=[];document.querySelectorAll('#contribution-rows tr').forEach(tr=>{const amount=parseFloat(tr.querySelector('.pc-amt').value)||0;if(amount>0)employerContributions.push({type:tr.querySelector('.pc-type').value,description:tr.querySelector('.pc-desc').value||tr.querySelector('.pc-type').value,amount});});const dailyPayClaims=selectedDailyPay();if(!earnings.length&&!dailyPayClaims.length)return showToast('No monthly earnings or saved daily pay selected','error');const data={date:document.getElementById('p-date').value,salaryMonth:document.getElementById('p-month').value,employeeId:emp.id,employeeName:nm,nic:emp.nic,epfNo:emp.epfNo,etfRef:emp.etfRef,phone:emp.phone,role:emp.role,employmentType:emp.employmentType,earnings,deductions,employerContributions,dailyPayClaims,paymentMethod:document.getElementById('p-meth').value,status:document.getElementById('p-stat').value};showLoader(true,'Saving monthly pay sheet, statutory details & double-entry ledgers...');const res=await apiPost({action:'add_payroll',data:{parsedJson:data,date:data.date}});showLoader(false);if(res?.status==='success'){document.getElementById('pay-modal').classList.add('hidden');await fetchData(true);switchView('pay-view');showToast('Monthly salary sheet saved');setupPayrollSuccess(data,res);}else showToast(res?.message||'Payroll failed','error');};
+
+        function normalizePhone(phone){const num=String(phone||'').replace(/\D/g,'');if(!num)return'';if(num.startsWith('94'))return num;return num.length>=9?'94'+(num.startsWith('0')?num.substring(1):num):num;}
+        function setupPayrollSuccess(data,res){const emp=activeEmpData[data.employeeName]||{},phone=normalizePhone(emp.phone),ded=safeArray(data.deductions).map(x=>`- ${x.description||x.type}: Rs. ${formatMoney(x.amount)}`).join('\n'),con=safeArray(data.employerContributions).map(x=>`- ${x.description||x.type}: Rs. ${formatMoney(x.amount)}`).join('\n'),msg=`*AR PLASTIC DATA - SALARY SHEET*\nMonth: ${data.salaryMonth}\nEmployee: ${data.employeeName}\nNIC: ${data.nic||'-'}\nEPF No: ${data.epfNo||'-'}\n\nGross Salary: Rs. ${formatMoney(res.grossPay)}\nDaily Pay: Rs. ${formatMoney(res.dailyBaseTotal||0)}\nChip Conversion: Rs. ${formatMoney(res.pieceworkTotal||0)} (${res.conversionKg||0} Kg)\nDeductions: Rs. ${formatMoney((res.grossPay||0)-(res.netPay||0))}\nNet Salary: Rs. ${formatMoney(res.netPay)}\nStatus: ${data.status}${ded?'\n\n*Deductions*\n'+ded:''}${con?'\n\n*Employer Contributions*\n'+con:''}\n\nRef: ${res.refId||''}\nSystem generated from CK SYS V2.`;const b=document.getElementById('whatsapp-btn');b.href=phone?`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`:'#';b.classList.toggle('pointer-events-none',!phone);document.getElementById('success-modal').classList.remove('hidden');}
+        function closeSuccessModal(){document.getElementById('success-modal').classList.add('hidden');}
+        function sharePayrollWhatsApp(id){const row=safeArray(sysData.payroll).find(r=>String(r.id)===String(id));if(!row)return;const p=row.parsedJson||{},emp=safeArray(sysData.employees).find(e=>String(e.id)===String(p.employeeId))?.parsedJson||{},st=payrollSettlement(p),phone=normalizePhone(p.phone||emp.phone),ded=safeArray(p.deductions).map(x=>`${x.description||x.type}: Rs. ${formatMoney(x.amount)}`).join('\n'),con=safeArray(p.employerContributions).map(x=>`${x.description||x.type}: Rs. ${formatMoney(x.amount)}`).join('\n'),msg=`*AR PLASTIC DATA - SALARY SHEET*\n${p.salaryMonth||''}\n${p.employeeName||''}\nNIC: ${p.nic||'-'} | EPF: ${p.epfNo||emp.epfNo||'-'}\n\nGross: Rs. ${formatMoney(p.grossPay)}\nDaily Pay: Rs. ${formatMoney(p.dailyBaseTotal||0)}\nChip Conversion: Rs. ${formatMoney(p.pieceworkTotal||0)} (${p.conversionKg||0} Kg)\nDeductions: Rs. ${formatMoney(p.deduct||0)}\nNet: Rs. ${formatMoney(p.netPay)}\nPaid: Rs. ${formatMoney(st.paid)} | Due: Rs. ${formatMoney(st.due)}${ded?'\n\nDeductions\n'+ded:''}${con?'\n\nEmployer Contributions\n'+con:''}\n\nPayroll Ref: ${row.refId}`;if(!phone)return showToast('Employee WhatsApp/phone is not available','error');window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`,'_blank');}
+        async function settlePayroll(id){const row=safeArray(sysData.payroll).find(r=>String(r.id)===String(id));if(!row)return;const p=row.parsedJson||{},st=payrollSettlement(p);if(st.due<=0)return showToast('Payroll already paid','info');const raw=await customPrompt(`Outstanding salary: Rs. ${formatMoney(st.due)}\nEnter amount to pay now:`);if(raw===null)return;const amount=parseFloat(raw);if(!amount||amount<=0)return showToast('Invalid payment amount','error');const m=(await customPrompt('Payment method: type BANK, CASH or CHEQUE'))||'';const method=/cash/i.test(m)?'Cash':/cheque|check/i.test(m)?'Cheque':'Bank Transfer';showLoader(true,'Posting salary settlement...');const res=await apiPost({action:'pay_payroll',data:{parsedJson:{payrollId:row.id,payrollRef:row.refId,date:new Date().toISOString().substring(0,10),amount,method}}});showLoader(false);if(res?.status==='success'){showToast('Payroll payment saved');await fetchData(true);}else showToast(res?.message||'Payment failed','error');}
+        async function delPay(id,refId){const c=await customPrompt('This reverses the monthly payroll ledger and releases its Daily Pay / piecework claims. Any separate payroll settlement must be reversed first.\nType DELETE to continue.');if(c!=='DELETE')return;showLoader(true,'Reversing payroll...');const res=await apiPost({action:'delete_payroll',data:{id,refId}});showLoader(false);if(res?.status==='success'){showToast('Payroll reversed');await fetchData(true);}else showToast(res?.message||'Failed','error');}
+        function calcYTD(empId,currentYear){return safeArray(sysData.payroll).reduce((sum,r)=>{const p=r.parsedJson||{},st=payrollSettlement(p);return sum+(String(p.employeeId)===String(empId)&&String(p.salaryMonth||r.date||'').startsWith(currentYear)?st.paid:0)},0);}
+        async function downloadPayslip(id){const row=sysData.payroll.find(r=>r.id===id);if(!row)return;const p=row.parsedJson||{},earn=safeArray(p.earnings).slice();if((p.dailyBaseTotal||0)>0)earn.push({type:'Daily Wages',description:`Saved Daily Work · ${p.workDays||0} day(s)`,qty:p.workDays||'-',amount:p.dailyBaseTotal});if((p.pieceworkTotal||0)>0)earn.push({type:'Chip Conversion Piecework',description:`Conversion Piecework · ${p.conversionKg||0} Kg`,qty:p.conversionKg||'-',amount:p.pieceworkTotal});document.getElementById('ps-id').innerText=row.refId;document.getElementById('ps-date').innerText=String(p.date||row.date).substring(0,10);document.getElementById('ps-name').innerText=p.employeeName||'';document.getElementById('ps-role').innerText=(p.role||'Staff')+' · '+(p.employmentType||'');document.getElementById('ps-nic').innerText=(p.nic||'Not Provided')+(p.epfNo?' · EPF '+p.epfNo:'');document.getElementById('ps-meth').innerText=p.paymentMethod||'-';document.getElementById('ps-badge').innerText=payrollSettlement(p).status;document.getElementById('ps-earnings-body').innerHTML=earn.map(x=>`<tr><td class="p-3 border-b text-sm">${x.description||x.type}</td><td class="p-3 border-b text-right text-xs font-mono">${x.qty||'-'}${x.rate?` @ ${formatMoney(x.rate)}`:''}</td><td class="p-3 border-b text-right font-mono font-bold">${formatMoney(x.amount)}</td></tr>`).join('');const ds=safeArray(p.deductions);document.getElementById('ps-deductions-body').innerHTML=ds.length?ds.map(x=>`<tr><td class="p-3 border-b text-sm">${x.description||x.type}</td><td class="p-3 border-b text-right font-mono font-bold text-red-600">-${formatMoney(x.amount)}</td></tr>`).join(''):'<tr><td class="p-3 text-gray-400">No deductions</td><td></td></tr>';document.getElementById('ps-gross').innerText=formatMoney(p.grossPay||0);document.getElementById('ps-net').innerText='Rs. '+formatMoney(p.netPay);document.getElementById('ps-ytd').innerText='Rs. '+formatMoney(calcYTD(p.employeeId,String(p.salaryMonth||p.date||row.date).substring(0,4)));const el=document.getElementById('payslip-template');el.classList.remove('hidden');showLoader(true,'Generating detailed payslip...');try{await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js','html2pdf');await html2pdf().set({margin:0,filename:`Payslip_${(p.employeeName||'Employee').replace(/\s+/g,'_')}_${p.salaryMonth||String(row.date).substring(0,7)}.pdf`,image:{type:'jpeg',quality:1},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(el).save();showToast('Payslip downloaded');}catch(err){showToast('PDF error','error');}finally{el.classList.add('hidden');showLoader(false);}}
+
+        let currentPayReport=null;
+        function openPayReport(employeeId,salaryMonth=''){const row=safeArray(sysData.employees).find(x=>String(x.id)===String(employeeId));if(!row)return;document.getElementById('report-employee-id').value=employeeId;const now=new Date(),y=salaryMonth?salaryMonth.substring(0,4):String(now.getFullYear()),m=salaryMonth?salaryMonth.substring(5,7):String(now.getMonth()+1).padStart(2,'0');document.getElementById('report-year').value=y;document.getElementById('report-month').value=m;document.getElementById('report-employee-title').innerText=`${row.parsedJson?.name||'Employee'} · Monthly, Annual & All-Time Salary / EPF / ETF Report`;document.getElementById('pay-report-modal').classList.remove('hidden');toggleReportYear();loadPayReport();}
+        function closePayReport(){document.getElementById('pay-report-modal').classList.add('hidden');}
+        function toggleReportYear(){const allTime=document.getElementById('report-month').value==='ALL_TIME',y=document.getElementById('report-year');y.disabled=allTime;y.classList.toggle('opacity-50',allTime);}
+        async function loadPayReport(){const employeeId=document.getElementById('report-employee-id').value;if(!employeeId)return;const month=document.getElementById('report-month').value,year=month==='ALL_TIME'?'ALL':document.getElementById('report-year').value;showLoader(true,'Building employee salary / EPF / ETF report from Google Sheet records...');const res=await apiPost({action:'get_employee_pay_report',data:{employeeId,year,month}});showLoader(false);if(res?.status!=='success')return showToast(res?.message||'Report failed','error');currentPayReport=res;renderPayReport(res);}
+        function payReportPeriodLabel(r){return r.month==='ALL_TIME'?'All-Time Employment History':r.month==='ALL'?`Year ${r.year}`:`${r.year}-${r.month}`;}
+        function renderPayReport(r){
+            const allTime=r.month==='ALL_TIME',annual=r.month==='ALL',t=r.totals||{},stat=r.statutory||{},period=payReportPeriodLabel(r),daily=safeArray(r.dailyRows),pay=safeArray(r.payrollRows),details=safeArray(r.detailRows),emp=r.employee||{};
+            const sum=(annual||allTime)?t:pay.reduce((a,x)=>{a.gross+=x.grossPay;a.daily+=x.dailyBaseTotal;a.piecework+=x.pieceworkTotal;a.deductions+=x.deduct;a.net+=x.netPay;a.paid+=x.paid;a.due+=x.due;a.workDays+=x.workDays;a.conversionKg+=x.conversionKg;a.totalEmployerContribution+=(x.employerContributionTotal||0);return a;},{gross:0,daily:0,piecework:0,deductions:0,net:0,paid:0,due:0,workDays:0,conversionKg:0,totalEmployerContribution:0});
+            let body=`<div class="bg-white rounded-xl border p-5 mb-4"><div class="flex justify-between flex-wrap gap-3"><div><h3 class="text-2xl font-black">${emp.name||'-'}</h3><p class="text-xs text-gray-500">${emp.nic||'-'} · ${emp.role||'-'} · ${emp.employmentType||'Permanent'}</p><p class="text-[10px] text-gray-500 mt-1">EPF No: <strong>${emp.epfNo||'-'}</strong> · ETF Ref: <strong>${emp.etfRef||'-'}</strong> · Joined: <strong>${emp.joinedDate||'-'}</strong>${emp.leftDate?` · Left: <strong>${emp.leftDate}</strong>`:''}</p></div><div class="text-right"><p class="text-[9px] uppercase tracking-widest text-gray-400 font-black">Report Period</p><p class="font-mono font-black">${period}</p><p class="text-[9px] text-gray-400 mt-1">CK SYS V2 payroll register</p></div></div></div>`;
+            body+=`<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4"><div class="bg-white border rounded-xl p-4"><p class="text-[9px] uppercase text-gray-400 font-black">Gross Salary</p><p class="font-mono font-black text-lg">${formatMoney(sum.gross||0)}</p></div><div class="bg-cyan-50 border border-cyan-100 rounded-xl p-4"><p class="text-[9px] uppercase text-cyan-700 font-black">Daily + Conversion</p><p class="font-mono font-black text-lg">${formatMoney((sum.daily||0)+(sum.piecework||0))}</p><p class="text-[9px]">${sum.workDays||0} day(s) · ${sum.conversionKg||0} Kg</p></div><div class="bg-red-50 border border-red-100 rounded-xl p-4"><p class="text-[9px] uppercase text-red-600 font-black">Employee Deductions</p><p class="font-mono font-black text-lg">${formatMoney(sum.deductions||0)}</p></div><div class="bg-green-50 border border-green-100 rounded-xl p-4"><p class="text-[9px] uppercase text-green-700 font-black">Net / Paid</p><p class="font-mono font-black text-lg">${formatMoney(sum.net||0)}</p><p class="text-[9px]">Paid ${formatMoney(sum.paid||0)} · Due ${formatMoney(sum.due||0)}</p></div><div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4"><p class="text-[9px] uppercase text-indigo-700 font-black">Employer Contributions</p><p class="font-mono font-black text-lg">${formatMoney(stat.totalEmployerContribution||sum.totalEmployerContribution||0)}</p><p class="text-[9px]">EPF ${formatMoney(stat.employerEpf||0)} · ETF ${formatMoney(stat.employerEtf||0)}</p></div></div>`;
+            body+=`<div class="bg-white border rounded-xl p-4 mb-4"><div class="flex justify-between flex-wrap gap-3"><div><h3 class="text-xs font-black uppercase tracking-widest text-indigo-700">EPF / ETF & Statutory Summary</h3><p class="text-[10px] text-gray-500 mt-1">Uses the actual deduction/contribution lines saved with posted payroll. No statutory percentage is assumed by the system.</p></div></div><div class="grid grid-cols-2 md:grid-cols-5 gap-2 mt-3 text-xs"><div class="bg-gray-50 p-3 rounded-lg"><span class="block text-[9px] uppercase text-gray-400">Employee EPF</span><strong class="font-mono">${formatMoney(stat.employeeEpf||0)}</strong></div><div class="bg-gray-50 p-3 rounded-lg"><span class="block text-[9px] uppercase text-gray-400">Employee ETF / Other</span><strong class="font-mono">${formatMoney(stat.employeeEtf||0)}</strong></div><div class="bg-gray-50 p-3 rounded-lg"><span class="block text-[9px] uppercase text-gray-400">Employer EPF</span><strong class="font-mono">${formatMoney(stat.employerEpf||0)}</strong></div><div class="bg-gray-50 p-3 rounded-lg"><span class="block text-[9px] uppercase text-gray-400">Employer ETF</span><strong class="font-mono">${formatMoney(stat.employerEtf||0)}</strong></div><div class="bg-indigo-50 p-3 rounded-lg"><span class="block text-[9px] uppercase text-indigo-500">EPF/ETF Combined</span><strong class="font-mono text-indigo-900">${formatMoney(stat.epfEtfTotal||0)}</strong></div></div></div>`;
+            if(allTime){
+                body+=`<div class="bg-white border rounded-xl overflow-x-auto mb-4"><div class="p-3 border-b bg-gray-50"><h3 class="text-xs font-black uppercase tracking-widest">All-Time Year Summary</h3></div><table class="w-full min-w-[1000px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-3 text-left">Year</th><th class="p-3 text-right">Days</th><th class="p-3 text-right">Kg</th><th class="p-3 text-right">Gross</th><th class="p-3 text-right">Employee EPF</th><th class="p-3 text-right">Employer EPF</th><th class="p-3 text-right">Employer ETF</th><th class="p-3 text-right">Net</th><th class="p-3 text-right">Paid</th><th class="p-3 text-right">Due</th></tr></thead><tbody>${safeArray(r.yearRows).map(y=>`<tr class="border-t"><td class="p-3 font-mono font-bold">${y.year}</td><td class="p-3 text-right">${y.workDays||0}</td><td class="p-3 text-right">${y.conversionKg||0}</td><td class="p-3 text-right font-mono font-bold">${formatMoney(y.gross)}</td><td class="p-3 text-right font-mono">${formatMoney(y.employeeEpf)}</td><td class="p-3 text-right font-mono">${formatMoney(y.employerEpf)}</td><td class="p-3 text-right font-mono">${formatMoney(y.employerEtf)}</td><td class="p-3 text-right font-mono font-bold">${formatMoney(y.net)}</td><td class="p-3 text-right font-mono text-green-700">${formatMoney(y.paid)}</td><td class="p-3 text-right font-mono text-amber-700">${formatMoney(y.due)}</td></tr>`).join('')}</tbody></table></div>`;
+                body+=renderMonthGovernmentTable(r.monthRows);
+            } else if(annual){ body+=renderMonthGovernmentTable(r.monthRows); }
+            else {
+                body+=`<div class="bg-white border rounded-xl overflow-x-auto mb-4"><div class="p-3 border-b bg-gray-50"><h3 class="text-xs font-black uppercase tracking-widest">Daily Work & Chip Conversion Pay</h3></div><table class="w-full min-w-[950px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-3 text-left">Date</th><th class="p-3 text-right">Work Units</th><th class="p-3 text-right">Daily Rate</th><th class="p-3 text-right">Daily Base</th><th class="p-3 text-right">Conversion Kg</th><th class="p-3 text-right">Piecework</th><th class="p-3 text-right">Day Total</th><th class="p-3">Source</th></tr></thead><tbody>${daily.length?daily.map(d=>`<tr class="border-t"><td class="p-3 font-mono">${d.date}</td><td class="p-3 text-right">${d.workUnits||0}</td><td class="p-3 text-right font-mono">${formatMoney(d.dailyRateSnapshot||d.dailyRate||0)}</td><td class="p-3 text-right font-mono">${formatMoney(d.baseDailyAmount||0)}</td><td class="p-3 text-right">${d.conversionKg||0}</td><td class="p-3 text-right font-mono text-violet-700">${formatMoney(d.pieceworkTotal||0)}</td><td class="p-3 text-right font-mono font-black">${formatMoney(d.grossDay||0)}</td><td class="p-3 text-[10px]">${d.source||'-'}</td></tr>`).join(''):`<tr><td colspan="8" class="p-6 text-center text-gray-400">No daily work records</td></tr>`}</tbody></table></div>`;
+                body+=`<div class="bg-white border rounded-xl overflow-x-auto mb-4"><div class="p-3 border-b bg-gray-50"><h3 class="text-xs font-black uppercase tracking-widest">Saved Salary Detail Lines</h3><p class="text-[9px] text-gray-400 mt-1">Permanent audit details from Payroll_Details.</p></div><table class="w-full min-w-[1000px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-3 text-left">Type</th><th class="p-3 text-left">Work Date</th><th class="p-3 text-left">Description</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Rate</th><th class="p-3 text-right">Amount</th></tr></thead><tbody>${details.length?details.map(d=>`<tr class="border-t"><td class="p-3 font-bold ${String(d.lineType||'').toLowerCase().includes('deduction')?'text-red-600':String(d.lineType||'').toLowerCase().includes('piecework')?'text-violet-700':String(d.lineType||'').toLowerCase().includes('employer')?'text-indigo-700':''}">${d.lineType||'-'}</td><td class="p-3 font-mono text-gray-500">${d.workDate||d.payrollDate||'-'}</td><td class="p-3">${d.description||'-'}${d.rateType?`<span class="block text-[9px] text-gray-400">${d.rateType}${d.conversionRef?' · '+d.conversionRef:''}</span>`:''}</td><td class="p-3 text-right">${d.qty??'-'}</td><td class="p-3 text-right font-mono">${d.rate!==undefined?formatMoney(d.rate):'-'}</td><td class="p-3 text-right font-mono font-black">${String(d.lineType||'').toLowerCase().includes('deduction')?'-':''}${formatMoney(d.amount||0)}</td></tr>`).join(''):`<tr><td colspan="6" class="p-6 text-center text-gray-400">No posted salary detail lines for this month</td></tr>`}</tbody></table></div>`;
+                body+=`<div class="bg-white border rounded-xl overflow-x-auto"><div class="p-3 border-b bg-gray-50"><h3 class="text-xs font-black uppercase tracking-widest">Monthly Payroll Sheet</h3></div><table class="w-full min-w-[820px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-3">Ref</th><th class="p-3 text-right">Gross</th><th class="p-3 text-right">Deductions</th><th class="p-3 text-right">Employer Contrib.</th><th class="p-3 text-right">Net</th><th class="p-3 text-right">Paid</th><th class="p-3 text-right">Due</th></tr></thead><tbody>${pay.length?pay.map(x=>`<tr class="border-t"><td class="p-3 font-mono">${x.refId}</td><td class="p-3 text-right font-mono">${formatMoney(x.grossPay)}</td><td class="p-3 text-right font-mono text-red-600">${formatMoney(x.deduct)}</td><td class="p-3 text-right font-mono text-indigo-700">${formatMoney(x.employerContributionTotal||0)}</td><td class="p-3 text-right font-mono font-black">${formatMoney(x.netPay)}</td><td class="p-3 text-right font-mono text-green-700">${formatMoney(x.paid)}</td><td class="p-3 text-right font-mono text-amber-700">${formatMoney(x.due)}</td></tr>`).join(''):`<tr><td colspan="7" class="p-6 text-center text-gray-400">Monthly payroll not posted yet</td></tr>`}</tbody></table></div>`;
+                const payments=safeArray(r.paymentRows);body+=`<div class="bg-white border rounded-xl overflow-x-auto mt-4"><div class="p-3 border-b bg-gray-50"><h3 class="text-xs font-black uppercase tracking-widest">Salary Payment History</h3><p class="text-[9px] text-gray-400 mt-1">Initial payment and later salary settlements are kept separately for audit.</p></div><table class="w-full min-w-[760px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-3 text-left">Date</th><th class="p-3 text-left">Reference</th><th class="p-3 text-left">Method</th><th class="p-3 text-left">Source</th><th class="p-3 text-right">Amount</th></tr></thead><tbody>${payments.length?payments.map(x=>`<tr class="border-t"><td class="p-3 font-mono">${x.date||'-'}</td><td class="p-3 font-mono">${x.refId||'-'}</td><td class="p-3">${x.method||'-'}</td><td class="p-3">${x.source||'-'}</td><td class="p-3 text-right font-mono font-black text-green-700">${formatMoney(x.amount||0)}</td></tr>`).join(''):`<tr><td colspan="5" class="p-5 text-center text-gray-400">No salary payment transactions yet</td></tr>`}</tbody></table></div>`;
+            }
+            body+=`<div class="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900"><strong>Open / not yet payroll-claimed:</strong> Daily Rs. ${formatMoney(r.openAccrued?.daily||0)} · Piecework Rs. ${formatMoney(r.openAccrued?.piecework||0)} · Total Rs. ${formatMoney(r.openAccrued?.gross||0)}</div>`;
+            document.getElementById('pay-report-content').innerHTML=body;lucide.createIcons();
+        }
+        function renderMonthGovernmentTable(rows){return `<div class="bg-white border rounded-xl overflow-x-auto mb-4"><div class="p-3 border-b bg-gray-50"><h3 class="text-xs font-black uppercase tracking-widest">Monthly Salary + EPF / ETF Schedule</h3></div><table class="w-full min-w-[1200px] text-xs"><thead class="bg-gray-50 text-[9px] uppercase text-gray-500"><tr><th class="p-3 text-left">Month</th><th class="p-3 text-right">Days</th><th class="p-3 text-right">Kg</th><th class="p-3 text-right">Gross</th><th class="p-3 text-right">Employee EPF</th><th class="p-3 text-right">Employer EPF</th><th class="p-3 text-right">Employer ETF</th><th class="p-3 text-right">Ded.</th><th class="p-3 text-right">Net</th><th class="p-3 text-right">Paid</th><th class="p-3 text-right">Due</th></tr></thead><tbody>${safeArray(rows).map(m=>`<tr class="border-t"><td class="p-3 font-mono font-bold">${m.month}</td><td class="p-3 text-right">${m.workDays||0}</td><td class="p-3 text-right">${m.conversionKg||0}</td><td class="p-3 text-right font-mono font-bold">${formatMoney(m.gross)}</td><td class="p-3 text-right font-mono">${formatMoney(m.employeeEpf)}</td><td class="p-3 text-right font-mono">${formatMoney(m.employerEpf)}</td><td class="p-3 text-right font-mono">${formatMoney(m.employerEtf)}</td><td class="p-3 text-right font-mono text-red-600">${formatMoney(m.deductions)}</td><td class="p-3 text-right font-mono font-bold">${formatMoney(m.net)}</td><td class="p-3 text-right font-mono text-green-700">${formatMoney(m.paid)}</td><td class="p-3 text-right font-mono text-amber-700">${formatMoney(m.due)}</td></tr>`).join('')}</tbody></table></div>`;}
+        function reportPrintableHtml(){if(!currentPayReport)return'';const r=currentPayReport,content=document.getElementById('pay-report-content').innerHTML;return `<div style="border-bottom:2px solid #111827;padding-bottom:16px;margin-bottom:18px"><h1 style="font-size:28px;font-weight:900;margin:0">AR PLASTIC DATA</h1><p style="font-size:10px;letter-spacing:1px;color:#6b7280;margin-top:4px">EMPLOYEE SALARY / EPF / ETF REPORT · ${payReportPeriodLabel(r)}</p></div>${content}<div style="margin-top:30px;display:flex;justify-content:space-between;gap:40px"><div style="width:45%;border-top:1px solid #9ca3af;padding-top:8px;font-size:9px;color:#6b7280">Employee acknowledgement / signature</div><div style="width:45%;border-top:1px solid #9ca3af;padding-top:8px;font-size:9px;color:#6b7280;text-align:right">Authorized employer signature</div></div><div style="margin-top:24px;border-top:1px solid #e5e7eb;padding-top:12px;font-size:9px;color:#6b7280">System generated from CK SYS V2 payroll, Daily Pay and Payroll Details records. Verify statutory filing requirements before submission.</div>`;}
+        async function downloadPayReport(){if(!currentPayReport)return;const r=currentPayReport,el=document.getElementById('employee-report-print');el.innerHTML=reportPrintableHtml();el.classList.remove('hidden');showLoader(true,'Generating detailed salary / EPF / ETF PDF...');try{await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js','html2pdf');const tag=r.month==='ALL_TIME'?'All_Time':r.month==='ALL'?r.year:`${r.year}_${r.month}`;await html2pdf().set({margin:0,filename:`Salary_Sheet_${(r.employee.name||'Employee').replace(/\s+/g,'_')}_${tag}.pdf`,image:{type:'jpeg',quality:1},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(el).save();showToast('Salary sheet PDF downloaded');}catch(e){showToast('PDF generation failed','error');}finally{el.classList.add('hidden');showLoader(false);}}
+        function printPayReport(){if(!currentPayReport)return;const w=window.open('','_blank','width=1000,height=800');if(!w)return showToast('Popup blocked. Allow popups to print.','error');w.document.write(`<!doctype html><html><head><title>Salary Sheet</title><script src="https://cdn.tailwindcss.com"><\/script><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#111827;padding:24px}table{border-collapse:collapse;width:100%}th,td{page-break-inside:avoid}@media print{button{display:none!important}body{padding:0}}</style></head><body>${reportPrintableHtml()}</body></html>`);w.document.close();w.focus();setTimeout(()=>w.print(),600);}
+        function buildPayReportWhatsAppText(r){const e=r.employee||{},s=r.totals||{},st=r.statutory||{},monthly=r.month!=='ALL'&&r.month!=='ALL_TIME',pay=monthly?safeArray(r.payrollRows)[0]||{}:null;let text=`*AR PLASTIC DATA - SALARY / EPF / ETF SHEET*\nEmployee: ${e.name||'-'}\nNIC: ${e.nic||'-'}\nEPF No: ${e.epfNo||'-'}\nETF Ref: ${e.etfRef||'-'}\nPeriod: ${payReportPeriodLabel(r)}\n`;
+            const sum=monthly?pay:s;text+=`\nGross Salary: Rs. ${formatMoney(sum.grossPay??sum.gross??0)}\nDaily Pay: Rs. ${formatMoney(sum.dailyBaseTotal??sum.daily??0)}\nChip Conversion: Rs. ${formatMoney(sum.pieceworkTotal??sum.piecework??0)}\nConversion Kg: ${sum.conversionKg||0}\nDeductions: Rs. ${formatMoney(sum.deduct??sum.deductions??0)}\nNet Salary: Rs. ${formatMoney(sum.netPay??sum.net??0)}\nPaid: Rs. ${formatMoney(sum.paid||0)}\nDue: Rs. ${formatMoney(sum.due||0)}\n\n*EPF / ETF*\nEmployee EPF: Rs. ${formatMoney(st.employeeEpf||0)}\nEmployer EPF: Rs. ${formatMoney(st.employerEpf||0)}\nEmployer ETF: Rs. ${formatMoney(st.employerEtf||0)}`;
+            if(monthly){const ds=safeArray(r.detailRows).filter(x=>String(x.lineType).toLowerCase()==='deduction');if(ds.length)text+='\n\n*Deductions*\n'+ds.map(x=>`- ${x.description}: Rs. ${formatMoney(x.amount)}`).join('\n');const pcs=safeArray(r.detailRows).filter(x=>String(x.lineType).toLowerCase().includes('piecework'));if(pcs.length)text+='\n\n*Chip Conversion*\n'+pcs.slice(0,25).map(x=>`- ${x.workDate||''} ${x.description}: ${x.qty||0} Kg = Rs. ${formatMoney(x.amount)}`).join('\n');const pm=safeArray(r.paymentRows);if(pm.length)text+='\n\n*Payments*\n'+pm.map(x=>`- ${x.date||''} ${x.method||''}: Rs. ${formatMoney(x.amount)}`).join('\n');}
+            else if(r.month==='ALL'){const rows=safeArray(r.monthRows).filter(x=>(x.payrollCount||0)>0);if(rows.length)text+='\n\n*Monthly Summary*\n'+rows.map(x=>`${x.month}: Gross ${formatMoney(x.gross)} | EPF ${formatMoney(x.employeeEpf)} | Emp EPF ${formatMoney(x.employerEpf)} | ETF ${formatMoney(x.employerEtf)} | Net ${formatMoney(x.net)}`).join('\n');}
+            else if(r.month==='ALL_TIME'){const rows=safeArray(r.yearRows);if(rows.length)text+='\n\n*Year Summary*\n'+rows.map(x=>`${x.year}: Gross ${formatMoney(x.gross)} | Employee EPF ${formatMoney(x.employeeEpf)} | Employer EPF ${formatMoney(x.employerEpf)} | ETF ${formatMoney(x.employerEtf)} | Net ${formatMoney(x.net)}`).join('\n');}
+            text+='\n\nSystem generated from CK SYS V2 payroll records.';return text;}
+        function sendPayReportWhatsApp(){if(!currentPayReport)return;const phone=normalizePhone(currentPayReport.employee?.phone);if(!phone)return showToast('Employee WhatsApp/phone is not available','error');window.open(`https://wa.me/${phone}?text=${encodeURIComponent(buildPayReportWhatsAppText(currentPayReport))}`,'_blank');}
+        function csvCell(v){return `"${String(v??'').replace(/"/g,'""')}"`;}
+        function downloadPayCsv(){if(!currentPayReport)return;const r=currentPayReport,rows=[['Employee',r.employee.name],['NIC',r.employee.nic],['EPF No',r.employee.epfNo],['ETF Ref',r.employee.etfRef],['Period',payReportPeriodLabel(r)],[],['Month','Work Days','Conversion Kg','Gross','Employee EPF','Employer EPF','Employer ETF','Deductions','Net','Paid','Due']];safeArray(r.monthRows).forEach(m=>rows.push([m.month,m.workDays,m.conversionKg,m.gross,m.employeeEpf,m.employerEpf,m.employerEtf,m.deductions,m.net,m.paid,m.due]));rows.push([],['TOTAL','','',r.totals?.gross||0,r.statutory?.employeeEpf||0,r.statutory?.employerEpf||0,r.statutory?.employerEtf||0,r.totals?.deductions||0,r.totals?.net||0,r.totals?.paid||0,r.totals?.due||0]);const blob=new Blob([rows.map(x=>x.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),a=document.createElement('a'),tag=r.month==='ALL_TIME'?'All_Time':r.month==='ALL'?r.year:`${r.year}_${r.month}`;a.href=URL.createObjectURL(blob);a.download=`EPF_ETF_Salary_Schedule_${(r.employee.name||'Employee').replace(/\s+/g,'_')}_${tag}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);}
+
+        // Initialize Call
+        let __lastForegroundSync = 0;
+        function syncFreshOnForeground(){
+            if(!backendUrl || document.visibilityState === 'hidden') return;
+            const now=Date.now(); if(now-__lastForegroundSync < 15000) return;
+            __lastForegroundSync=now; fetchData(true);
+        }
+        window.addEventListener('focus', syncFreshOnForeground);
+        document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') syncFreshOnForeground(); });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if(!checkAuth()) return;
+            if(backendUrl) fetchData();
+        });
+    </script>
+</body>
+</html>

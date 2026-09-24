@@ -1,0 +1,2300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enterprise ERP | Double Entry Accounting Master</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root { --mac-bg: #f5f5f7; --mac-window: #ffffff; --mac-sidebar: rgba(245, 245, 247, 0.85); --mac-border: #e5e5e5; --mac-text: #1d1d1f; }
+        body { background-color: var(--mac-bg); color: var(--mac-text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
+        .mac-window { background: var(--mac-window); box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); overflow: hidden; }
+        @media (min-width: 768px) { .mac-window { border-radius: 12px; } }
+        .mac-titlebar { background: linear-gradient(to bottom, #ffffff, #f6f6f6); border-bottom: 1px solid var(--mac-border); height: 40px; display: flex; align-items: center; padding: 0 16px; user-select: none; }
+        .mac-traffic-lights { display: flex; gap: 8px; } .traffic-light { width: 12px; height: 12px; border-radius: 50%; } .tl-red { background-color: #ff5f56; border: 1px solid #e0443e; } .tl-yellow { background-color: #ffbd2e; border: 1px solid #dea123; } .tl-green { background-color: #27c93f; border: 1px solid #1aab29; }
+        .glass-panel { background: var(--mac-sidebar); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .nav-item { border-radius: 8px; transition: all 0.2s ease; } .nav-item:hover, .nav-item.active { background-color: rgba(0, 0, 0, 0.05); } .nav-item.active { background-color: #007aff; color: white !important; }
+        .mobile-nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #8e8e93; transition: color 0.2s; padding: 4px 0; width: 20%; } .mobile-nav-item.active { color: #007aff; } .mobile-nav-item span { font-size: 10px; margin-top: 4px; font-weight: 500; }
+        .mac-input { border: 1px solid #d1d1d6; border-radius: 8px; padding: 12px 14px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff; font-size: 14px; width: 100%; } .mac-input:focus { outline: none; border-color: #007aff; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2); }
+        ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .fade-in { animation: fadeIn 0.3s ease-out; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .progress-bar { height: 8px; border-radius: 4px; background: #e5e7eb; overflow: hidden; } .progress-fill { height: 100%; border-radius: 4px; transition: width 1s ease-in-out; }
+        .stripe-pdf { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #111827; background: #ffffff; }
+        .stripe-table { width: 100%; border-collapse: collapse; margin-top: 20px; } .stripe-table th { background-color: #f8fafc; color: #6b7280; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px; border-bottom: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; font-weight: 700; text-align: left; } .stripe-table td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 11px; page-break-inside: avoid; } .stripe-table tr { page-break-inside: avoid; } .stripe-table tr:last-child td { border-bottom: 2px solid #e2e8f0; } .stripe-totals { width: 320px; margin-left: auto; margin-top: 20px; page-break-inside: avoid; } .stripe-totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; } .stripe-totals-row.grand { border-bottom: none; border-top: 2px solid #111827; padding-top: 12px; font-weight: 900; font-size: 16px; }
+        .admin-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    
+        /* ==============================================================
+           HICH FIX PACK V7 - Professional responsive ERP shell
+           ============================================================== */
+        html, body { width: 100%; height: 100%; min-height: 100dvh; overflow: hidden; background: #f3f4f6 !important; }
+        body { display: block !important; padding: 0 !important; }
+        .mac-window { width: 100% !important; height: 100dvh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; border: 0 !important; box-shadow: none !important; }
+        .mac-titlebar { height: 56px !important; background: #ffffff !important; border-bottom: 1px solid #e5e7eb !important; box-shadow: none !important; }
+        .mac-traffic-lights, .traffic-light { display: none !important; }
+        .glass-panel { background: #ffffff !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+        .nav-item { border-radius: 10px !important; }
+        .nav-item.active { background: #111827 !important; color: #ffffff !important; }
+        .nav-item.active svg { color: #ffffff !important; }
+        .mac-input { min-height: 42px; border-radius: 10px !important; }
+        .admin-scroll, .overflow-x-auto { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+        table { border-collapse: separate; border-spacing: 0; }
+        main { min-width: 0 !important; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+        @media (min-width: 768px) {
+            .mac-window > .flex.flex-1 { height: calc(100dvh - 56px) !important; min-height: 0 !important; }
+            aside { height: calc(100dvh - 56px) !important; }
+            main { height: 100% !important; }
+            .mobile-only { display: none !important; }
+        }
+
+        @media (max-width: 767px) {
+            html, body { height: 100dvh !important; overflow: hidden !important; }
+            .mac-window { height: 100dvh !important; min-height: 100dvh !important; overflow: hidden !important; }
+            .mac-window > .flex.flex-1 { height: calc(100dvh - 68px - env(safe-area-inset-bottom)) !important; min-height: 0 !important; padding-bottom: 0 !important; overflow: hidden !important; }
+            main { height: 100% !important; overflow-y: auto !important; overflow-x: hidden !important; padding: 12px !important; -webkit-overflow-scrolling: touch; }
+            .mac-input, input, select, textarea { font-size: 16px !important; min-height: 44px !important; }
+            .fixed.inset-0 { padding: 10px !important; }
+            .fixed.inset-0 > .bg-white, .fixed.inset-0 .rounded-2xl { max-height: 92dvh !important; overflow-y: auto !important; }
+            table { min-width: 720px; }
+            .text-4xl { font-size: 1.75rem !important; line-height: 2rem !important; }
+            .text-3xl { font-size: 1.5rem !important; line-height: 1.9rem !important; }
+            .text-2xl { font-size: 1.25rem !important; line-height: 1.65rem !important; }
+            .mobile-nav-item { min-height: 60px; color: #6b7280 !important; }
+            .mobile-nav-item.active { color: #111827 !important; font-weight: 800 !important; }
+            .mobile-nav-item span { font-size: 10px !important; }
+            #toast { width: calc(100vw - 24px) !important; justify-content: center; border-radius: 14px !important; }
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center md:p-6 pb-0 bg-gray-100">
+
+    <!-- Microsoft Login Overlay (Password Only) -->
+    <div id="ms-login-overlay" class="fixed inset-0 bg-[#f3f2f1] z-[99999] flex flex-col items-center justify-center hidden">
+        <div class="bg-white p-10 w-full max-w-[440px] shadow-[0_2px_6px_rgba(0,0,0,0.2)]">
+            <div class="flex items-center gap-2 mb-6">
+                <svg viewBox="0 0 23 23" class="w-6 h-6"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+                <span class="text-xl font-semibold text-[#737373]">AR System Login</span>
+            </div>
+            <h2 class="text-2xl font-semibold text-[#1b1b1b] mb-4 tracking-tight">Sign in</h2>
+            <p class="text-sm text-gray-500 mb-6 font-medium">to continue to Enterprise ERP</p>
+            <form onsubmit="doLogin(event)" class="space-y-4">
+                <p id="ms-err" class="text-[#e81123] text-[13px] hidden">Incorrect password. Please try again.</p>
+                <div>
+                    <input type="password" id="ms-pass" placeholder="Enter Access Password" required class="w-full border-b border-black outline-none py-2 focus:border-b-2 focus:border-[#0067b8] text-[15px] transition-all bg-transparent placeholder-gray-600">
+                </div>
+                <p class="text-[13px] text-[#0067b8] hover:text-[#333] cursor-pointer mt-4 inline-block">Can't access your account?</p>
+                <div class="flex justify-end mt-8">
+                    <button type="submit" class="bg-[#0067b8] hover:bg-[#005da6] text-white px-8 py-2 font-semibold text-[15px] transition-colors">Sign in</button>
+                </div>
+            </form>
+        </div>
+        <div class="mt-8 text-center text-xs text-gray-500 font-mono">
+            <p>Super Admin Pass: superadmin123</p>
+            <p>Admin Pass: admin123</p>
+        </div>
+        <div class="fixed bottom-4 flex gap-4 text-xs text-gray-500">
+            <a href="#" class="hover:underline">Terms of use</a>
+            <a href="#" class="hover:underline">Privacy & cookies</a>
+            <span>...</span>
+        </div>
+    </div>
+
+    <div id="loader" class="hidden fixed inset-0 bg-white/95 backdrop-blur-md z-[999] flex flex-col items-center justify-center transition-opacity">
+        <div class="animate-spin rounded-full h-14 w-14 border-4 border-gray-200 border-t-indigo-600 mb-4 shadow-lg"></div>
+        <p class="text-sm font-black text-gray-800 tracking-widest uppercase" id="loader-msg">Loading System...</p>
+    </div>
+    
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 -translate-y-20 opacity-0 transition-all duration-300 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 z-[1000]">
+        <i data-lucide="info" class="w-5 h-5 text-blue-400" id="toast-icon"></i>
+        <span id="toast-msg" class="text-sm font-bold tracking-wide"></span>
+    </div>
+
+    <div id="url-modal" class="hidden fixed inset-0 bg-black/60 z-[1100] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-gray-200">
+            <div class="flex items-center gap-3 mb-4 text-indigo-600">
+                <i data-lucide="server" class="w-8 h-8"></i>
+                <h2 class="text-2xl font-black uppercase tracking-widest">System Setup</h2>
+            </div>
+            <p class="text-xs text-gray-500 mb-6 font-bold leading-relaxed">Please configure the central Google Apps Script Web App URL to establish the database connection.</p>
+            <input type="text" id="backend-url-input" class="mac-input w-full mb-6 font-mono text-xs bg-gray-50 border-gray-300" placeholder="https://script.google.com/macros/s/...">
+            <button onclick="saveBackendUrl()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl py-4 font-black shadow-lg transform active:scale-95 transition uppercase tracking-widest flex justify-center items-center gap-2">
+                <i data-lucide="plug" class="w-5 h-5"></i> Connect Database
+            </button>
+        </div>
+    </div>
+
+    <div class="mac-window w-full h-full md:max-w-7xl flex flex-col relative bg-white shadow-2xl">
+        
+        <div class="mac-titlebar shrink-0 hidden md:flex justify-between">
+            <div class="mac-traffic-lights items-center">
+                <div class="traffic-light tl-red"></div>
+                <div class="traffic-light tl-yellow"></div>
+                <div class="traffic-light tl-green"></div>
+            </div>
+            <div class="text-xs font-bold tracking-widest text-gray-600 absolute left-1/2 transform -translate-x-1/2 uppercase">
+                AR PLASTIC DATA ERP | Accounting Master
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Fiscal Year</label>
+                    <select id="global-year-filter" class="mac-input py-1 px-3 text-[10px] font-black text-indigo-700 bg-indigo-50 border-indigo-200 shadow-inner" onchange="setGlobalYear(this.value)"></select>
+                </div>
+                <button onclick="document.getElementById('url-modal').classList.remove('hidden')" class="text-gray-400 hover:text-indigo-600 transition" title="Database Settings">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <span id="user-role-badge" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-gray-100 text-gray-600 border border-gray-200 rounded shadow-inner hidden md:inline-block"></span>
+                    <span id="sync-status" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-green-50 text-green-600 border border-green-200 rounded shadow-inner">Online</span>
+                    <button onclick="doLogout()" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded shadow-inner hover:bg-red-100 transition flex items-center gap-1"><i data-lucide="log-out" class="w-3 h-3"></i> Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-1 overflow-hidden flex-col md:flex-row pb-16 md:pb-0 min-h-0">
+            
+            <aside class="glass-panel w-64 flex-shrink-0 hidden md:flex flex-col p-4 border-r border-gray-200 overflow-y-auto z-10">
+                <div class="mb-6">
+                    <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-2">Enterprise Modules</h2>
+                    <nav class="space-y-1">
+                        <a href="index.html" id="nav-acc-link" class="nav-item active w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i> Accounting</a>
+                        <a href="production.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="factory" class="w-4 h-4"></i> Production</a>
+                        <a href="sales.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Sales & Invoices</a>
+                        <a href="inventory.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="package" class="w-4 h-4"></i> Inventory</a>
+                        <a href="employees.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="users" class="w-4 h-4"></i> Staff & Payroll</a>
+                    </nav>
+                </div>
+                
+                <div class="mb-6">
+                    <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 px-2">Finance Views</h2>
+                    <nav class="space-y-1">
+                        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item active w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Overview</button>
+                        <button onclick="switchTab('add-entry')" id="nav-add-entry" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="zap" class="w-4 h-4"></i> Quick Entry</button>
+                        <button onclick="switchTab('journal')" id="nav-journal" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="book-open" class="w-4 h-4"></i> Adv. Journal</button>
+                        <button onclick="switchTab('edit-data')" id="nav-edit-data" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="pencil" class="w-4 h-4"></i> Edit Entries</button>
+                        <button onclick="switchTab('ledger')" id="nav-ledger" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="list" class="w-4 h-4"></i> Master Ledger</button>
+                        <button onclick="switchTab('audit-trail')" id="nav-audit-trail" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="history" class="w-4 h-4"></i> Audit Trail</button>
+                        <button onclick="switchTab('reports')" id="nav-reports" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Data</button>
+                    </nav>
+                </div>
+                
+                <div class="mt-auto space-y-2">
+                    <button onclick="fetchData(true)" class="w-full bg-white border border-gray-200 text-gray-700 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm hover:bg-gray-50 transition flex items-center justify-center gap-2 transform active:scale-95"><i data-lucide="refresh-cw" class="w-4 h-4"></i> Force Sync</button>
+                    <button onclick="visualEliminateAllData()" class="w-full bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm hover:bg-red-100 transition flex items-center justify-center gap-2 transform active:scale-95"><i data-lucide="database-zap" class="w-4 h-4"></i> Eliminate All Data</button>
+                </div>
+            </aside>
+
+            <main class="flex-1 bg-gray-50 p-4 md:p-6 flex flex-col min-w-0 min-h-0 overflow-x-hidden overflow-y-auto relative" id="main-content">
+                
+                <!-- 1. DASHBOARD VIEW -->
+                <div id="view-dashboard" class="flex-1 flex flex-col min-h-0 w-full max-w-7xl mx-auto fade-in">
+                    <div class="flex justify-between items-center mb-4 shrink-0 gap-3">
+                        <h1 class="text-2xl font-black text-gray-800 tracking-tight">Financial Overview</h1>
+                        <div class="flex items-center gap-2">
+                            <select id="mobile-year-filter" class="mac-input md:hidden py-1.5 px-3 text-[10px] font-black text-indigo-700 bg-indigo-50 border-indigo-200 w-auto" onchange="setGlobalYear(this.value)"></select>
+                            <button onclick="fetchData(true)" class="md:hidden bg-indigo-100 text-indigo-600 p-2 rounded-full shadow-sm"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+                            <button onclick="visualEliminateAllData()" class="md:hidden bg-red-100 text-red-600 p-2 rounded-full shadow-sm" title="Eliminate All Data"><i data-lucide="database-zap" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl mb-4 text-sm text-indigo-900 shrink-0 shadow-inner flex flex-col md:flex-row gap-3 items-start md:items-center">
+                        <i data-lucide="info" class="w-6 h-6 shrink-0 text-indigo-500 mt-0.5"></i>
+                        <div><p class="leading-relaxed"><strong>Accounting Engine &amp; Brain:</strong> Assets, Liabilities &amp; Equity are <strong>cumulative balances</strong> &mdash; all years up to the end of the selected fiscal year (an asset bought last year is still an asset). Revenue, Expenses &amp; Net Profit belong to the selected year only; prior years' profits carry into Equity as Retained Earnings. Your explicit category always wins; if a category is unrecognized, the engine safely classifies by Account Name. The Trial Balance and Accounting Equation (A = L + E) are verified continuously. The manufacturing chain is controlled as Bulk Raw Material → Converted Chips → Finished Goods → Sales. Conversion wages are accrued to Piecework Wages Payable and cleared by payroll, preventing double counting. Production overhead credits are treated as payable/clearing liabilities, never as income or expense reductions.</p></div>
+                    </div>
+
+                    <div id="imbalance-warning" class="hidden mb-4 bg-red-50 border border-red-200 p-4 rounded-xl flex items-start gap-3 shadow-sm shrink-0">
+                        <i data-lucide="alert-octagon" class="w-6 h-6 text-red-600 shrink-0"></i>
+                        <div>
+                            <h3 class="font-black text-red-800 uppercase tracking-widest text-[10px]">Ledger Imbalance Detected</h3>
+                            <p class="text-sm text-red-600 font-bold mt-1">Total System Debits do not match Credits (up to the selected year). Difference: <span class="font-mono" id="imbalance-amount">0.00</span>. Please audit manual journals.</p>
+                        </div>
+                    </div>
+
+                    <div id="equation-warning" class="hidden mb-4 bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3 shadow-sm shrink-0">
+                        <i data-lucide="scale" class="w-6 h-6 text-amber-600 shrink-0"></i>
+                        <div>
+                            <h3 class="font-black text-amber-800 uppercase tracking-widest text-[10px]">Accounting Equation Variance</h3>
+                            <p class="text-sm text-amber-700 font-bold mt-1">Assets &ne; Liabilities + Equity. Variance: <span class="font-mono" id="equation-amount">0.00</span>. <span id="unknown-count">0</span> line(s) used unrecognized categories &mdash; review the Master Ledger.</p>
+                        </div>
+                    </div>
+
+                    <div id="nodata-warning" class="hidden mb-4 bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-start gap-3 shadow-sm shrink-0">
+                        <i data-lucide="database" class="w-6 h-6 text-blue-600 shrink-0"></i>
+                        <div>
+                            <h3 class="font-black text-blue-800 uppercase tracking-widest text-[10px]">No Transactions In Selected Fiscal Year</h3>
+                            <p class="text-sm text-blue-700 font-bold mt-1" id="nodata-detail"></p>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Metric Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 shrink-0">
+                        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition"><div class="absolute right-0 top-0 w-1 h-full bg-blue-500"></div><h3 class="text-[9px] font-black text-gray-400 uppercase tracking-widest group-hover:text-blue-500 transition">Total Assets</h3><p class="text-xl md:text-3xl font-black mt-1 text-gray-800 tracking-tight font-mono" id="dash-assets">0.00</p><p class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Cumulative &middot; As at FY end</p></div>
+                        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition"><div class="absolute right-0 top-0 w-1 h-full bg-red-500"></div><h3 class="text-[9px] font-black text-gray-400 uppercase tracking-widest group-hover:text-red-500 transition">Total Liabilities</h3><p class="text-xl md:text-3xl font-black mt-1 text-gray-800 tracking-tight font-mono" id="dash-liabilities">0.00</p><p class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Cumulative &middot; As at FY end</p></div>
+                        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:shadow-md transition"><div class="absolute right-0 top-0 w-1 h-full bg-green-500"></div><h3 class="text-[9px] font-black text-gray-400 uppercase tracking-widest group-hover:text-green-500 transition">Total Equity</h3><p class="text-xl md:text-3xl font-black mt-1 text-gray-800 tracking-tight font-mono" id="dash-equity">0.00</p><p class="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Incl. Retained Earnings</p></div>
+                        <div class="bg-gray-900 p-5 rounded-xl border border-gray-800 shadow-lg flex flex-col justify-center transform hover:-translate-y-1 transition duration-300"><h3 class="text-[9px] font-black text-purple-400 uppercase tracking-widest">Net Profit</h3><p class="text-xl md:text-3xl font-black text-white mt-1 font-mono tracking-tight" id="dash-profit">0.00</p><p class="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1">Selected FY only</p></div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 shrink-0">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Bulk RM Value</p><p id="dash-bulk-rm" class="text-lg font-black font-mono text-slate-800 mt-1">0.00</p><p class="text-[8px] text-gray-400 uppercase font-bold mt-1">Unconverted material</p></div>
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 shadow-sm"><p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Converted Chip Value</p><p id="dash-chip-stock" class="text-lg font-black font-mono text-emerald-800 mt-1">0.00</p><p class="text-[8px] text-emerald-600/70 uppercase font-bold mt-1">Ready for production</p></div>
+                        <div class="bg-violet-50 p-4 rounded-xl border border-violet-100 shadow-sm"><p class="text-[9px] font-black text-violet-600 uppercase tracking-widest">Piecework Payable</p><p id="dash-piecework" class="text-lg font-black font-mono text-violet-800 mt-1">0.00</p><p class="text-[8px] text-violet-600/70 uppercase font-bold mt-1">Unpaid chip labor</p></div>
+                        <div class="bg-amber-50 p-4 rounded-xl border border-amber-100 shadow-sm"><p class="text-[9px] font-black text-amber-600 uppercase tracking-widest">Total Inventory Value</p><p id="dash-total-inventory" class="text-lg font-black font-mono text-amber-900 mt-1">0.00</p><p class="text-[8px] text-amber-600/70 uppercase font-bold mt-1">Bulk + chips + FG</p></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-[250px] shrink-0">
+                        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col">
+                            <h3 class="text-xs font-black text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-widest"><i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-500"></i> Revenue vs Expenses vs Net Profit</h3>
+                            <div class="flex-1 w-full relative min-h-[150px]"><canvas id="financeChart"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center">
+                            <h3 class="text-xs font-black text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-widest"><i data-lucide="wallet" class="w-4 h-4 text-blue-500"></i> Liquidity Status</h3>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 shadow-inner"><p class="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Cash &amp; Bank</p><p class="text-lg font-black text-blue-900 font-mono" id="dash-cash">0.00</p></div>
+                                <div class="bg-green-50 p-3 rounded-xl border border-green-100 shadow-inner"><p class="text-[9px] font-black text-green-600 uppercase tracking-widest mb-1">Receivables</p><p class="text-lg font-black text-green-900 font-mono" id="dash-ar">0.00</p></div>
+                                <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 shadow-inner"><p class="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">Live Stock Value</p><p class="text-lg font-black text-amber-900 font-mono" id="dash-stock">0.00</p></div>
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-gray-100">
+                                <div class="flex justify-between text-[11px] mb-2 font-black uppercase tracking-widest text-gray-500"><span>FY Revenue: <span id="dash-revenue" class="text-green-600">0</span></span> <span>FY Expenses: <span id="dash-expenses" class="text-red-500">0</span></span></div>
+                                <div class="progress-bar flex w-full h-4 mt-auto rounded-full shadow-inner"><div id="bar-rev" class="bg-green-500 h-full transition-all duration-1000"></div><div id="bar-exp" class="bg-red-500 h-full transition-all duration-1000"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. INTELLIGENT QUICK ENTRY VIEW -->
+                <div id="view-add-entry" class="flex-1 flex flex-col min-h-0 hidden max-w-2xl mx-auto w-full fade-in">
+                    <h1 class="text-2xl font-black text-gray-800 tracking-tight mb-2 shrink-0">Record Quick Entry</h1>
+                    <p class="text-sm text-gray-500 mb-6 shrink-0 font-medium border-l-4 border-indigo-500 pl-3">Record transactions perfectly. Type words like 'Salary' or 'Sales' and the UI suggests the correct category. Tax is separated into recoverable input tax or output tax payable so the journal remains audit-ready.</p>
+                    
+                    <div class="flex-1 overflow-auto bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+                        <form id="entry-form" class="space-y-6" onsubmit="submitEntry(event, 'add')">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 border-b border-gray-100 pb-5">
+                                <div><label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Transaction Date</label><input type="date" id="input-date" required class="mac-input w-full bg-gray-50 focus:bg-white border-gray-300"></div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Cash Flow Direction</label>
+                                    <div class="flex bg-gray-100 rounded-lg overflow-hidden border border-gray-300 h-[46px] shadow-inner">
+                                        <label class="flex-1 text-center cursor-pointer relative h-full"><input type="radio" name="input-direction" value="IN" required class="peer sr-only"><div class="absolute inset-0 flex items-center justify-center text-xs font-black text-gray-500 uppercase tracking-widest peer-checked:bg-green-600 peer-checked:text-white transition-colors duration-200 gap-2"><i data-lucide="arrow-down-left" class="w-4 h-4"></i> Money IN</div></label>
+                                        <label class="flex-1 text-center cursor-pointer border-l border-gray-300 relative h-full"><input type="radio" name="input-direction" value="OUT" required class="peer sr-only"><div class="absolute inset-0 flex items-center justify-center text-xs font-black text-gray-500 uppercase tracking-widest peer-checked:bg-red-600 peer-checked:text-white transition-colors duration-200 gap-2"><i data-lucide="arrow-up-right" class="w-4 h-4"></i> Money OUT</div></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Payment Method (Asset Offset)</label>
+                                    <select id="input-method-select" required class="mac-input w-full bg-gray-50 focus:bg-white font-bold border-gray-300" onchange="handleMethodChange('input')"><option value="Cash">Cash</option><option value="Bank Transfer">Bank Transfer</option><option value="Credit Card">Credit Card</option><option value="Cheque">Cheque</option><option value="Other">Custom Type...</option></select>
+                                    <input type="text" id="input-method-custom" placeholder="Type custom method..." class="mac-input w-full bg-gray-50 border-gray-300 mt-2 hidden">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Financial Category</label>
+                                    <input type="text" id="input-category" required class="mac-input w-full bg-gray-50 focus:bg-white font-bold border-gray-300" list="cat-suggestions" placeholder="Type or select category..." onchange="updateAccountSuggestions('input-category', 'account-suggestions')">
+                                    <datalist id="cat-suggestions"><option value="Asset"><option value="Liability"><option value="Equity"><option value="Revenue"><option value="Expense"></datalist>
+                                    <p id="input-cat-hint" class="text-[9px] mt-1 font-bold text-gray-400 uppercase tracking-widest"></p>
+                                </div>
+                            </div>
+
+                            <div><label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Target Account Name</label><input type="text" id="input-account" required placeholder="e.g. Sales, Rent, Electricity..." class="mac-input w-full bg-white border-gray-300 font-bold focus:ring-indigo-500 shadow-sm" list="account-suggestions" oninput="autoFixCategory('input-account')"><datalist id="account-suggestions"></datalist></div>
+                            <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Description / Memo</label><input type="text" id="input-description" required placeholder="Detailed description of transaction" class="mac-input w-full bg-gray-50 border-gray-300 focus:bg-white"></div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                                <div><label class="text-[9px] font-black text-indigo-600 uppercase tracking-widest block mb-1">Base Amount (Rs)</label><input type="number" step="0.01" min="0.01" id="input-amount" required placeholder="0.00" class="mac-input w-full text-xl font-mono font-black text-indigo-900 bg-white border-indigo-300 focus:border-indigo-500 h-14 shadow-sm text-right pr-4" oninput="calcTax('input')"></div>
+                                <div><label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Tax (%)</label><input type="number" step="0.01" min="0" id="input-tax-pct" placeholder="0" class="mac-input w-full text-xl font-mono font-black text-gray-700 bg-white border-gray-300 h-14 shadow-inner text-right pr-4" oninput="calcTax('input')"></div>
+                                <div><label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Tax Amount (Rs)</label><input type="number" step="0.01" min="0" id="input-tax" placeholder="0.00" class="mac-input w-full text-xl font-mono font-black text-gray-500 bg-gray-200 border-gray-300 h-14 shadow-inner text-right pr-4 cursor-not-allowed" readonly></div>
+                            </div>
+                            
+                            <div class="bg-indigo-900 rounded-xl p-6 shadow-inner flex justify-between items-center">
+                                <div><p class="text-[10px] text-indigo-300 uppercase tracking-widest font-bold">Total Gross Amount to Post</p><p class="text-xs text-indigo-400 mt-1 font-mono">Base + <span id="input-tax-amount-display">Rs. 0.00</span> Tax</p></div>
+                                <p class="text-3xl font-black font-mono text-white tracking-tight" id="input-total-final">Rs. 0.00</p>
+                            </div>
+
+                            <button type="submit" class="w-full bg-indigo-600 text-white py-4 mt-4 rounded-xl text-sm font-black uppercase tracking-widest shadow-lg hover:bg-indigo-700 transform active:scale-95 transition flex items-center justify-center gap-2"><i data-lucide="check-square" class="w-5 h-5"></i> Post Balanced Double Entry</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 3. MASTER DATA EDIT VIEW -->
+                <div id="view-edit-data" class="flex-1 flex flex-col min-h-0 hidden fade-in w-full">
+                    <h1 class="text-2xl font-black text-gray-800 tracking-tight mb-2 shrink-0">Master Data Edit</h1>
+                    <p class="text-sm text-gray-500 mb-4 shrink-0 font-medium">Search, filter, and permanently edit your Quick Entry records. Showing exact 1-line precision.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-3 mb-4 shrink-0 bg-white p-3 border border-gray-200 rounded-xl shadow-sm">
+                        <div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4"></i><input type="text" id="edit-search" placeholder="Search accounts, memos..." class="mac-input w-full pl-9 py-2 text-sm shadow-inner" onkeyup="filterEditTable()"></div>
+                        <input type="text" id="edit-filter-category" class="mac-input w-full md:w-48 py-2 text-sm font-bold text-gray-700" list="cat-suggestions" placeholder="Filter Category..." onchange="filterEditTable()" onkeyup="filterEditTable()">
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+                        <div class="overflow-x-auto overflow-y-auto flex-1 pb-16 md:pb-0">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
+                                <thead class="bg-gray-100 sticky top-0 shadow-sm border-b border-gray-200 text-[9px] font-black text-gray-500 uppercase tracking-widest z-10">
+                                    <tr><th class="p-3 w-[12%]">Date</th><th class="p-3 w-[20%]">Account & Category</th><th class="p-3 w-[33%]">Memo & Method</th><th class="p-3 text-right w-[15%]">Total Amount & Type</th><th class="p-3 text-center w-[20%]">Action</th></tr>
+                                </thead>
+                                <tbody id="edit-table-body" class="divide-y divide-gray-100 text-sm"></tbody>
+                            </table>
+                            <div id="edit-empty-state" class="hidden p-8 text-center text-gray-500 italic font-medium">No matching Quick Entries found.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. ADVANCED MANUAL JOURNAL VIEW -->
+                <div id="view-journal" class="flex-1 flex flex-col min-h-0 hidden max-w-6xl mx-auto w-full fade-in">
+                    <h1 class="text-2xl font-black text-gray-800 tracking-tight mb-2 shrink-0">Advanced Manual Journal</h1>
+                    <div class="bg-orange-50 border border-orange-200 p-4 rounded-xl mb-4 text-sm text-orange-900 shrink-0 shadow-sm"><div class="flex gap-3"><i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 text-orange-600 mt-0.5"></i><p class="leading-relaxed"><strong>Warning:</strong> Use this exclusively to post complex multi-line transactions not handled by automated modules (e.g., Owner's equity deposit, Depreciation, Adjustments). The journal must balance perfectly to zero.</p></div></div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5 shrink-0 border-b border-gray-100 pb-5">
+                            <div><label class="text-[9px] font-black uppercase tracking-widest text-gray-500 block mb-1">Journal Date</label><input type="date" id="j-date" class="mac-input w-full bg-gray-50 border-gray-300"></div>
+                            <div><label class="text-[9px] font-bold uppercase tracking-widest text-gray-500 block mb-1">Global Memo / Description</label><input type="text" id="j-memo" placeholder="Why is this journal being created?" class="mac-input w-full bg-gray-50 border-gray-300 font-medium"></div>
+                        </div>
+
+                        <div class="border border-gray-200 rounded-lg overflow-hidden flex-1 flex flex-col min-h-0">
+                            <div class="overflow-y-auto flex-1 bg-gray-50">
+                                <table class="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
+                                    <thead class="bg-gray-100 border-b border-gray-200 text-gray-500 uppercase text-[9px] font-black tracking-widest sticky top-0 z-10">
+                                        <tr><th class="p-3 w-1/4">Category</th><th class="p-3 w-1/3">Account Name</th><th class="p-3 w-1/5 text-right text-blue-600">Debit (Rs)</th><th class="p-3 w-1/5 text-right text-yellow-600">Credit (Rs)</th><th class="p-3 w-10"></th></tr>
+                                    </thead>
+                                    <tbody id="journal-lines" class="divide-y divide-gray-200 bg-white"></tbody>
+                                </table>
+                                <datalist id="acc-hints"><option value="Cash"><option value="Bank"><option value="Accounts Receivable"><option value="Accounts Payable"><option value="Owner Capital"><option value="Owner Draw"><option value="Sales Revenue"><option value="Cost of Goods Sold"><option value="Salary & Wages Expense"></datalist>
+                            </div>
+                            <div class="p-3 bg-gray-100 border-t border-gray-200 shrink-0"><button onclick="addJournalLine()" class="text-[10px] font-black tracking-widest uppercase text-indigo-600 flex items-center gap-1 hover:text-indigo-800 transition bg-white px-3 py-2 rounded-lg shadow-sm border border-gray-200 active:scale-95 transform"><i data-lucide="plus-circle" class="w-4 h-4"></i> Add Blank Row</button></div>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-900 text-white rounded-xl p-5 shadow-lg mt-5 shrink-0 border border-gray-800">
+                            <div class="text-[10px] uppercase font-bold tracking-widest text-gray-400 max-w-xs text-center md:text-left leading-relaxed">Debits must strictly equal Credits.</div>
+                            <div class="flex gap-6">
+                                <div class="text-right"><p class="text-[9px] text-gray-400 uppercase tracking-widest font-black">Total Debit</p><p class="font-mono font-black text-xl md:text-2xl text-blue-400 tracking-tight" id="j-tot-dr">0.00</p></div>
+                                <div class="text-right"><p class="text-[9px] text-gray-400 uppercase tracking-widest font-black">Total Credit</p><p class="font-mono font-black text-xl md:text-2xl text-yellow-400 tracking-tight" id="j-tot-cr">0.00</p></div>
+                                <div class="text-right pl-6 border-l border-gray-700"><p class="text-[9px] text-gray-400 uppercase tracking-widest font-black">Difference</p><p class="font-mono font-black text-2xl md:text-3xl transition-colors duration-300 tracking-tighter" id="j-diff">0.00</p></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 shrink-0"><button onclick="saveJournal()" class="w-full bg-indigo-600 text-white py-5 rounded-xl font-black shadow-lg hover:bg-indigo-700 transform active:scale-95 transition flex items-center justify-center gap-2 uppercase tracking-widest text-sm"><i data-lucide="save" class="w-5 h-5"></i> Commit Journal to Ledger</button></div>
+                    </div>
+                </div>
+
+                <!-- 5. GLOBAL MASTER LEDGER VIEW (True Double-Entry Logic) -->
+                <div id="view-ledger" class="flex-1 flex flex-col min-h-0 hidden fade-in">
+                    <h1 class="text-2xl font-black text-gray-800 tracking-tight mb-2 shrink-0">Global Master Ledger</h1>
+                    <p class="text-sm text-gray-500 mb-4 shrink-0 font-medium">True double-entry view. Every transaction shows both Debit and Credit rows, grouped by Ref ID, with live balance checking and missing-pair warnings.</p>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4 shrink-0 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="col-span-2 md:col-span-2 relative"><i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-gray-400"></i><input type="text" id="l-search" placeholder="Search accounts, memos, IDs..." class="mac-input w-full pl-9 py-2.5 text-xs shadow-inner" onkeyup="renderLedger()"></div>
+                        <div><select id="l-module" class="mac-input w-full py-2.5 text-xs font-bold text-gray-700" onchange="renderLedger()"><option value="all">All ERP Modules</option><option value="sales">Sales & Invoices</option><option value="payroll">Payroll Engine</option><option value="expenses">Expenses</option><option value="journal">Manual Journals</option><option value="manual_entry">Quick Entries</option><option value="inventory">Inventory Adj.</option><option value="rm_purchase">RM Purchases</option><option value="conversion">Chip Conversion</option></select></div>
+                        <div><input type="text" id="l-cat" list="cat-suggestions" placeholder="Filter Category..." class="mac-input w-full py-2.5 text-xs font-bold text-gray-700" onkeyup="renderLedger()" onchange="renderLedger()"></div>
+                        <div><input type="month" id="l-date" class="mac-input w-full py-2.5 text-xs font-bold text-gray-700" onchange="renderLedger()"></div>
+                    </div>
+
+                    <div id="ledger-integrity-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 shrink-0"></div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+                        <div class="overflow-x-auto overflow-y-auto flex-1 rounded-xl">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[1000px]">
+                                <thead class="bg-gray-100 sticky top-0 shadow-sm border-b border-gray-200 text-gray-500 uppercase text-[9px] font-black tracking-widest z-10">
+                                    <tr><th class="p-3 w-[10%]">Date</th><th class="p-3 w-[15%]">Ref ID & Source</th><th class="p-3 w-[10%] text-center">Category</th><th class="p-3 w-[20%]">Account Name</th><th class="p-3 w-[25%] max-w-[200px]">Memo</th><th class="p-3 w-[10%] text-right text-blue-700">Debit (Rs)</th><th class="p-3 w-[10%] text-right text-yellow-600">Credit (Rs)</th><th class="p-3 w-[5%] text-center">Act</th></tr>
+                                </thead>
+                                <tbody id="ledger-body" class="divide-y divide-gray-100 border-b border-gray-100"></tbody>
+                            </table>
+                            <div id="ledger-empty" class="hidden p-8 text-center text-sm text-gray-400 font-medium italic">No transactions match your filters.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. AUDIT TRAIL VIEW -->
+                <div id="view-audit-trail" class="flex-1 flex flex-col min-h-0 hidden fade-in w-full">
+                    <h1 class="text-2xl font-black text-gray-800 tracking-tight mb-2 shrink-0">Official Audit Trail</h1>
+                    <p class="text-sm text-gray-500 mb-4 shrink-0 font-medium">Read-only tracking of every financial movement. Shows the full Debit and Credit audit trail, not a hidden one-line summary.</p>
+                    
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 overflow-hidden flex flex-col min-h-0">
+                        <div class="overflow-x-auto overflow-y-auto flex-1 pb-16 md:pb-0">
+                            <table class="w-full text-left border-collapse min-w-[800px] text-sm">
+                                <thead class="bg-gray-100 sticky top-0 z-10 shadow-sm border-b border-gray-200 text-[9px] uppercase tracking-widest font-black text-gray-500">
+                                    <tr><th class="p-3 w-[12%]">Date</th><th class="p-3 w-[20%]">Account</th><th class="p-3 w-[38%]">Memo & Method</th><th class="p-3 text-right w-[15%] text-blue-700">Debit (Rs)</th><th class="p-3 text-right w-[15%] text-yellow-600">Credit (Rs)</th></tr>
+                                </thead>
+                                <tbody id="audit-table-body" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. REPORTS & EXPORTS VIEW -->
+                <div id="view-reports" class="flex-1 flex flex-col min-h-0 hidden fade-in overflow-y-auto">
+                    <h1 class="text-2xl font-black text-gray-800 tracking-tight mb-2 shrink-0">Financial Reports & Exports</h1>
+                    <p class="text-sm text-gray-500 mb-6 shrink-0 font-medium border-l-4 border-indigo-500 pl-3">Generate enterprise-grade Income Statement, Statement of Financial Position, Excel, and PDF strictly based on the double-entry database. Production overhead credits are normalized as liabilities/payables so they never inflate profit.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 shrink-0">
+                        <button onclick="exportExcel()" class="bg-white border border-gray-200 text-green-700 p-8 rounded-2xl shadow-sm hover:shadow-xl hover:border-green-300 flex flex-col items-center justify-center gap-4 transition group">
+                            <div class="bg-green-50 p-5 rounded-full group-hover:bg-green-100 transition"><i data-lucide="file-spreadsheet" class="w-10 h-10"></i></div>
+                            <div class="text-center"><span class="font-black text-lg block text-gray-900 uppercase tracking-widest">Master Excel</span><span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-2 block">Monthly Summaries & Ledger</span></div>
+                        </button>
+
+                        <button onclick="exportStandardPDF()" class="bg-white border border-gray-200 text-indigo-700 p-8 rounded-2xl shadow-sm hover:shadow-xl hover:border-indigo-300 flex flex-col items-center justify-center gap-4 transition group">
+                            <div class="bg-indigo-50 p-5 rounded-full group-hover:bg-indigo-100 transition"><i data-lucide="file-text" class="w-10 h-10"></i></div>
+                            <div class="text-center"><span class="font-black text-lg block text-gray-900 uppercase tracking-widest">Master PDF</span><span class="text-[10px] text-gray-500 uppercase tracking-widest font-bold mt-2 block">Exact Live Database Snapshot</span></div>
+                        </button>
+                        
+                        <button onclick="openPdfStudio()" class="bg-gray-900 border border-gray-800 text-white p-8 rounded-2xl shadow-lg hover:shadow-2xl hover:bg-black flex flex-col items-center justify-center gap-4 transition transform active:scale-95 group">
+                            <div class="bg-gray-800 p-5 rounded-full group-hover:bg-gray-700 transition shadow-inner"><i data-lucide="printer" class="w-10 h-10"></i></div>
+                            <div class="text-center"><span class="font-black text-lg block text-white uppercase tracking-widest">PDF Studio Builder</span><span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold mt-2 block">Edit locally & Print</span></div>
+                        </button>
+                    </div>
+
+                    <!-- Structured Financial Statements Preview -->
+                    <div id="structured-report-preview" class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8 shrink-0"></div>
+
+                    <!-- Hidden PDF Template Container (Stripe Style) -->
+                    <div id="pdf-container" class="bg-white border border-gray-200 rounded-xl p-8 shadow-sm relative overflow-hidden hidden print:block shrink-0 stripe-pdf">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #111827; padding-bottom: 24px; margin-bottom: 40px;">
+                            <div>
+                                <h1 style="font-size: 36px; font-weight: 900; margin: 0; color: #111827; letter-spacing: -1px;">AR PLASTIC DATA</h1>
+                                <p style="font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; margin-top: 4px;">Enterprise Financial Report</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <h2 style="font-size: 24px; font-weight: 300; color: #d1d5db; text-transform: uppercase; letter-spacing: 4px; margin: 0 0 8px 0;">Master Audit</h2>
+                                <p style="font-size: 12px; font-weight: 700; color: #111827; margin: 0;">Date: <span class="pdf-date" style="font-family: monospace; color: #4b5563; font-weight: normal;"></span></p>
+                            </div>
+                        </div>
+                        <div id="pdf-content"></div>
+                        <div style="border-top: 1px solid #e5e7eb; padding-top: 32px; margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end; page-break-inside: avoid;">
+                            <div><p style="font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0;">Data Integrity</p><p style="font-size: 10px; color: #6b7280; width: 280px; line-height: 1.5; margin: 0;">This report is strictly generated from double-entry accounting ledgers.</p></div>
+                            <div style="text-align: center;"><div style="width: 192px; border-bottom: 1px solid #9ca3af; margin-bottom: 8px;"></div><p style="font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Authorized Signature</p></div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <nav class="md:hidden glass-panel fixed bottom-0 w-full border-t border-gray-200 flex justify-around items-center z-50 h-[65px] pb-safe">
+            <a href="index.html" id="mobile-nav-acc-link" class="mobile-nav-item active"><i data-lucide="pie-chart" class="w-6 h-6"></i><span>Finance</span></a>
+            <a href="production.html" class="mobile-nav-item"><i data-lucide="factory" class="w-6 h-6"></i><span>Prod</span></a>
+            <a href="sales.html" class="mobile-nav-item"><i data-lucide="shopping-cart" class="w-6 h-6"></i><span>Sales</span></a>
+            <a href="inventory.html" class="mobile-nav-item"><i data-lucide="package" class="w-6 h-6"></i><span>Inv</span></a>
+            <a href="employees.html" class="mobile-nav-item"><i data-lucide="users" class="w-6 h-6"></i><span>Staff</span></a>
+        </nav>
+    </div>
+
+    <!-- Edit Quick Entry Modal -->
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black/70 z-[300] flex items-center justify-center p-4 backdrop-blur-md transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center shrink-0">
+                <h2 class="text-xl font-black text-gray-900 tracking-tight">Update Quick Entry</h2>
+                <button type="button" onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 bg-white border shadow-sm p-1.5 rounded-lg transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
+                <form id="edit-form" class="space-y-5 bg-white p-5 rounded-xl border border-gray-200 shadow-sm" onsubmit="submitEntry(event, 'update')">
+                    <input type="hidden" id="edit-id"><input type="hidden" id="edit-ref">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 border-b border-gray-100 pb-5">
+                        <div><label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Transaction Date</label><input type="date" id="edit-date" required class="mac-input w-full bg-gray-50 focus:bg-white border-gray-300"></div>
+                        <div>
+                            <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Cash Flow Direction</label>
+                            <div class="flex bg-gray-100 rounded-lg overflow-hidden border border-gray-300 h-[46px] shadow-inner">
+                                <label class="flex-1 text-center cursor-pointer relative h-full"><input type="radio" name="edit-direction" value="IN" required class="peer sr-only"><div class="absolute inset-0 flex items-center justify-center text-xs font-black text-gray-500 uppercase tracking-widest peer-checked:bg-green-600 peer-checked:text-white transition-colors duration-200 gap-2"><i data-lucide="arrow-down-left" class="w-4 h-4"></i> Money IN</div></label>
+                                <label class="flex-1 text-center cursor-pointer border-l border-gray-300 relative h-full"><input type="radio" name="edit-direction" value="OUT" required class="peer sr-only"><div class="absolute inset-0 flex items-center justify-center text-xs font-black text-gray-500 uppercase tracking-widest peer-checked:bg-red-600 peer-checked:text-white transition-colors duration-200 gap-2"><i data-lucide="arrow-up-right" class="w-4 h-4"></i> Money OUT</div></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div><label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Payment Method (Asset Offset)</label><select id="edit-method-select" required class="mac-input w-full bg-gray-50 focus:bg-white font-bold border-gray-300" onchange="handleMethodChange('edit')"><option value="Cash">Cash</option><option value="Bank Transfer">Bank Transfer</option><option value="Credit Card">Credit Card</option><option value="Cheque">Cheque</option><option value="Other">Custom Type...</option></select><input type="text" id="edit-method-custom" placeholder="Type custom method..." class="mac-input w-full bg-gray-50 border-gray-300 mt-2 hidden"></div>
+                        <div><label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Financial Category</label><input type="text" id="edit-category" required class="mac-input w-full bg-gray-50 focus:bg-white font-bold border-gray-300" list="cat-suggestions" placeholder="Type or select category..."><p id="edit-cat-hint" class="text-[9px] mt-1 font-bold text-gray-400 uppercase tracking-widest"></p></div>
+                    </div>
+                    <div><label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-1">Target Account Name</label><input type="text" id="edit-account" required placeholder="e.g. Sales, Rent, Electricity..." class="mac-input w-full bg-white border-gray-300 font-bold focus:ring-indigo-500 shadow-sm" list="account-suggestions" oninput="autoFixCategory('edit-account')"></div>
+                    <div><label class="text-[9px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Description / Memo</label><input type="text" id="edit-description" required class="mac-input w-full bg-gray-50 border-gray-300 focus:bg-white"></div>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 mt-4"><label class="text-[9px] font-black text-indigo-600 uppercase tracking-widest block mb-1">Total Gross Amount to Post (Rs)</label><input type="number" step="0.01" min="0.01" id="edit-amount" required class="mac-input w-full text-2xl font-mono font-black text-indigo-900 bg-white border-indigo-300 focus:border-indigo-500 h-14 shadow-sm text-right pr-4"></div>
+                    <div class="pt-4 flex gap-4"><button type="button" onclick="deleteEntry()" class="flex-1 bg-red-50 border border-red-200 hover:bg-red-100 text-red-700 py-4 rounded-xl text-sm font-bold shadow-sm transition flex items-center justify-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Delete</button><button type="submit" class="flex-[2] bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl text-sm font-black tracking-widest uppercase shadow-lg transform active:scale-95 transition flex items-center justify-center gap-2"><i data-lucide="check-circle" class="w-5 h-5"></i> Update Double Entry</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Super Admin PDF Studio Modal -->
+    <div id="pdf-studio-modal" class="hidden fixed inset-0 bg-gray-900/95 z-[500] p-2 md:p-6 backdrop-blur-md flex flex-col">
+        <div class="bg-white rounded-2xl shadow-2xl flex-1 flex flex-col overflow-hidden max-w-7xl mx-auto w-full border border-gray-700">
+            <div class="p-4 border-b border-gray-200 bg-gray-50 flex flex-col md:flex-row justify-between items-center shrink-0 gap-4">
+                <div>
+                    <h2 class="text-xl font-black text-indigo-900 flex items-center gap-2 uppercase tracking-widest"><i data-lucide="sliders-horizontal" class="w-5 h-5"></i> PDF Studio Builder</h2>
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1"><span class="text-red-500">Notice:</span> Edits made here strictly modify the final PDF export. They do NOT alter the live Master Database.</p>
+                </div>
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <button onclick="closePdfStudio()" class="bg-white border p-2 rounded-lg hover:bg-gray-100 transition shadow-sm"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+            <div class="bg-indigo-900 text-white p-3 border-b flex gap-2 overflow-x-auto shrink-0 shadow-sm z-10 items-center justify-between">
+                <div class="flex gap-2">
+                    <input type="text" id="ps-search" placeholder="Filter rows..." class="mac-input py-1.5 text-xs w-48 shadow-inner font-medium bg-indigo-800 border-indigo-700 text-white placeholder-indigo-300" onkeyup="renderPdfStudio()">
+                    <button onclick="pAddRow()" class="bg-white/10 hover:bg-white/20 border border-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition flex items-center gap-1"><i data-lucide="plus" class="w-3 h-3"></i> Add PDF Row</button>
+                </div>
+                <div class="flex gap-4 text-[10px] font-black uppercase tracking-widest items-center">
+                    <span id="ps-dr" class="text-blue-300">Dr: 0.00</span>
+                    <span id="ps-cr" class="text-yellow-300">Cr: 0.00</span>
+                    <span id="ps-diff" class="text-gray-300">Diff: 0.00</span>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-0 admin-scroll bg-gray-100" id="ps-canvas"></div>
+            <div class="p-4 bg-white border-t border-gray-200 flex justify-between shrink-0 items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <button onclick="resetPdfStudio()" class="text-[10px] font-bold uppercase tracking-widest text-gray-500 hover:text-gray-900 transition flex items-center gap-1 bg-gray-100 px-3 py-2 rounded-lg"><i data-lucide="rotate-ccw" class="w-3 h-3 inline"></i> Reset to Live DB</button>
+                <button onclick="generateEditedPdf()" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black shadow-lg hover:bg-indigo-700 transition flex items-center gap-2 transform active:scale-95 uppercase tracking-widest text-xs"><i data-lucide="printer" class="w-4 h-4"></i> Generate Custom PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // SHARED SYSTEM GLOBALS & HELPERS
+        // ==========================================
+        let defaultUrl = 'https://script.google.com/macros/s/AKfycbyXl2ysDYn0ROMdTyWXPJ6FGmJAPiexRe3WwDGfXLyOVP9Rw-IREhZmFEYYsRkX5TKj_g/exec';
+        let backendUrl = localStorage.getItem('erp_backend_url') || defaultUrl;
+        let sysData = { employees: [], conversions: [], production: [], sales: [], financials: [], payroll: [], adjustments: [], rmPurchases: [] };
+        let chartInstance = null;
+        let globalYear = new Date().getFullYear().toString(); 
+        
+        lucide.createIcons();
+        document.getElementById('j-date').valueAsDate = new Date();
+        document.getElementById('input-date').valueAsDate = new Date();
+        document.querySelectorAll('.pdf-date').forEach(e => { e.innerText = new Date().toLocaleDateString(); });
+
+        // --- AUTHENTICATION ENGINE ---
+        const authOverlay = document.getElementById('ms-login-overlay');
+        
+        function checkAuth() {
+            const userStr = localStorage.getItem('erp_user');
+            const path = window.location.pathname.toLowerCase();
+            const isAccounting = path.includes('index.html') || path.endsWith('/');
+
+            if (!userStr) {
+                if(authOverlay) authOverlay.classList.remove('hidden');
+                return false;
+            }
+
+            const user = JSON.parse(userStr);
+            if (user.role === 'Admin' && isAccounting) {
+                window.location.href = 'production.html';
+                return false;
+            }
+
+            if(authOverlay) authOverlay.classList.add('hidden');
+            
+            let roleBadge = document.getElementById('user-role-badge');
+            if(roleBadge) roleBadge.innerText = user.role;
+
+            // Restrict UI for Admin
+            if(user.role === 'Admin') {
+                let n1 = document.getElementById('nav-acc-link'); if(n1) n1.classList.add('hidden');
+                let n2 = document.getElementById('mobile-nav-acc-link'); if(n2) n2.classList.add('hidden');
+            }
+            
+            return true;
+        }
+
+        function doLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('ms-pass').value;
+            const err = document.getElementById('ms-err');
+
+            if (pass === 'superadmin123') {
+                localStorage.setItem('erp_user', JSON.stringify({ role: 'Super Admin' }));
+                window.location.reload();
+            } else if (pass === 'admin123') {
+                localStorage.setItem('erp_user', JSON.stringify({ role: 'Admin' }));
+                window.location.href = 'production.html';
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function doLogout() {
+            localStorage.removeItem('erp_user');
+            window.location.href = 'index.html'; 
+        }
+
+        // --- CUSTOM MODALS ---
+        function customConfirm(msg) {
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm px-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-gray-200">
+                        <div class="flex items-center gap-3 mb-4 text-amber-600">
+                            <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                            <h3 class="text-lg font-black tracking-tight text-gray-900">Confirmation Required</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-6 font-medium leading-relaxed">${msg}</p>
+                        <div class="flex gap-3 justify-end">
+                            <button id="cc-cancel" class="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition text-sm">Cancel</button>
+                            <button id="cc-ok" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow-md">Confirm Action</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                lucide.createIcons();
+                document.getElementById('cc-cancel').onclick = () => { modal.remove(); resolve(false); };
+                document.getElementById('cc-ok').onclick = () => { modal.remove(); resolve(true); };
+            });
+        }
+
+        function customPrompt(msg) {
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm px-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-red-200">
+                        <div class="flex items-center gap-3 mb-4 text-red-600">
+                            <i data-lucide="alert-octagon" class="w-6 h-6"></i>
+                            <h3 class="text-lg font-black tracking-tight text-gray-900">Critical Action</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4 font-medium leading-relaxed">${msg.replace(/\n/g, '<br>')}</p>
+                        <input type="text" id="cp-input" class="w-full border border-gray-300 rounded-xl p-3 mb-6 focus:ring-2 focus:ring-red-500 outline-none transition" placeholder="Type here...">
+                        <div class="flex gap-3 justify-end">
+                            <button id="cp-cancel" class="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition text-sm">Cancel</button>
+                            <button id="cp-ok" class="px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition text-sm shadow-md">Execute</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                lucide.createIcons();
+                document.getElementById('cp-input').focus();
+                document.getElementById('cp-cancel').onclick = () => { modal.remove(); resolve(null); };
+                document.getElementById('cp-ok').onclick = () => { resolve(document.getElementById('cp-input').value); modal.remove(); };
+            });
+        }
+
+        async function visualEliminateAllData() {
+            // VISUAL DEMO ONLY: this function intentionally never calls apiPost,
+            // never clears Sheets, and never mutates the local ERP data/cache.
+            const typed = await customPrompt('This is the data elimination confirmation screen.\nType ERASE ALL to continue.');
+            if(typed === null) return;
+            if(String(typed).trim().toUpperCase() !== 'ERASE ALL') {
+                showToast('Confirmation text did not match. Nothing was changed.', 'error');
+                return;
+            }
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/70 z-[10000] flex items-center justify-center px-4 backdrop-blur-md';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-7 text-center border border-red-200">
+                    <div class="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4"><i data-lucide="database-zap" class="w-7 h-7"></i></div>
+                    <h3 id="erase-title" class="text-xl font-black text-gray-900">All data will erase</h3>
+                    <p id="erase-copy" class="text-sm text-gray-500 font-medium mt-2">Visual elimination sequence in progress.</p>
+                    <div id="erase-count" class="text-6xl font-black font-mono text-red-600 my-6">6</div>
+                    <div class="h-2 bg-red-100 rounded-full overflow-hidden"><div id="erase-bar" class="h-full bg-red-600 transition-all duration-700" style="width:0%"></div></div>
+                </div>`;
+            document.body.appendChild(modal);
+            lucide.createIcons();
+            const count = modal.querySelector('#erase-count'), bar = modal.querySelector('#erase-bar');
+            for(let i=6;i>=0;i--) {
+                count.textContent = String(i);
+                bar.style.width = `${((6-i)/6)*100}%`;
+                await new Promise(r => setTimeout(r, 650));
+            }
+            modal.querySelector('#erase-title').textContent = 'All data are removed';
+            modal.querySelector('#erase-copy').textContent = 'Visual sequence completed.';
+            count.innerHTML = '<span class="text-green-600">✓</span>';
+            bar.style.width = '100%';
+            bar.className = 'h-full bg-green-600 transition-all duration-300';
+            setTimeout(() => modal.remove(), 1800);
+        }
+
+        function safeStr(val) { return (val === null || val === undefined) ? '' : String(val).toLowerCase(); }
+        function safeArray(arr) { return Array.isArray(arr) ? arr : []; }
+
+        function loadScriptOnce(src, globalName) {
+            if(globalName && window[globalName]) return Promise.resolve();
+            return new Promise((resolve,reject)=>{
+                const existing=[...document.scripts].find(x=>x.src===src);
+                if(existing){ existing.addEventListener('load',resolve,{once:true}); existing.addEventListener('error',reject,{once:true}); return; }
+                const sc=document.createElement('script'); sc.src=src; sc.onload=resolve; sc.onerror=reject; document.head.appendChild(sc);
+            });
+        }
+        async function ensureExcelLibraries(){
+            await loadScriptOnce('https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js','ExcelJS');
+            await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js','saveAs');
+        }
+        async function ensurePdfLibrary(){
+            await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js','html2pdf');
+        }
+
+        function escapeHtml(val) {
+            return String(val === null || val === undefined ? '' : val)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function formatMoney(num) { 
+            let n = parseFloat(num); if(isNaN(n)) n = 0;
+            return new Intl.NumberFormat('en-LK', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(n); 
+        }
+
+        function parseAmount(v) {
+            if(typeof v === 'number') return isFinite(v) ? v : 0;
+            if(v === null || v === undefined || v === '') return 0;
+            const m = String(v).match(/-?\d[\d,]*(\.\d+)?/);
+            if(!m) return 0;
+            let n = parseFloat(m[0].replace(/,/g, ''));
+            return isFinite(n) ? n : 0;
+        }
+
+        function isDebitRow(r) { const t = safeStr(r && r.type).trim(); return t.charAt(0) === 'd'; }
+
+        function parseDateSafe(d) {
+            if(!d) return null;
+            const dt = new Date(d);
+            return isNaN(dt.getTime()) ? null : dt;
+        }
+        function fmtDate(d) {
+            const dt = parseDateSafe(d);
+            if(!dt) return typeof d === 'string' ? d.substring(0, 10) : '';
+            return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+        }
+        function rowYear(r) { const dt = parseDateSafe(r.date); return dt ? String(dt.getFullYear()) : null; }
+        function rowMonthKey(r) { const dt = parseDateSafe(r.date); return dt ? dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') : null; }
+        function monthLabel(key) {
+            const p = key.split('-');
+            return new Date(parseInt(p[0],10), parseInt(p[1],10)-1, 1).toLocaleString('default', { month: 'short', year: '2-digit' });
+        }
+        function inGlobalYear(r) { if(globalYear === 'ALL') return true; return rowYear(r) === globalYear; }
+
+        // ==========================================
+        // FIXED DATA PARSING (CRITICAL FOR CALCS)
+        // ==========================================
+        function normalizeSysData() {
+            ['financials','production','sales','payroll','adjustments','rmPurchases','employees','conversions'].forEach(k => {
+                sysData[k] = safeArray(sysData[k]).map(r => {
+                    if(r && typeof r.parsedJson === 'string' && r.parsedJson.trim()) {
+                        try { r.parsedJson = JSON.parse(r.parsedJson); } catch(e) { /* keep raw */ }
+                    }
+                    return r;
+                });
+            });
+        }
+
+        function autoSelectBestYear() {
+            const rows = safeArray(sysData.financials);
+            if(!rows.length || globalYear === 'ALL') return;
+            if(rows.some(r => rowYear(r) === globalYear)) return;
+            const years = rows.map(rowYear).filter(Boolean).sort();
+            if(years.length) globalYear = years[years.length - 1];
+        }
+
+        function saveBackendUrl() {
+            let url = document.getElementById('backend-url-input').value.trim();
+            if(url) { 
+                localStorage.setItem('erp_backend_url', url); 
+                backendUrl = url; 
+                document.getElementById('url-modal').classList.add('hidden'); 
+                fetchData(true); 
+            }
+        }
+
+        function showLoader(show, msg="Processing System Request...") { 
+            let loader = document.getElementById('loader');
+            if(!loader) return;
+            document.getElementById('loader-msg').innerText = msg; 
+            if(show) { loader.classList.remove('hidden'); setTimeout(() => loader.classList.remove('opacity-0'), 10); } 
+            else { loader.classList.add('opacity-0'); setTimeout(() => loader.classList.add('hidden'), 300); }
+        }
+
+        function showToast(msg, type="success") {
+            let t = document.getElementById('toast');
+            let i = document.getElementById('toast-icon');
+            if(!t || !i) return;
+            document.getElementById('toast-msg').innerText = msg;
+            t.className = `fixed top-4 left-1/2 transform -translate-x-1/2 transition-all duration-300 px-6 py-4 rounded-full shadow-2xl flex items-center gap-3 z-[1000] translate-y-0 opacity-100 ${type==='error'?'bg-red-600 text-white':'bg-gray-900 text-white'}`;
+            i.setAttribute('data-lucide', type==='error'?'alert-circle':'check-circle'); 
+            i.className = `w-5 h-5 ${type==='error'?'text-white':'text-green-400'}`; 
+            lucide.createIcons();
+            setTimeout(() => { 
+                t.classList.replace('translate-y-0', '-translate-y-20'); 
+                t.classList.replace('opacity-100', 'opacity-0'); 
+            }, 3000);
+        }
+
+        async function apiGet(force) {
+            const joiner = backendUrl.includes('?') ? '&' : '?';
+            let url = backendUrl + joiner + 'modules=employees,conversions,production,sales,financials,payroll,adjustments,rmPurchases' + (force ? '&refresh=true&_ts='+Date.now() : '');
+            try { 
+                let res = await fetch(url, { cache: 'no-store' }); 
+                if(!res.ok) throw new Error(); 
+                return await res.json(); 
+            } catch(e) { return null; }
+        }
+
+        async function apiPost(payload) {
+            try { 
+                let res = await fetch(backendUrl, { method: 'POST', body: JSON.stringify(payload) }); 
+                if(!res.ok) throw new Error(); 
+                return await res.json(); 
+            } catch(e) { return null; }
+        }
+
+        // ==========================================
+        // ROBUST DATA FETCHING
+        // ==========================================
+        async function fetchData(force = false) {
+            showLoader(true, "Syncing Financial Data..."); 
+            let statusEl = document.getElementById('sync-status');
+            if(statusEl) statusEl.innerText = "Syncing...";
+            
+            try {
+                let res = await apiGet(force);
+                if(res?.status==='success' && res.data) { 
+                    sysData = res.data; 
+                    normalizeSysData();
+                    autoSelectBestYear();
+                    try { localStorage.setItem('cksys_v2_erp_data_v13_final', JSON.stringify(sysData)); } catch(e){} 
+                    if(statusEl) statusEl.innerText = "Online";
+                    updateUI(); 
+                }
+                else { 
+                    let c=localStorage.getItem('cksys_v2_erp_data_v13_final'); 
+                    if(c){
+                        try { 
+                            sysData=JSON.parse(c); 
+                            normalizeSysData();
+                            autoSelectBestYear();
+                            if(statusEl) statusEl.innerText = "Offline (Cached)";
+                            updateUI(); 
+                            showToast("Operating offline with cached data.", "info"); 
+                        } 
+                        catch(e) { localStorage.removeItem('cksys_v2_erp_data_v13_final'); updateUI(); }
+                    } else { 
+                        if(statusEl) statusEl.innerText = "Offline";
+                        showToast("Failed to connect", "error");
+                        updateUI(); 
+                    } 
+                }
+            } catch(e) { 
+                if(statusEl) statusEl.innerText = "Error";
+                showToast("System Error while fetching data", "error");
+                updateUI(); 
+            } 
+            finally { showLoader(false); }
+        }
+
+        function classifyCategory(cat, account) {
+            const pick = (c) => {
+                if(!c) return 'Unknown';
+                if(/liab|payab|loan|debt|overdraft|creditor/.test(c)) return 'Liability';
+                if(/equit|capital|owner|retain|drawing|reserve/.test(c)) return 'Equity';
+                if(/asset/.test(c)) return 'Asset';            // explicit "Asset (...)" wins early
+                if(/exp|cogs|cost|wage|salar|overhead|maint|fuel|freight/.test(c)) return 'Expense'; // "Cost of Sales" must check before Revenue
+                if(/rev|income|sale|earning|turnover/.test(c)) return 'Revenue';
+                if(/rent|utilit|electric|water|insurance|repair|stationer|advertis|transport|fee/.test(c)) return 'Expense';
+                if(/cash|bank|receivab|inventory|stock|equipment|machin|vehicle|land|building|debtor|deposit/.test(c)) return 'Asset';
+                return 'Unknown';
+            };
+            let cls = pick(safeStr(cat).trim());
+            if(cls === 'Unknown') cls = pick(safeStr(account).trim());
+            return cls;
+        }
+
+        function ledgerEffect(cls, isDr, amt) {
+            if(cls === 'Asset' || cls === 'Expense') return isDr ? amt : -amt;
+            return isDr ? -amt : amt; // Liability, Equity, Revenue
+        }
+
+        function isProductionOverheadCreditRow(r) {
+            if(!r || isDebitRow(r)) return false;
+            const source = safeStr(r.sourceModule || (r.parsedJson && r.parsedJson.sourceModule));
+            const text = `${r.category || ''} ${r.account || ''} ${r.description || ''}`.toLowerCase();
+            const isOverhead = /factory\s*overhead|overhead\s*applied|manufacturing\s*overhead|production\s*overhead/.test(text);
+            const isProduction = source.includes('production') || /overhead\s*applied|production/.test(text);
+            return isOverhead && isProduction;
+        }
+
+        function normalizeAccountingRow(row) {
+            if(!row) return row;
+            const r = { ...row };
+            if(isProductionOverheadCreditRow(r)) {
+                r.originalCategory = r.originalCategory || r.category;
+                r.originalAccount = r.originalAccount || r.account;
+                r.category = 'Liability';
+                r.account = 'Factory Overhead Payable';
+                r.description = r.description || 'Overhead Applied';
+                r._accountingNormalized = true;
+                r._normalizationReason = 'Production overhead credit reclassified from Expense credit to Liability so it cannot inflate profit.';
+                if(r.parsedJson && typeof r.parsedJson === 'object') {
+                    r.parsedJson = { ...r.parsedJson, _accountingNormalized: true, _normalizationReason: r._normalizationReason };
+                }
+            }
+            return r;
+        }
+
+        function computeFinancialsFromRows(rowsInput, year) {
+            const res = {
+                totals: { Asset:0, Liability:0, Equity:0, Revenue:0, Expense:0 },
+                cash: 0, ar: 0,
+                drTotal: 0, crTotal: 0,
+                monthly: {},          // { 'YYYY-MM': {rev, exp} } — selected FY only
+                unknownCount: 0,
+                rowCount: 0,          // ledger lines dated in the selected FY
+                priorRetained: 0,     // prior-year profits folded into Equity
+                netProfit: 0
+            };
+
+            const isAll = !year || year === 'ALL';
+            const yearNum = isAll ? null : parseInt(year, 10);
+
+            safeArray(rowsInput).map(normalizeAccountingRow).forEach(r => {
+                const ry = rowYear(r);
+                if(ry === null) return;
+                const ryNum = parseInt(ry, 10);
+                if(!isAll && ryNum > yearNum) return;      // future years never count
+                const inYear = isAll || ryNum === yearNum; // is this row in the selected FY?
+
+                const amt = Math.abs(parseAmount(r.amount));
+                if(amt === 0) return;
+                const isDr = isDebitRow(r);
+                let cls = classifyCategory(r.category, r.account);
+
+                if(isDr) res.drTotal += amt; else res.crTotal += amt;
+                if(inYear) res.rowCount++;
+
+                if(cls === 'Unknown') {
+                    res.unknownCount++;
+                    cls = isDr ? 'Expense' : 'Revenue';
+                }
+
+                const effect = ledgerEffect(cls, isDr, amt);
+
+                if(cls === 'Asset' || cls === 'Liability' || cls === 'Equity') {
+                    res.totals[cls] += effect;
+                    if(cls === 'Asset') {
+                        const acc = safeStr(r.account);
+                        if(acc.includes('cash') || acc.includes('bank')) res.cash += effect;
+                        if(acc.includes('receivab') || acc.includes('debtor')) res.ar += effect;
+                    }
+                } else if(inYear) {
+                    res.totals[cls] += effect;
+                    const mk = rowMonthKey(r);
+                    if(mk) {
+                        if(!res.monthly[mk]) res.monthly[mk] = { rev: 0, exp: 0 };
+                        if(cls === 'Revenue') res.monthly[mk].rev += effect;
+                        else res.monthly[mk].exp += effect;
+                    }
+                } else {
+                    res.priorRetained += (cls === 'Revenue') ? effect : -effect;
+                }
+            });
+
+            res.netProfit = res.totals.Revenue - res.totals.Expense;
+            res.totals.Equity += res.priorRetained + res.netProfit;
+            return res;
+        }
+
+        function computeFinancials(year) {
+            return computeFinancialsFromRows(getFullLedgerLines(sysData.financials), year);
+        }
+
+        function computeManufacturingFlow() {
+            const bulk = {}, chips = {};
+            const seedBulk=name=>{if(!bulk[name])bulk[name]={name,totalIn:0,totalCost:0,used:0,costOut:0,current:0,avgCost:0,value:0};return bulk[name];};
+            const seedChip=(name,type)=>{if(!chips[name])chips[name]={name,type:type||'',totalIn:0,totalCost:0,used:0,costOut:0,current:0,avgCost:0,value:0};return chips[name];};
+            safeArray(sysData.rmPurchases).forEach(r=>{const p=r.parsedJson||{},name=p.materialName;if(!name)return;const x=seedBulk(name);x.totalIn+=parseAmount(p.qty);x.totalCost+=parseAmount(p.totalCost);});
+            safeArray(sysData.conversions).forEach(r=>{const p=r.parsedJson||{},m=p.sourceMaterial||{},name=m.name;if(name){const x=seedBulk(name);x.used+=parseAmount(m.kg);x.costOut+=parseAmount(m.cost);}const c=p.chip||{},cn=c.name||c.type;if(cn){const x=seedChip(cn,c.type);x.totalIn+=parseAmount(c.outputKg);x.totalCost+=parseAmount(p.costing&&p.costing.totalConvertedCost);}});
+            safeArray(sysData.production).forEach(r=>{const p=r.parsedJson||{},m=p.rawMaterial||{},name=m.name;if(!name)return;if(String(m.stage||'').toUpperCase()==='CHIP'){const x=seedChip(name,'');x.used+=parseAmount(m.kg);x.costOut+=parseAmount(m.cost);}else{const x=seedBulk(name);x.used+=parseAmount(m.kg);x.costOut+=parseAmount(m.cost);}});
+            let bulkValue=0;Object.values(bulk).forEach(x=>{x.current=x.totalIn-x.used;x.value=Math.max(0,x.totalCost-x.costOut);x.avgCost=x.current>0?x.value/x.current:(x.totalIn>0?x.totalCost/x.totalIn:0);bulkValue+=x.value;});
+            let chipValue=0;Object.values(chips).forEach(x=>{x.current=x.totalIn-x.used;x.value=Math.max(0,x.totalCost-x.costOut);x.avgCost=x.current>0?x.value/x.current:(x.totalIn>0?x.totalCost/x.totalIn:0);chipValue+=x.value;});
+            const paidWorkIds=new Set();safeArray(sysData.payroll).forEach(r=>safeArray((r.parsedJson||{}).pieceworkClaims).forEach(c=>{if(c.workId)paidWorkIds.add(c.workId);}));let pieceworkPayable=0;safeArray(sysData.conversions).forEach(r=>safeArray((r.parsedJson||{}).workers).forEach(w=>{if(!w.workId||!paidWorkIds.has(w.workId))pieceworkPayable+=parseAmount(w.amount);}));
+            return {bulk,chips,bulkValue,chipValue,pieceworkPayable};
+        }
+
+        function computeStockValuation() {
+            const items={};const seed=nm=>{if(!items[nm])items[nm]={name:nm,produced:0,sold:0,adjusted:0,current:0,value:0,totalCostIn:0,costOut:0,adjustmentValue:0,avgCost:0};return items[nm];};
+            safeArray(sysData.production).forEach(pr=>{const p=pr.parsedJson||{},nm=p.item&&p.item.name;if(!nm)return;const x=seed(nm);x.produced+=parseAmount(p.item.qty);x.totalCostIn+=parseAmount(p.costing&&p.costing.totalCost);});
+            safeArray(sysData.sales).forEach(sl=>{const p=sl.parsedJson||{};safeArray(p.items).forEach(it=>{const nm=it.itemName;if(!nm)return;const x=seed(nm),q=parseAmount(it.qty);x.sold+=q;x.costOut+=parseAmount(it.lineCost!==undefined?it.lineCost:q*parseAmount(it.unitCost));});});
+            safeArray(sysData.adjustments).forEach(a=>{const p=a.parsedJson||{},nm=p.item;if(!nm)return;const x=seed(nm),q=parseAmount(p.qty),v=parseAmount(p.value);if(safeStr(p.type)==='positive'){x.adjusted+=q;x.adjustmentValue+=v;}else{x.adjusted-=q;x.adjustmentValue-=v;}});
+            let finishedGoodsValue=0;Object.values(items).forEach(x=>{x.current=x.produced-x.sold+x.adjusted;x.value=Math.max(0,x.totalCostIn-x.costOut+x.adjustmentValue);x.avgCost=x.current>0?x.value/x.current:(x.produced>0?x.totalCostIn/x.produced:0);finishedGoodsValue+=x.value;});
+            const flow=computeManufacturingFlow();return {items,finishedGoodsValue,bulkValue:flow.bulkValue,chipValue:flow.chipValue,totalValue:finishedGoodsValue+flow.bulkValue+flow.chipValue,materialFlow:flow};
+        }
+
+        function reportLineText(r) {
+            return `${r.category || ''} ${r.account || ''} ${r.description || r.desc || ''}`.toLowerCase();
+        }
+
+        function isCostOfSalesRow(r) {
+            const t = reportLineText(r);
+            return /cost\s*of\s*sales|cogs|cost\s*of\s*goods|goods\s*sold|direct\s*cost|direct\s*material|direct\s*labou?r|raw\s*material|production\s*cost|manufacturing\s*cost|purchases?/.test(t);
+        }
+
+        function isTaxExpenseRow(r) {
+            const t = reportLineText(r);
+            return /income\s*tax|corporation\s*tax|corporate\s*tax|tax\s*expense|profit\s*tax|business\s*tax|vat\s*expense|tax\s*paid/.test(t);
+        }
+
+        function isOtherIncomeRow(r) {
+            const t = reportLineText(r);
+            return /other\s*income|interest\s*income|discount\s*received|gain\s*on|commission\s*income|rent\s*income|scrap\s*income|misc\.?\s*income|sundry\s*income/.test(t);
+        }
+
+        function isNonCurrentAssetRow(r) {
+            const t = reportLineText(r);
+            return /non\s*current|fixed\s*asset|property|plant|equipment|ppe|machinery|machine|vehicle|motor|land|building|furniture|computer|leasehold|long\s*term\s*deposit/.test(t);
+        }
+
+        function isNonCurrentLiabilityRow(r) {
+            const t = reportLineText(r);
+            return /non\s*current|long\s*term|term\s*loan|bank\s*loan|mortgage|debenture|lease\s*liability|finance\s*lease/.test(t) && !/short\s*term|current|overdraft/.test(t);
+        }
+
+        function computeStructuredStatements(year, rowsOverride = null) {
+            const rows = rowsOverride ? safeArray(rowsOverride) : getFullLedgerLines(sysData.financials);
+            const fin = rowsOverride ? computeFinancialsFromRows(rows, year) : computeFinancials(year);
+            const isAll = !year || year === 'ALL';
+            const yearNum = isAll ? null : parseInt(year, 10);
+
+            const income = { sales: 0, costOfSales: 0, grossProfit: 0, otherIncome: 0, expenses: 0, profitBeforeTax: 0, tax: 0, netProfit: 0 };
+            const position = { nonCurrentAssets: 0, currentAssets: 0, totalAssets: 0, equity: 0, nonCurrentLiabilities: 0, currentLiabilities: 0, totalEquityAndLiabilities: 0, variance: 0 };
+
+            rows.forEach((r, i) => {
+                const ry = rowYear(r);
+                if(ry === null) return;
+                const ryNum = parseInt(ry, 10);
+                const amt = Math.abs(parseAmount(r.amount));
+                if(amt <= 0) return;
+                const isDr = isDebitRow(r);
+                let cls = classifyCategory(r.category, r.account);
+                if(cls === 'Unknown') cls = isDr ? 'Expense' : 'Revenue';
+                const effect = ledgerEffect(cls, isDr, amt);
+                const inSelectedYear = isAll || ryNum === yearNum;
+                const withinPositionDate = isAll || ryNum <= yearNum;
+
+                if(inSelectedYear) {
+                    if(cls === 'Revenue') {
+                        if(isOtherIncomeRow(r)) income.otherIncome += effect;
+                        else income.sales += effect;
+                    } else if(cls === 'Expense') {
+                        if(isTaxExpenseRow(r)) income.tax += effect;
+                        else if(isCostOfSalesRow(r)) income.costOfSales += effect;
+                        else income.expenses += effect;
+                    }
+                }
+
+                if(withinPositionDate) {
+                    if(cls === 'Asset') {
+                        if(isNonCurrentAssetRow(r)) position.nonCurrentAssets += effect;
+                        else position.currentAssets += effect;
+                    } else if(cls === 'Liability') {
+                        if(isNonCurrentLiabilityRow(r)) position.nonCurrentLiabilities += effect;
+                        else position.currentLiabilities += effect;
+                    }
+                }
+            });
+
+            income.grossProfit = income.sales - income.costOfSales;
+            income.profitBeforeTax = income.grossProfit + income.otherIncome - income.expenses;
+            income.netProfit = income.profitBeforeTax - income.tax;
+
+            position.totalAssets = position.nonCurrentAssets + position.currentAssets;
+            position.equity = fin.totals.Equity;
+            position.totalEquityAndLiabilities = position.equity + position.nonCurrentLiabilities + position.currentLiabilities;
+            position.variance = position.totalAssets - position.totalEquityAndLiabilities;
+
+            return { income, position, fin };
+        }
+
+        function reportRow(label, amount, opts = {}) {
+            const bold = opts.bold ? 'font-black text-gray-900' : 'font-bold text-gray-600';
+            const line = opts.line ? 'border-t-2 border-gray-900 pt-3 mt-1' : '';
+            const color = opts.color || (amount < 0 ? 'text-red-700' : 'text-gray-900');
+            return `<div class="flex justify-between gap-4 py-2 ${line}"><span class="${bold}">${escapeHtml(label)}</span><span class="font-mono ${opts.bold ? 'font-black' : 'font-bold'} ${color}">${formatMoney(amount)}</span></div>`;
+        }
+
+        function renderStructuredReports() {
+            const el = document.getElementById('structured-report-preview');
+            if(!el) return;
+            const st = computeStructuredStatements(globalYear);
+            const inc = st.income;
+            const pos = st.position;
+            const varianceOk = Math.abs(pos.variance) < 0.01;
+
+            el.innerHTML = `
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="bg-gray-900 text-white px-5 py-4">
+                        <h2 class="text-sm font-black uppercase tracking-widest">Income Statement</h2>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Sales - Cost of Sales = Gross Profit + Other Income - Expenses = PBT - Tax = Net Profit</p>
+                    </div>
+                    <div class="p-5 text-sm">
+                        ${reportRow('Sales', inc.sales)}
+                        ${reportRow('Less: Cost of Sales', inc.costOfSales)}
+                        ${reportRow('Gross Profit', inc.grossProfit, {bold:true, line:true, color: inc.grossProfit >= 0 ? 'text-green-700' : 'text-red-700'})}
+                        ${reportRow('Add: Other Income', inc.otherIncome)}
+                        ${reportRow('Less: Expenses', inc.expenses)}
+                        ${reportRow('Profit Before Tax', inc.profitBeforeTax, {bold:true, line:true, color: inc.profitBeforeTax >= 0 ? 'text-indigo-700' : 'text-red-700'})}
+                        ${reportRow('Less: Tax', inc.tax)}
+                        ${reportRow('Net Profit', inc.netProfit, {bold:true, line:true, color: inc.netProfit >= 0 ? 'text-green-700' : 'text-red-700'})}
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div class="bg-indigo-900 text-white px-5 py-4">
+                        <h2 class="text-sm font-black uppercase tracking-widest">Statement of Financial Position</h2>
+                        <p class="text-[10px] font-bold text-indigo-200 uppercase tracking-widest mt-1">Assets = Equity + Non-Current Liabilities + Current Liabilities</p>
+                    </div>
+                    <div class="p-5 text-sm grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-[10px] font-black text-blue-700 uppercase tracking-widest mb-2">Assets</h3>
+                            ${reportRow('Non-Current Assets', pos.nonCurrentAssets)}
+                            ${reportRow('Current Assets', pos.currentAssets)}
+                            ${reportRow('Total Assets', pos.totalAssets, {bold:true, line:true, color:'text-blue-700'})}
+                        </div>
+                        <div>
+                            <h3 class="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-2">Equity & Liabilities</h3>
+                            ${reportRow('Equity', pos.equity)}
+                            ${reportRow('Non-Current Liabilities', pos.nonCurrentLiabilities)}
+                            ${reportRow('Current Liabilities', pos.currentLiabilities)}
+                            ${reportRow('Total Equity and Liabilities', pos.totalEquityAndLiabilities, {bold:true, line:true, color:'text-purple-700'})}
+                        </div>
+                    </div>
+                    <div class="px-5 pb-5">
+                        <div class="rounded-xl border ${varianceOk ? 'border-green-200 bg-green-50 text-green-800' : 'border-red-200 bg-red-50 text-red-800'} px-4 py-3 flex justify-between items-center text-xs font-black uppercase tracking-widest">
+                            <span>Balance Check Variance</span>
+                            <span class="font-mono">${formatMoney(pos.variance)}</span>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        function buildStatementsPdfHtml(st) {
+            const inc = st.income;
+            const pos = st.position;
+            const pdfRow = (label, val, bold=false, color='#111827') => `
+                <tr>
+                    <td style="padding: 7px 10px; border-bottom: 1px solid #e5e7eb; font-size: 10px; ${bold?'font-weight:900; color:#111827;':'font-weight:700; color:#4b5563;'}">${escapeHtml(label)}</td>
+                    <td style="padding: 7px 10px; border-bottom: 1px solid #e5e7eb; text-align:right; font-family:monospace; font-size: 10px; font-weight:${bold?'900':'700'}; color:${color};">${formatMoney(val)}</td>
+                </tr>`;
+
+            return `
+                <div style="display:flex; gap:16px; margin: 0 0 32px 0; page-break-inside: avoid;">
+                    <div style="flex:1; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+                        <div style="background:#111827; color:white; padding:10px 14px;">
+                            <h2 style="font-size:13px; margin:0; font-weight:900; text-transform:uppercase; letter-spacing:1.5px;">Income Statement — FY ${escapeHtml(globalYear)}</h2>
+                            <p style="font-size:8px; color:#d1d5db; margin:4px 0 0 0; text-transform:uppercase; letter-spacing:.8px;">Sales - Cost of Sales = Gross Profit + Other Income - Expenses = PBT - Tax = Net Profit</p>
+                        </div>
+                        <table style="width:100%; border-collapse:collapse;">
+                            ${pdfRow('Sales', inc.sales)}
+                            ${pdfRow('Less: Cost of Sales', inc.costOfSales)}
+                            ${pdfRow('Gross Profit', inc.grossProfit, true, inc.grossProfit >= 0 ? '#15803d' : '#dc2626')}
+                            ${pdfRow('Add: Other Income', inc.otherIncome)}
+                            ${pdfRow('Less: Expenses', inc.expenses)}
+                            ${pdfRow('Profit Before Tax', inc.profitBeforeTax, true, inc.profitBeforeTax >= 0 ? '#1d4ed8' : '#dc2626')}
+                            ${pdfRow('Less: Tax', inc.tax)}
+                            ${pdfRow('Net Profit', inc.netProfit, true, inc.netProfit >= 0 ? '#15803d' : '#dc2626')}
+                        </table>
+                    </div>
+                    <div style="flex:1; border:1px solid #e5e7eb; border-radius:8px; overflow:hidden;">
+                        <div style="background:#312e81; color:white; padding:10px 14px;">
+                            <h2 style="font-size:13px; margin:0; font-weight:900; text-transform:uppercase; letter-spacing:1.5px;">Statement of Financial Position</h2>
+                            <p style="font-size:8px; color:#c7d2fe; margin:4px 0 0 0; text-transform:uppercase; letter-spacing:.8px;">Assets = Equity + Non-current Liability + Current Liability</p>
+                        </div>
+                        <table style="width:100%; border-collapse:collapse;">
+                            ${pdfRow('Non-Current Assets', pos.nonCurrentAssets)}
+                            ${pdfRow('Current Assets', pos.currentAssets)}
+                            ${pdfRow('Total Assets', pos.totalAssets, true, '#1d4ed8')}
+                            ${pdfRow('Equity', pos.equity)}
+                            ${pdfRow('Non-Current Liabilities', pos.nonCurrentLiabilities)}
+                            ${pdfRow('Current Liabilities', pos.currentLiabilities)}
+                            ${pdfRow('Total Equity and Liabilities', pos.totalEquityAndLiabilities, true, '#6d28d9')}
+                            ${pdfRow('Balance Check Variance', pos.variance, true, Math.abs(pos.variance) < 0.01 ? '#15803d' : '#dc2626')}
+                        </table>
+                    </div>
+                </div>`;
+        }
+
+        function autoFixCategory(fieldId) {
+            const accEl = document.getElementById(fieldId);
+            if(!accEl) return;
+            const catEl = document.getElementById(fieldId.replace('account', 'category'));
+            if(!catEl || catEl === accEl) return;
+            const guess = classifyCategory('', accEl.value);
+            if(guess !== 'Unknown' && !catEl.value.trim()) catEl.value = guess;
+            const hint = document.getElementById(fieldId.replace('account', 'cat-hint'));
+            if(hint) hint.innerText = accEl.value.trim() === '' || guess === 'Unknown' ? '' : `Engine reads "${accEl.value.trim()}" as: ${guess}`;
+        }
+
+        function getRefKey(r, fallbackIndex = 0) {
+            return String((r && (r.refId || r.ref || r.journalId || r.invoiceId || r.voucherId || r.id)) || ('NOREF-' + fallbackIndex));
+        }
+
+        function hasStoredEntries(r) {
+            const p = (r && r.parsedJson) || {};
+            return Array.isArray(p.entries) && p.entries.length >= 2;
+        }
+
+        function expandedRowsFromStoredEntries(parent, fallbackIndex = 0) {
+            const p = parent.parsedJson || {};
+            const ref = getRefKey(parent, fallbackIndex);
+            return safeArray(p.entries).map((entry, i) => {
+                const dr = Math.abs(parseAmount(entry.debit));
+                const cr = Math.abs(parseAmount(entry.credit));
+                const isDr = dr >= cr;
+                const amt = isDr ? dr : cr;
+                return normalizeAccountingRow({
+                    ...parent,
+                    id: `${parent.id || ref}-EXP-${i}`,
+                    refId: ref,
+                    date: entry.date || p.date || parent.date,
+                    type: isDr ? 'Debit' : 'Credit',
+                    category: entry.category || parent.category || classifyCategory('', entry.account),
+                    account: entry.account || parent.account || 'Unknown Account',
+                    description: entry.description || p.memo || p.description || parent.description || 'Double-entry journal line',
+                    amount: amt,
+                    sourceModule: parent.sourceModule || 'manual_entry',
+                    parsedJson: { ...p, _expandedFromStoredEntries: true, _lineRole: entry.role || (i === 0 ? 'primary' : 'offset') },
+                    _expandedFromStoredEntries: true
+                });
+            }).filter(r => parseAmount(r.amount) > 0);
+        }
+
+        function getFullLedgerLines(dataArray) {
+            const groups = new Map();
+            safeArray(dataArray).forEach((r, i) => {
+                if(!r) return;
+                const ref = getRefKey(r, i);
+                if(!groups.has(ref)) groups.set(ref, []);
+                groups.get(ref).push({ row: r, index: i });
+            });
+
+            const out = [];
+            groups.forEach((items, ref) => {
+                const rawRows = items.map(x => ({ ...x.row, refId: getRefKey(x.row, x.index) }));
+                const hasRealPair = rawRows.filter(r => parseAmount(r.amount) > 0).length >= 2;
+                if(!hasRealPair && rawRows.length === 1 && hasStoredEntries(rawRows[0])) {
+                    out.push(...expandedRowsFromStoredEntries(rawRows[0], items[0].index));
+                } else {
+                    rawRows.forEach(r => {
+                        const amt = Math.abs(parseAmount(r.amount));
+                        if(amt <= 0) return;
+                        out.push(normalizeAccountingRow({ ...r, amount: amt, type: isDebitRow(r) ? 'Debit' : 'Credit' }));
+                    });
+                }
+            });
+            return out;
+        }
+
+        function getLedgerIntegrity(rows) {
+            const map = new Map();
+            let totalDr = 0, totalCr = 0;
+            safeArray(rows).forEach((r, i) => {
+                const ref = getRefKey(r, i);
+                if(!map.has(ref)) map.set(ref, { refId: ref, debit: 0, credit: 0, rows: 0 });
+                const g = map.get(ref);
+                const amt = Math.abs(parseAmount(r.amount));
+                if(isDebitRow(r)) { g.debit += amt; totalDr += amt; }
+                else { g.credit += amt; totalCr += amt; }
+                g.rows += 1;
+            });
+            map.forEach(g => {
+                g.diff = Math.round(Math.abs(g.debit - g.credit) * 100) / 100;
+                g.balanced = g.rows >= 2 && g.diff < 0.01;
+            });
+            return { groups: map, totalDr, totalCr, diff: Math.round(Math.abs(totalDr - totalCr) * 100) / 100 };
+        }
+
+        function ledgerStatusBadge(group) {
+            if(!group) return '';
+            if(group.balanced) return `<span class="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-green-50 text-green-700 border border-green-200">Balanced</span>`;
+            const label = group.rows < 2 ? 'Missing Pair' : `Diff ${formatMoney(group.diff)}`;
+            return `<span class="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-red-50 text-red-700 border border-red-200">${escapeHtml(label)}</span>`;
+        }
+
+        function renderLedgerIntegritySummary(rows) {
+            const box = document.getElementById('ledger-integrity-summary');
+            if(!box) return;
+            const check = getLedgerIntegrity(rows);
+            const badCount = Array.from(check.groups.values()).filter(g => !g.balanced).length;
+            const ok = check.diff < 0.01 && badCount === 0;
+            box.innerHTML = `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Visible Debits</p><p class="text-lg font-black font-mono text-blue-700">${formatMoney(check.totalDr)}</p></div>
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Visible Credits</p><p class="text-lg font-black font-mono text-yellow-600">${formatMoney(check.totalCr)}</p></div>
+                <div class="bg-white p-4 rounded-xl border ${ok?'border-green-200':'border-red-200'} shadow-sm"><p class="text-[9px] font-black ${ok?'text-green-600':'text-red-600'} uppercase tracking-widest">Difference</p><p class="text-lg font-black font-mono ${ok?'text-green-700':'text-red-700'}">${formatMoney(check.diff)}</p></div>
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Transactions</p><p class="text-lg font-black font-mono ${badCount?'text-red-700':'text-gray-800'}">${check.groups.size} <span class="text-[10px] font-bold text-gray-400">/ ${badCount} issue(s)</span></p></div>`;
+        }
+
+        function getPrimaryLedgerLines(dataArray) {
+            let lines = []; let seenRefs = new Set();
+            safeArray(dataArray).forEach((r, i) => {
+                let desc = safeStr(r.description); let mod = r.sourceModule;
+                let ref = getRefKey(r, i);
+                if (mod === 'journal') { lines.push({ ...r, refId: ref }); }
+                else if (!desc.includes('offset') && !seenRefs.has(ref)) { lines.push({ ...r, refId: ref }); seenRefs.add(ref); }
+            });
+            return lines;
+        }
+
+        function setGlobalYear(y) { globalYear = y; populateYearSelectors(); updateUI(false); }
+
+        function populateYearSelectors() {
+            let years = new Set();
+            safeArray(sysData.financials).forEach(r => { let y = rowYear(r); if(y) years.add(y); });
+            years.add(new Date().getFullYear().toString());
+            if(globalYear !== 'ALL' && !years.has(globalYear)) years.add(globalYear);
+            let yArr = Array.from(years).sort().reverse();
+            let optionsHtml = `<option value="ALL" ${globalYear==='ALL'?'selected':''}>All Years</option>` + yArr.map(y => `<option value="${y}" ${y===globalYear?'selected':''}>${y} Fiscal Year</option>`).join('');
+            ['global-year-filter','mobile-year-filter'].forEach(id => {
+                let el = document.getElementById(id);
+                if(el && document.activeElement !== el) el.innerHTML = optionsHtml;
+                if(el) el.value = globalYear;
+            });
+        }
+
+        function updateUI(rebuildYears = true) {
+            if(rebuildYears) populateYearSelectors();
+            calculateAndRenderDashboard();
+            if(!document.getElementById('view-ledger').classList.contains('hidden')) renderLedger();
+            if(!document.getElementById('view-edit-data').classList.contains('hidden')) renderEditTable();
+            if(!document.getElementById('view-audit-trail').classList.contains('hidden')) renderAuditTable();
+            if(!document.getElementById('view-reports').classList.contains('hidden')) renderStructuredReports();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            let dNav = document.getElementById('nav-' + tabId); if(dNav) dNav.classList.add('active');
+            ['dashboard', 'journal', 'ledger', 'reports', 'add-entry', 'edit-data', 'audit-trail'].forEach(id => { let el = document.getElementById('view-' + id); if(el) el.classList.add('hidden'); });
+            let target = document.getElementById('view-' + tabId); if(target) target.classList.remove('hidden');
+            updateUI(false);
+            lucide.createIcons();
+        }
+
+        function updateAccountSuggestions(selectId, dataListId) {
+            const selectEl = document.getElementById(selectId);
+            if(!selectEl) return;
+            const cls = classifyCategory(selectEl.value, ''); 
+            const dataList = document.getElementById(dataListId); 
+            if(!dataList) return;
+            dataList.innerHTML = '';
+            const opts = { 'Asset': ['Cash', 'Bank', 'Accounts Receivable'], 'Liability': ['Accounts Payable', 'Wages Payable', 'Bank Loan'], 'Equity': ['Owner Capital', 'Retained Earnings'], 'Revenue': ['Sales Revenue', 'Service Income'], 'Expense': ['Cost of Goods Sold', 'Salary & Wages Expense', 'Factory Overhead', 'Electricity', 'Rent', 'Maintenance'] };
+            if(opts[cls]) { opts[cls].forEach(item => dataList.innerHTML += `<option value="${item}">`); }
+            const hint = document.getElementById(selectId.replace('category', 'cat-hint'));
+            if(hint) hint.innerText = selectEl.value.trim() === '' ? '' : (cls === 'Unknown' ? 'Category not recognized — engine will classify by Account Name.' : `Engine classified as: ${cls}`);
+        }
+
+        function handleMethodChange(prefix) {
+            const select = document.getElementById(prefix + '-method-select'); const customInput = document.getElementById(prefix + '-method-custom');
+            if(!select || !customInput) return;
+            if (select.value === 'Other') { customInput.classList.remove('hidden'); customInput.setAttribute('required', 'true'); customInput.focus(); } else { customInput.classList.add('hidden'); customInput.removeAttribute('required'); customInput.value = ''; }
+        }
+
+        function calculateAndRenderDashboard() {
+            const fin = computeFinancials(globalYear);
+            const t = fin.totals;
+            const np = fin.netProfit;
+
+            const set = (id, val) => { let el = document.getElementById(id); if(el) el.innerText = val; };
+            set('dash-assets', formatMoney(t.Asset));
+            set('dash-liabilities', formatMoney(t.Liability));
+            set('dash-equity', formatMoney(t.Equity));
+            set('dash-revenue', formatMoney(t.Revenue));
+            set('dash-expenses', formatMoney(t.Expense));
+            set('dash-cash', formatMoney(fin.cash));
+            set('dash-ar', formatMoney(fin.ar));
+            try {
+                const stock = computeStockValuation();
+                const flow = stock.materialFlow || computeManufacturingFlow();
+                set('dash-stock', formatMoney(stock.totalValue));
+                set('dash-bulk-rm', formatMoney(flow.bulkValue));
+                set('dash-chip-stock', formatMoney(flow.chipValue));
+                set('dash-piecework', formatMoney(flow.pieceworkPayable));
+                set('dash-total-inventory', formatMoney(stock.totalValue));
+            } catch(e) {
+                ['dash-stock','dash-bulk-rm','dash-chip-stock','dash-piecework','dash-total-inventory'].forEach(id => set(id, '0.00'));
+            }
+
+            let profEl = document.getElementById('dash-profit');
+            if(profEl) { profEl.innerText = formatMoney(np); profEl.className = `text-xl md:text-3xl font-black mt-1 font-mono tracking-tight ${np >= 0 ? 'text-green-400' : 'text-red-400'}`; }
+
+            const imb = Math.abs(fin.drTotal - fin.crTotal);
+            const warnEl = document.getElementById('imbalance-warning');
+            if(warnEl) { warnEl.classList.toggle('hidden', imb < 0.01); set('imbalance-amount', formatMoney(imb)); }
+
+            const eqVar = Math.abs(t.Asset - (t.Liability + t.Equity));
+            const eqEl = document.getElementById('equation-warning');
+            const showEq = imb < 0.01 && (fin.drTotal + fin.crTotal) > 0 && eqVar >= 0.01;
+            if(eqEl) { eqEl.classList.toggle('hidden', !showEq); set('equation-amount', formatMoney(eqVar)); set('unknown-count', String(fin.unknownCount)); }
+
+            const totalRows = safeArray(sysData.financials).length;
+            const ndEl = document.getElementById('nodata-warning');
+            if(ndEl) {
+                ndEl.classList.toggle('hidden', fin.rowCount > 0);
+                const det = document.getElementById('nodata-detail');
+                if(det) det.innerText = totalRows === 0
+                    ? 'The database returned 0 ledger rows. Check the backend URL in Settings (gear icon) or press Force Sync.'
+                    : `The database holds ${totalRows} ledger line(s), but none are dated in ${globalYear}. Balance-sheet figures below still include all prior years. Select "All Years" or another fiscal year above.`;
+            }
+
+            let totRE = t.Revenue + t.Expense; let bRev = document.getElementById('bar-rev'); let bExp = document.getElementById('bar-exp');
+            if(totRE > 0) { if(bRev) bRev.style.width = `${Math.max(0,(t.Revenue/totRE))*100}%`; if(bExp) bExp.style.width = `${Math.max(0,(t.Expense/totRE))*100}%`; } 
+            else { if(bRev) bRev.style.width = `50%`; if(bExp) bExp.style.width = `50%`; }
+
+            let cEl = document.getElementById('financeChart'); let ctx = cEl ? cEl.getContext('2d') : null;
+            if(!ctx) return;
+            if(typeof Chart === 'undefined') {
+                loadScriptOnce('https://cdn.jsdelivr.net/npm/chart.js','Chart').then(() => calculateAndRenderDashboard()).catch(() => showToast('Chart library could not load','error'));
+                return;
+            }
+            if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+            let labels = Object.keys(fin.monthly).sort(); 
+            if(labels.length > 12) { labels = labels.slice(labels.length - 12); }
+            let dataRev = labels.map(l => Math.round(fin.monthly[l].rev*100)/100); 
+            let dataExp = labels.map(l => Math.round(fin.monthly[l].exp*100)/100);
+            let dataNet = labels.map((l,i) => Math.round((dataRev[i]-dataExp[i])*100)/100);
+
+            chartInstance = new Chart(ctx, { 
+                type: 'bar', 
+                data: { 
+                    labels: labels.map(monthLabel), 
+                    datasets: [ 
+                        { label: 'Revenue', data: dataRev, backgroundColor: '#22c55e', borderRadius: 4, order: 2 }, 
+                        { label: 'Expenses', data: dataExp, backgroundColor: '#ef4444', borderRadius: 4, order: 2 },
+                        { label: 'Net Profit', data: dataNet, type: 'line', borderColor: '#6366f1', backgroundColor: '#6366f1', borderWidth: 2.5, pointRadius: 3, tension: 0.3, order: 1 }
+                    ] 
+                }, 
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { 
+                        legend: { position: 'top', labels: { boxWidth: 10, font: {size: 10} } },
+                        tooltip: { callbacks: { label: (c) => `${c.dataset.label}: Rs. ${formatMoney(c.parsed.y)}` } }
+                    }, 
+                    scales: { 
+                        x: { grid: {display: false}, ticks: {font: {size: 9}} }, 
+                        y: { beginAtZero: true, grid: {color: '#f3f4f6'}, ticks: {font: {size: 9}, callback: (v) => Intl.NumberFormat('en-LK', {notation:'compact'}).format(v)} } 
+                    } 
+                } 
+            });
+        }
+
+        function methodToOffset(method, direction) {
+            const m = safeStr(method);
+            if(m.includes('bank')) return { category: 'Asset', account: 'Bank' };
+            if(m.includes('cash')) return { category: 'Asset', account: 'Cash' };
+            if(m.includes('cheque') || m.includes('check')) return { category: 'Asset', account: 'Cheque / Bank Clearing' };
+            if(m.includes('credit card')) {
+                return direction === 'OUT'
+                    ? { category: 'Liability', account: 'Credit Card Payable' }
+                    : { category: 'Asset', account: 'Credit Card Receivable' };
+            }
+            return { category: 'Asset', account: `${method || 'Other'} Clearing` };
+        }
+
+        function buildQuickEntryDoubleEntry({ date, direction, method, category, account, description, baseAmount, taxAmount, amount }) {
+            const offset = methodToOffset(method, direction);
+            const cleanCategory = classifyCategory(category, account) === 'Unknown' ? (category || classifyCategory('', account) || 'Expense') : category;
+            const tax = Math.max(0, parseFloat(taxAmount) || 0);
+            const base = Math.max(0, parseFloat(baseAmount) || Math.max(0, (parseFloat(amount)||0) - tax));
+            const total = Math.round((base + tax) * 100) / 100;
+            const rows = [];
+            if(direction === 'OUT') {
+                if(base > 0) rows.push({ role:'primary', date, category:cleanCategory, account, description, debit:base, credit:0 });
+                if(tax > 0) rows.push({ role:'input-tax', date, category:'Asset', account:'Input Tax / Tax Recoverable', description:`Recoverable input tax - ${description}`, debit:tax, credit:0 });
+                rows.push({ role:'offset', date, category:offset.category, account:offset.account, description:`${method} offset for ${description}`, debit:0, credit:total });
+            } else {
+                rows.push({ role:'offset', date, category:offset.category, account:offset.account, description:`${method} offset for ${description}`, debit:total, credit:0 });
+                if(base > 0) rows.push({ role:'primary', date, category:cleanCategory, account, description, debit:0, credit:base });
+                if(tax > 0) rows.push({ role:'output-tax', date, category:'Liability', account:'Output Tax / Tax Payable', description:`Output tax - ${description}`, debit:0, credit:tax });
+            }
+            return rows;
+        }
+
+        function calcTax(prefix) {
+            let baseEl = document.getElementById(`${prefix}-amount`);
+            let pctEl = document.getElementById(`${prefix}-tax-pct`);
+            let base = baseEl ? parseFloat(baseEl.value) || 0 : 0; 
+            let pct = pctEl ? parseFloat(pctEl.value) || 0 : 0;
+            let taxAmt = Math.round(base * (pct / 100) * 100) / 100;
+            let tEl = document.getElementById(`${prefix}-tax`); 
+            if(tEl) tEl.value = taxAmt > 0 ? taxAmt.toFixed(2) : '';
+            let taxDisp = document.getElementById(`${prefix}-tax-amount-display`); 
+            if(taxDisp) taxDisp.innerText = 'Rs. ' + taxAmt.toFixed(2);
+            let totDisp = document.getElementById(`${prefix}-total-final`); 
+            if(totDisp) totDisp.innerText = 'Rs. ' + formatMoney(base + taxAmt);
+        }
+
+        async function submitEntry(e, actionType) {
+            e.preventDefault();
+            const isEdit = actionType === 'update'; const prefix = isEdit ? 'edit-' : 'input-';
+            const rawDesc = document.getElementById(`${prefix}description`).value.trim(); 
+            const singleLineDesc = rawDesc.replace(/[\r\n]+/g, ' ');
+            const methodSelect = document.getElementById(`${prefix}method-select`).value; 
+            const methodCustomEl = document.getElementById(`${prefix}method-custom`);
+            const methodCustom = methodCustomEl ? methodCustomEl.value.trim() : ''; 
+            const finalMethod = methodSelect === 'Other' ? methodCustom : methodSelect;
+            if(methodSelect === 'Other' && !finalMethod) { return showToast("Please type the custom payment method.", "error"); }
+
+            let dirNode = document.querySelector(`input[name="${prefix}direction"]:checked`);
+            if(!dirNode) { return showToast("Select Cash Flow Direction (IN/OUT)", "error"); }
+
+            let baseAmt = parseFloat(document.getElementById(`${prefix}amount`).value) || 0; 
+            let catTarget = document.getElementById(`${prefix}category`).value.trim(); 
+            let accTarget = document.getElementById(`${prefix}account`).value.trim(); 
+            let dateVal = document.getElementById(`${prefix}date`).value;
+            let taxEl = document.getElementById(`${prefix}tax`); 
+            let taxAmt = taxEl ? (parseFloat(taxEl.value) || 0) : 0;
+            let amt = Math.round((baseAmt + taxAmt) * 100) / 100;
+
+            if(amt <= 0) { return showToast("Amount must be greater than zero.", "error"); }
+            if(!dateVal) { return showToast("Transaction date is required.", "error"); }
+            if(!accTarget) { return showToast("Target account name is required.", "error"); }
+
+            const cls = classifyCategory(catTarget, accTarget);
+            if(cls === 'Revenue' && dirNode.value === 'OUT') {
+                let proceed = await customConfirm("Heads up: You marked a REVENUE account as Money OUT (this records a revenue reduction / refund). Continue?");
+                if(!proceed) return;
+            }
+            if(cls === 'Expense' && dirNode.value === 'IN') {
+                let proceed = await customConfirm("Heads up: You marked an EXPENSE account as Money IN (this records an expense reversal / reimbursement). Continue?");
+                if(!proceed) return;
+            }
+
+            let btn = e.target.querySelector('button[type="submit"]'); let ogHtml = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Processing...`; btn.disabled = true; lucide.createIcons();
+
+            showLoader(true, isEdit ? "Updating Ledger..." : "Posting Double-Entry...");
+
+            try {
+                const doubleEntries = buildQuickEntryDoubleEntry({ date: dateVal, direction: dirNode.value, method: finalMethod, category: catTarget, account: accTarget, description: singleLineDesc, baseAmount: baseAmt, taxAmount: taxAmt, amount: amt });
+                const payload = { 
+                    action: isEdit ? 'update_single_entry' : 'add_single_entry', 
+                    direction: dirNode.value, 
+                    data: { 
+                        refId: isEdit ? document.getElementById('edit-ref').value : undefined, 
+                        parsedJson: { 
+                            date: dateVal, method: finalMethod, category: catTarget, account: accTarget, description: singleLineDesc,
+                            baseAmount: baseAmt, taxAmount: taxAmt, amount: amt, totalAmount: amt,
+                            doubleEntry: true, entries: doubleEntries
+                        } 
+                    } 
+                };
+                let res = await apiPost(payload); 
+                if(res?.status !== 'success') { throw new Error("Entry failed"); }
+
+                showToast(isEdit ? "Updated successfully!" : "Entry Saved!"); 
+                if (!isEdit) { 
+                    document.getElementById('entry-form').reset(); 
+                    document.getElementById('input-date').valueAsDate = new Date(); 
+                    let cMeth = document.getElementById('input-method-custom'); 
+                    if(cMeth) { cMeth.classList.add('hidden'); cMeth.removeAttribute('required'); } 
+                    let hint = document.getElementById('input-cat-hint'); if(hint) hint.innerText = '';
+                    calcTax('input'); 
+                } 
+                else { closeEditModal(); }
+                await fetchData(true);
+            } catch (err) { showToast("Failed to process transaction", "error"); } 
+            finally { btn.innerHTML = ogHtml; btn.disabled = false; showLoader(false); lucide.createIcons(); }
+        }
+
+        function renderEditTable() {
+            try {
+                let html=''; let count=0;
+                let sqEl = document.getElementById('edit-search'); let q = sqEl ? safeStr(sqEl.value) : '';
+                let scEl = document.getElementById('edit-filter-category'); let cat = scEl ? safeStr(scEl.value).trim() : '';
+
+                let primaryData = getPrimaryLedgerLines(sysData.financials);
+
+                primaryData.filter(r => r.sourceModule === 'manual_entry')
+                    .sort((a,b)=> (parseDateSafe(b.date)||0) - (parseDateSafe(a.date)||0))
+                    .forEach(r => {
+                        if(!inGlobalYear(r)) return;
+
+                        let p = r.parsedJson || {}; let rCat = safeStr(r.category);
+                        if(cat && cat !== 'all' && !rCat.includes(cat)) return;
+                        let amt = parseAmount(p.amount) || parseAmount(r.amount);
+                        if(q && !safeStr(r.account).includes(q) && !safeStr(r.description).includes(q) && !String(amt).includes(q)) return;
+                        
+                        count++;
+                        let method = p.method || 'Cash';
+
+                        html += `<tr class="hover:bg-blue-50 transition border-b border-gray-100">
+                            <td class="p-3 text-xs text-gray-500">${escapeHtml(fmtDate(r.date))}</td>
+                            <td class="p-3"><span class="font-bold text-gray-800 block">${escapeHtml(p.account||r.account)}</span><span class="text-[9px] uppercase tracking-widest text-gray-400 font-bold">${escapeHtml(p.category||r.category)}</span></td>
+                            <td class="p-3"><span class="block truncate max-w-[250px] text-xs text-gray-600" title="${escapeHtml(r.description)}">${escapeHtml(r.description)}</span><span class="text-[9px] uppercase tracking-widest text-indigo-500 font-bold">${escapeHtml(method)}</span></td>
+                            <td class="p-3 text-right font-mono font-bold text-gray-900">${formatMoney(amt)} <span class="text-[9px] uppercase text-gray-400 block">${escapeHtml(r.type)}</span></td>
+                            <td class="p-3 text-center"><button onclick="openEditModal('${escapeHtml(r.refId)}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-1 mx-auto shadow-sm border border-indigo-200"><i data-lucide="edit-2" class="w-3 h-3"></i> Edit</button></td>
+                        </tr>`;
+                    });
+                
+                let tb = document.getElementById('edit-table-body'); if(tb) tb.innerHTML = html;
+                let te = document.getElementById('edit-empty-state'); if(te) te.classList.toggle('hidden', count > 0);
+                lucide.createIcons();
+            } catch(e) { console.error("Edit Render Error", e); }
+        }
+
+        function filterEditTable() { renderEditTable(); }
+
+        function openEditModal(refId) {
+            let rows = safeArray(sysData.financials).filter(d => d.refId === refId);
+            if(rows.length === 0) return;
+            
+            let primaryRow = rows.find(r => !safeStr(r.description).includes('offset')) || rows[0];
+            
+            let editRefEl = document.getElementById('edit-ref');
+            if (editRefEl) editRefEl.value = primaryRow.refId; 
+            let editIdEl = document.getElementById('edit-id');
+            if (editIdEl) editIdEl.value = primaryRow.id || ''; 
+            
+            let editDateEl = document.getElementById('edit-date');
+            if (editDateEl) editDateEl.value = fmtDate(primaryRow.date);
+            
+            let pJson = primaryRow.parsedJson || {};
+            let methVal = pJson.method || 'Cash';
+            let mSel = document.getElementById('edit-method-select');
+            let mCus = document.getElementById('edit-method-custom');
+            
+            if(['Cash', 'Bank Transfer', 'Credit Card', 'Cheque'].includes(methVal)) {
+                if(mSel) mSel.value = methVal;
+                if(mCus) { mCus.classList.add('hidden'); mCus.removeAttribute('required'); mCus.value=''; }
+            } else {
+                if(mSel) mSel.value = 'Other';
+                if(mCus) { mCus.value = methVal; mCus.classList.remove('hidden'); mCus.setAttribute('required','true'); }
+            }
+
+            let editCatEl = document.getElementById('edit-category');
+            if (editCatEl) editCatEl.value = primaryRow.category || '';
+            
+            let isOut = isDebitRow(primaryRow); 
+            let rb = document.querySelector(`input[name="edit-direction"][value="${isOut?'OUT':'IN'}"]`); 
+            if(rb) rb.checked = true;
+            
+            let editAccEl = document.getElementById('edit-account');
+            if (editAccEl) editAccEl.value = pJson.account || primaryRow.account || '';
+            let editDescEl = document.getElementById('edit-description');
+            if (editDescEl) editDescEl.value = primaryRow.description || '';
+            
+            let baseAmt = parseAmount(pJson.amount) || parseAmount(primaryRow.amount);
+            let editAmtEl = document.getElementById('edit-amount');
+            if (editAmtEl) editAmtEl.value = baseAmt.toFixed(2);
+
+            let hint = document.getElementById('edit-cat-hint'); if(hint) hint.innerText = '';
+
+            let editModalEl = document.getElementById('edit-modal');
+            if (editModalEl) editModalEl.classList.remove('hidden');
+            lucide.createIcons();
+        }
+        
+        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+
+        async function deleteEntry() {
+            const refId = document.getElementById('edit-ref').value;
+            if(!refId) return;
+            let proceed = await customConfirm("CRITICAL: Are you sure you want to permanently delete this double-entry ledger record?");
+            if(!proceed) return;
+            showLoader(true, "Deleting Master Entry..."); 
+            try {
+                const response = await apiPost({ action: 'delete_journal', data: { refId: refId } });
+                if(response?.status === 'success') { showToast("Master entry deleted!"); closeEditModal(); await fetchData(true); } else { throw new Error(); }
+            } catch (error) { showToast("Failed to delete entry.", "error"); } finally { showLoader(false); }
+        }
+
+        let jLines = [];
+        function addJournalLine() { jLines.push({ type: 'Debit', category: 'Expense', account: '', amount: 0 }); renderJournalLines(); }
+
+        function refreshJournalTotals() {
+            let tDr=0, tCr=0; 
+            jLines.forEach(l=>{ if(l.type==='Debit') tDr+=l.amount; else tCr+=l.amount; });
+            let dDr = document.getElementById('j-tot-dr'); if(dDr) dDr.innerText = formatMoney(tDr);
+            let dCr = document.getElementById('j-tot-cr'); if(dCr) dCr.innerText = formatMoney(tCr);
+            let d = Math.abs(tDr-tCr); let dEl = document.getElementById('j-diff'); 
+            if(dEl) { dEl.innerText = formatMoney(d); dEl.className = `font-mono font-black text-2xl md:text-3xl tracking-tighter transition-colors duration-300 ${d<0.01?'text-green-400':'text-red-400 animate-pulse'}`; }
+        }
+
+        function renderJournalLines() {
+            let html = ''; let cats = ['Asset','Liability','Equity','Revenue','Expense'];
+            
+            jLines.forEach((l, i) => {
+                html += `
+                <tr class="border-b border-gray-100">
+                    <td class="p-2"><select class="w-full text-xs font-bold p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500" onchange="updJL(${i},'category',this.value)">${cats.map(c=>`<option value="${c}" ${l.category===c?'selected':''}>${c}</option>`).join('')}</select></td>
+                    <td class="p-2"><input type="text" class="w-full text-sm p-3 border border-gray-300 rounded-lg shadow-sm font-bold focus:ring-2 focus:ring-blue-500" value="${escapeHtml(l.account)}" placeholder="e.g. Owner Draw..." list="acc-hints" onchange="updJL(${i},'account',this.value)"></td>
+                    <td class="p-2"><input type="number" step="0.01" min="0" class="w-full text-base p-3 border rounded-lg text-right font-mono font-black shadow-sm ${l.type==='Debit'?'bg-blue-50 text-blue-900 border-blue-300 focus:ring-2 focus:ring-blue-500':'bg-gray-100 text-gray-400 border-transparent cursor-not-allowed'}" value="${l.type==='Debit'&&l.amount?l.amount:''}" placeholder="0.00" oninput="updJL(${i},'dr',this.value)" ${l.type==='Credit'?'disabled':''}></td>
+                    <td class="p-2"><input type="number" step="0.01" min="0" class="w-full text-base p-3 border rounded-lg text-right font-mono font-black shadow-sm ${l.type==='Credit'?'bg-yellow-50 text-yellow-900 border-yellow-300 focus:ring-2 focus:ring-yellow-500':'bg-gray-100 text-gray-400 border-transparent cursor-not-allowed'}" value="${l.type==='Credit'&&l.amount?l.amount:''}" placeholder="0.00" oninput="updJL(${i},'cr',this.value)" ${l.type==='Debit'?'disabled':''}></td>
+                    <td class="p-2 text-center flex flex-col gap-2 items-center justify-center pt-3"><button type="button" onclick="jLines.splice(${i},1);renderJournalLines()" class="text-gray-400 hover:text-red-600 bg-white border border-gray-200 shadow-sm p-1.5 rounded-md transition"><i data-lucide="x-circle" class="w-4 h-4"></i></button><button type="button" onclick="updJL(${i},'flip')" class="text-gray-400 hover:text-indigo-600 bg-white border border-gray-200 shadow-sm p-1.5 rounded-md transition" title="Flip Dr/Cr"><i data-lucide="arrow-left-right" class="w-4 h-4"></i></button></td>
+                </tr>`;
+            });
+            
+            let jl = document.getElementById('journal-lines'); if(jl) jl.innerHTML = html;
+            refreshJournalTotals();
+            lucide.createIcons();
+        }
+
+        function updJL(i, f, v) {
+            if(!jLines[i]) return;
+            if(f==='flip') { jLines[i].type = jLines[i].type==='Debit'?'Credit':'Debit'; renderJournalLines(); return; }
+            if(f==='dr') { jLines[i].amount = Math.abs(parseFloat(v)||0); jLines[i].type='Debit'; refreshJournalTotals(); return; }
+            if(f==='cr') { jLines[i].amount = Math.abs(parseFloat(v)||0); jLines[i].type='Credit'; refreshJournalTotals(); return; }
+            jLines[i][f] = v; 
+        }
+
+        async function saveJournal() {
+            let tDr=0, tCr=0; jLines.forEach(l=>{ if(l.type==='Debit') tDr+=l.amount; else tCr+=l.amount; });
+            if(jLines.length<2 || Math.abs(tDr-tCr)>0.01) { return showToast("Journal must balance perfectly & have 2+ lines", "error"); }
+            if(tDr < 0.01) { return showToast("Journal cannot be all zeros", "error"); }
+            let d = document.getElementById('j-date').value; let m = document.getElementById('j-memo').value.trim();
+            if(!d || !m) { return showToast("Date and Description are required", "error"); }
+            if(jLines.some(l=>!String(l.account).trim())) { return showToast("All active lines need an account name", "error"); }
+
+            showLoader(true, "Posting Double-Entry Journal...");
+            let payload = { action: 'add_journal', data: { parsedJson: { date: d, memo: m.replace(/[\r\n]+/g,' '), entries: jLines.map(l=>({ category: l.category, account: String(l.account).trim(), debit: l.type==='Debit'?l.amount:0, credit: l.type==='Credit'?l.amount:0 })) } } };
+            let res = await apiPost(payload);
+            if(res?.status==='success') { showToast("Journal Posted Successfully!"); jLines=[]; addJournalLine(); addJournalLine(); document.getElementById('j-memo').value=''; await fetchData(true); switchTab('ledger'); } else { showToast("Posting Failed", "error"); }
+            showLoader(false);
+        }
+
+        function renderLedger() {
+            try {
+                let sqEl = document.getElementById('l-search'); let q = sqEl ? safeStr(sqEl.value) : '';
+                let smEl = document.getElementById('l-module'); let mod = smEl ? smEl.value : 'all';
+                let scEl = document.getElementById('l-cat'); let cat = scEl ? safeStr(scEl.value).trim() : '';
+                let sdEl = document.getElementById('l-date'); let month = sdEl ? sdEl.value : ''; 
+                
+                let html = ''; let count = 0;
+                let fullData = getFullLedgerLines(sysData.financials);
+                let sorted = fullData.slice().sort((a,b)=> ((parseDateSafe(b.date)||0) - (parseDateSafe(a.date)||0)) || safeStr(b.refId).localeCompare(safeStr(a.refId)) || (isDebitRow(a) ? -1 : 1));
+                let filteredRows = [];
+                
+                sorted.forEach(r => {
+                    if(!inGlobalYear(r)) return;
+                    if(mod !== 'all' && r.sourceModule !== mod) return;
+                    if(cat && cat !== 'all' && !safeStr(r.category).includes(cat)) return;
+                    if(month && rowMonthKey(r) !== month) return;
+                    if(q && !safeStr(r.account).includes(q) && !safeStr(r.description).includes(q) && !safeStr(r.refId).includes(q) && !safeStr(r.category).includes(q)) return;
+                    filteredRows.push(r);
+                });
+
+                renderLedgerIntegritySummary(filteredRows);
+                const status = getLedgerIntegrity(filteredRows);
+                let lastRef = ''; let altBg = false;
+
+                filteredRows.forEach(r => {
+                    count++;
+                    const ref = getRefKey(r, count);
+                    if (ref !== lastRef) { altBg = !altBg; lastRef = ref; }
+                    let bgClass = altBg ? 'bg-gray-50' : 'bg-white';
+                    if(r._expandedFromStoredEntries) bgClass = altBg ? 'bg-blue-50/40' : 'bg-indigo-50/30';
+
+                    let isDr = isDebitRow(r); 
+                    let amt = parseAmount(r.amount);
+                    let group = status.groups.get(ref);
+                    let expandedBadge = r._expandedFromStoredEntries ? `<span class="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 border border-indigo-200">Expanded</span>` : '';
+                    let normalizedBadge = r._accountingNormalized ? `<span class="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-amber-50 text-amber-700 border border-amber-200" title="${escapeHtml(r._normalizationReason || 'Accounting normalization applied')}">Normalized</span>` : '';
+                    const sourceModule = safeStr(r.sourceModule || r.parsedJson?.sourceModule);
+                    const canDeleteFromLedger = sourceModule === 'journal' || sourceModule === 'manual_entry';
+                    let delBtn = r._expandedFromStoredEntries
+                        ? `<span class="text-[8px] uppercase font-black tracking-widest text-gray-400">Stored</span>`
+                        : canDeleteFromLedger
+                            ? `<button onclick="deleteJournalRow('${escapeHtml(r.id)}','${escapeHtml(ref)}')" class="text-gray-400 hover:text-red-600 transition bg-white border border-gray-200 shadow-sm p-1.5 rounded" title="Delete Manual Transaction"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`
+                            : `<span class="inline-flex items-center gap-1 text-[8px] uppercase font-black tracking-widest text-gray-400" title="ERP-generated transaction: reverse it from its source module"><i data-lucide="lock" class="w-3 h-3"></i> Locked</span>`;
+
+                    let drClass = isDr ? 'text-blue-700' : 'text-gray-300';
+                    let crClass = !isDr ? 'text-yellow-600' : 'text-gray-300';
+
+                    html += `
+                    <tr class="${bgClass} hover:bg-gray-100 transition border-b border-gray-200">
+                        <td class="p-3 text-xs text-gray-500">${escapeHtml(fmtDate(r.date))}</td>
+                        <td class="p-3">
+                            <span class="font-mono text-[10px] font-bold text-gray-500 block">${escapeHtml(ref)}</span>
+                            <span class="uppercase text-[9px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-1 rounded inline-block mt-0.5">${escapeHtml(r.sourceModule || 'manual_entry')}</span>
+                            ${ledgerStatusBadge(group)} ${expandedBadge} ${normalizedBadge}
+                        </td>
+                        <td class="p-3 text-center">
+                            <span class="px-2 py-0.5 rounded text-[9px] uppercase tracking-widest font-bold border border-gray-200 shadow-sm bg-white">${escapeHtml(r.category)}</span>
+                        </td>
+                        <td class="p-3 font-bold text-gray-800">${escapeHtml(r.account)}</td>
+                        <td class="p-3 max-w-[200px] truncate text-xs text-gray-600" title="${escapeHtml(r.description)}">${escapeHtml(r.description)}</td>
+                        <td class="p-3 text-right font-mono font-bold ${drClass}">${isDr?formatMoney(amt):'-'}</td>
+                        <td class="p-3 text-right font-mono font-bold ${crClass}">${!isDr?formatMoney(amt):'-'}</td>
+                        <td class="p-3 text-center whitespace-nowrap flex justify-center gap-1">${delBtn}</td>
+                    </tr>`;
+                });
+                
+                let lb = document.getElementById('ledger-body'); if(lb) lb.innerHTML = html; 
+                let le = document.getElementById('ledger-empty'); if(le) le.classList.toggle('hidden', count > 0);
+                lucide.createIcons();
+            } catch(e) { console.error("Ledger render error", e); }
+        }
+
+        async function deleteJournalRow(id, refId) {
+            let proceed = await customConfirm(`DANGER: You are about to delete financial data.\nRef ID: ${refId}\n\nThis deletes ALL rows connected to this transaction to keep the ledger balanced.\n\nProceed to delete?`);
+            if(!proceed) { return showToast("Cancelled.", "info"); }
+            
+            showLoader(true, "Deep Deleting Ledger Entry...");
+            let res = await apiPost({ action: 'delete_journal', data: { refId: refId } });
+            if(res?.status==='success') { showToast("Ledger Cleaned"); await fetchData(true); } else { showToast(res?.message || "Deletion Failed", "error"); }
+            showLoader(false);
+        }
+
+        function renderAuditTable() {
+            try {
+                let html = '';
+                let fullData = getFullLedgerLines(sysData.financials);
+                let sorted = fullData.slice().sort((a,b)=> ((parseDateSafe(a.date)||0) - (parseDateSafe(b.date)||0)) || safeStr(b.refId).localeCompare(safeStr(a.refId))); 
+                
+                let lastRef = ''; let altBg = false;
+
+                sorted.forEach(r => {
+                    if(!inGlobalYear(r)) return;
+                    
+                    if (r.refId !== lastRef) { altBg = !altBg; lastRef = r.refId; }
+                    let bgClass = altBg ? 'bg-gray-50' : 'bg-white';
+
+                    let isDr = isDebitRow(r); 
+                    let amt = parseAmount(r.amount); 
+                    let method = (r.parsedJson && r.parsedJson.method) || 'System Post';
+                    
+                    let drClass = isDr ? 'text-blue-700' : 'text-transparent'; 
+                    let crClass = !isDr ? 'text-yellow-600' : 'text-transparent';
+
+                    html += `
+                    <tr class="${bgClass} hover:bg-gray-100 transition border-b border-gray-200">
+                        <td class="p-3 text-xs text-gray-500 font-mono">${escapeHtml(fmtDate(r.date))}</td>
+                        <td class="p-3">
+                            <span class="font-bold text-gray-800 block">${escapeHtml(r.account)}</span>
+                            <span class="text-[9px] uppercase tracking-widest text-gray-400 font-bold">${escapeHtml(r.category)}</span>
+                        </td>
+                        <td class="p-3">
+                            <span class="block truncate max-w-[250px] text-xs text-gray-600" title="${escapeHtml(r.description)}">${escapeHtml(r.description)}</span>
+                            <span class="text-[9px] uppercase tracking-widest text-indigo-500 font-bold">${escapeHtml(method)}</span>
+                        </td>
+                        <td class="p-3 text-right font-mono font-bold ${drClass}">${isDr?formatMoney(amt):'-'}</td>
+                        <td class="p-3 text-right font-mono font-bold ${crClass}">${!isDr?formatMoney(amt):'-'}</td>
+                    </tr>`;
+                });
+                
+                let ab = document.getElementById('audit-table-body'); if(ab) ab.innerHTML = html; 
+            } catch(e) { console.error("Audit render error", e); }
+        }
+
+        async function exportExcel() {
+            try {
+                showLoader(true, 'Loading Excel export engine...');
+                await ensureExcelLibraries();
+                showLoader(false);
+                showToast(`Generating Premium Excel for FY ${globalYear}...`, "success");
+                let wb = new ExcelJS.Workbook(); 
+            wb.creator = "AR PLASTIC DATA ERP"; 
+            let cFmt = '"Rs. "#,##0.00';
+
+            const fin = computeFinancials(globalYear); 
+            
+            let s1 = wb.addWorksheet(`Master Ledger ${globalYear}`, {views: [{state: 'frozen', ySplit: 1}]}); 
+            s1.columns = [{width:15},{width:20},{width:15},{width:25},{width:40},{width:15},{width:15}];
+            s1.addRow(['Date','Ref ID','Category','Account','Description / Memo','Debit','Credit']).font={bold:true};
+            
+            let lastRef = ''; 
+            let altColor = false;
+            let fullData = getFullLedgerLines(sysData.financials);
+
+            fullData.filter(r => inGlobalYear(r))
+                .sort((a,b)=> ((parseDateSafe(b.date)||0)-(parseDateSafe(a.date)||0)) || safeStr(b.refId).localeCompare(safeStr(a.refId)))
+                .forEach(r => {
+                    if (r.refId !== lastRef) { altColor = !altColor; lastRef = r.refId; }
+                    let isDr = isDebitRow(r);
+                    let amt = parseAmount(r.amount);
+                    let cType = classifyCategory(r.category, r.account);
+                    
+                    let rowColor = altColor ? 'FFF8FAFC' : 'FFFFFFFF';
+                    if(!isDr) rowColor = 'FFE0F2FE';
+                    else if(cType !== 'Asset') rowColor = 'FFF1F5F9';
+
+                    let mRow = s1.addRow([fmtDate(r.date), r.refId, r.category, r.account, r.description, isDr?amt:'', !isDr?amt:'']);
+                    mRow.getCell(6).numFmt=cFmt; 
+                    mRow.getCell(7).numFmt=cFmt;
+                    mRow.eachCell(c => { c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowColor } }; });
+                });
+
+            let sMonth = wb.addWorksheet(`Monthly Summary ${globalYear}`, {views: [{state: 'frozen', ySplit: 1}]});
+            sMonth.columns = [{width:20},{width:20},{width:20},{width:20}];
+            sMonth.addRow(['Month', 'Revenue', 'Expenses', 'Net Profit']).font={bold:true};
+
+            Object.keys(fin.monthly).sort().reverse().forEach(m => {
+                let data = fin.monthly[m];
+                let row = sMonth.addRow([m, data.rev, data.exp, data.rev - data.exp]);
+                row.getCell(2).numFmt=cFmt; 
+                row.getCell(3).numFmt=cFmt; 
+                row.getCell(4).numFmt=cFmt;
+                row.getCell(4).font = {bold: true, color: {argb: (data.rev - data.exp) >= 0 ? 'FF15803D' : 'FFDC2626'}};
+            });
+
+            const st = computeStructuredStatements(globalYear);
+            const inc = st.income;
+            const pos = st.position;
+            let sIS = wb.addWorksheet(`Income Statement ${globalYear}`, {views: [{state: 'frozen', ySplit: 1}]});
+            sIS.columns = [{width:42},{width:22}];
+            sIS.addRow([`Income Statement - FY ${globalYear}`, 'Amount']).font = {bold:true};
+            const addIS = (label, val, bold=false) => {
+                let row = sIS.addRow([label, val]);
+                row.getCell(2).numFmt = cFmt;
+                if(bold) row.font = {bold:true, color:{argb: val >= 0 ? 'FF15803D' : 'FFDC2626'}};
+                return row;
+            };
+            addIS('Sales', inc.sales);
+            addIS('Less: Cost of Sales', inc.costOfSales);
+            addIS('GROSS PROFIT', inc.grossProfit, true);
+            addIS('Add: Other Income', inc.otherIncome);
+            addIS('Less: Expenses', inc.expenses);
+            addIS('PROFIT BEFORE TAX', inc.profitBeforeTax, true);
+            addIS('Less: Tax', inc.tax);
+            addIS('NET PROFIT', inc.netProfit, true);
+
+            let sSFP = wb.addWorksheet(`Financial Position ${globalYear}`, {views: [{state: 'frozen', ySplit: 1}]});
+            sSFP.columns = [{width:42},{width:22}];
+            sSFP.addRow([`Statement of Financial Position - FY ${globalYear}`, 'Amount']).font = {bold:true};
+            const addSFP = (label, val, bold=false) => {
+                let row = sSFP.addRow([label, val]);
+                row.getCell(2).numFmt = cFmt;
+                if(bold) row.font = {bold:true, color:{argb: Math.abs(val) < 0.01 ? 'FF15803D' : (val >= 0 ? 'FF1D4ED8' : 'FFDC2626')}};
+                return row;
+            };
+            addSFP('Non-Current Assets', pos.nonCurrentAssets);
+            addSFP('Current Assets', pos.currentAssets);
+            addSFP('TOTAL ASSETS', pos.totalAssets, true);
+            sSFP.addRow([]);
+            addSFP('Equity', pos.equity);
+            addSFP('Non-Current Liabilities', pos.nonCurrentLiabilities);
+            addSFP('Current Liabilities', pos.currentLiabilities);
+            addSFP('TOTAL EQUITY AND LIABILITIES', pos.totalEquityAndLiabilities, true);
+            addSFP('Balance Check Variance', pos.variance, true);
+
+            let sCat = wb.addWorksheet(`Category Balances ${globalYear}`, {views: [{state: 'frozen', ySplit: 1}]});
+            sCat.columns = [{width:40},{width:25}];
+            sCat.addRow(['Category', 'Balance']).font={bold:true};
+            sCat.addRow(['Total Assets (Cumulative, As at FY End)', fin.totals.Asset]).getCell(2).numFmt=cFmt; 
+            sCat.addRow(['Total Liabilities (Cumulative, As at FY End)', fin.totals.Liability]).getCell(2).numFmt=cFmt; 
+            sCat.addRow(['Total Equity (Inc. Retained Earnings & Profit)', fin.totals.Equity]).getCell(2).numFmt=cFmt; 
+            sCat.addRow(['  of which Retained Earnings (Prior Years)', fin.priorRetained]).getCell(2).numFmt=cFmt;
+            sCat.addRow(['Total Revenue (Selected FY)', fin.totals.Revenue]).getCell(2).numFmt=cFmt; 
+            sCat.addRow(['Total Expenses (Selected FY)', fin.totals.Expense]).getCell(2).numFmt=cFmt; 
+            let npRow = sCat.addRow(['NET PROFIT (Selected FY)', fin.netProfit]); npRow.getCell(2).numFmt=cFmt;
+            npRow.font = {bold:true, color:{argb: fin.netProfit >= 0 ? 'FF15803D' : 'FFDC2626'}};
+            sCat.addRow([]);
+            sCat.addRow(['Trial Balance — Total Debits', fin.drTotal]).getCell(2).numFmt=cFmt;
+            sCat.addRow(['Trial Balance — Total Credits', fin.crTotal]).getCell(2).numFmt=cFmt;
+            let tbRow = sCat.addRow(['Trial Balance Difference (must be 0)', Math.abs(fin.drTotal - fin.crTotal)]);
+            tbRow.getCell(2).numFmt=cFmt; 
+            tbRow.font = {bold:true, color:{argb: Math.abs(fin.drTotal-fin.crTotal)<0.01 ? 'FF15803D' : 'FFDC2626'}};
+
+            let s2 = wb.addWorksheet('Live Stock Valuation', {views: [{state: 'frozen', ySplit: 1}]}); 
+            s2.columns=[{width:35},{width:15},{width:15},{width:15},{width:15},{width:20}];
+            s2.addRow(['Item Name','Produced Qty','Sold Qty','Adjusted Qty','Current Stock','Stock Value (Cost)']).font={bold:true};
+            
+            const stock = computeStockValuation();
+            Object.values(stock.items).forEach(s=>{ 
+                let row = s2.addRow([s.name, s.produced, s.sold, s.adjusted, s.current, s.value]); 
+                row.getCell(6).numFmt=cFmt;
+            });
+            let stRow = s2.addRow(['TOTAL STOCK VALUE', '', '', '', '', stock.totalValue]);
+            stRow.getCell(6).numFmt=cFmt; stRow.font={bold:true};
+
+            [s1, sMonth, sIS, sSFP, sCat, s2].forEach(sheet => {
+                const lastCol = Math.max(1, sheet.columnCount || 1);
+                sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: lastCol } };
+                sheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+                sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+                sheet.getRow(1).alignment = { horizontal: 'center' };
+            });
+
+                let buf = await wb.xlsx.writeBuffer(); 
+                saveAs(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `ERP_Accounting_Master_${globalYear}.xlsx`);
+                showToast('Excel exported successfully.', 'success');
+            } catch (err) {
+                console.error('Excel export error:', err);
+                showToast('Excel export failed: ' + (err && err.message ? err.message : 'Unknown error'), 'error');
+            }
+        }
+        
+        let pdfDraft = [];
+
+        function snapshotForPdf() {
+            let fullData = getFullLedgerLines(sysData.financials);
+            return JSON.parse(JSON.stringify(fullData.filter(r => inGlobalYear(r))));
+        }
+        
+        async function openPdfStudio() { 
+            let proceed = await customConfirm("INTERNAL USE ONLY<br><br>The PDF Studio Builder is strictly for internal auditing and layout adjustments. Generating custom PDFs does not alter the master financial ledger. Unauthorized distribution of modified reports is prohibited.<br><br>Do you agree to proceed?");
+            if(!proceed) return;
+
+            pdfDraft = snapshotForPdf(); 
+            let pModal = document.getElementById('pdf-studio-modal');
+            if(pModal) pModal.classList.remove('hidden'); 
+            let psSearch = document.getElementById('ps-search');
+            if(psSearch) psSearch.value=''; 
+            renderPdfStudio(); 
+        }
+        
+        function closePdfStudio() { 
+            let pModal = document.getElementById('pdf-studio-modal');
+            if(pModal) pModal.classList.add('hidden'); 
+        }
+        
+        async function resetPdfStudio() { 
+            let proceed = await customConfirm("Discard all adjustments and reload exact numbers from Database?");
+            if(proceed) { 
+                pdfDraft = snapshotForPdf(); 
+                let psSearch = document.getElementById('ps-search');
+                if(psSearch) psSearch.value=''; 
+                renderPdfStudio(); 
+            } 
+        }
+        
+        function renderPdfStudio() {
+            try {
+                let sqEl = document.getElementById('ps-search'); let sq = sqEl ? safeStr(sqEl.value) : '';
+                
+                let tDr=0, tCr=0;
+                pdfDraft.forEach(r => { let amt = parseAmount(r.amount); if(isDebitRow(r)) tDr+=amt; else tCr+=amt; });
+
+                let html= `
+                <table class="w-full text-xs text-left bg-white">
+                    <thead class="bg-indigo-900 text-white sticky top-0 shadow-md z-10">
+                        <tr>
+                            <th class="p-2 w-10 text-center"><i data-lucide="trash" class="w-4 h-4 mx-auto text-indigo-300"></i></th>
+                            <th class="p-2 w-28">Date</th>
+                            <th class="p-2 w-20">Type</th>
+                            <th class="p-2 w-28">Category</th>
+                            <th class="p-2 w-48">Account</th>
+                            <th class="p-2">Memo</th>
+                            <th class="p-2 w-32 text-right">Amount (Rs)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">`;
+                
+                pdfDraft.sort((a,b)=> (parseDateSafe(b.date)||0) - (parseDateSafe(a.date)||0)).forEach(r => {
+                    let amt = parseAmount(r.amount); 
+                    if(sq && !safeStr(r.account).includes(sq) && !safeStr(r.description).includes(sq)) return;
+
+                    let isDr = isDebitRow(r);
+
+                    html += `
+                    <tr class="hover:bg-indigo-50 transition">
+                        <td class="p-1 text-center">
+                            <button onclick="pDel('${escapeHtml(r.id)}')" class="text-red-400 hover:text-red-600 bg-white p-1.5 rounded-md border shadow-sm transition"><i data-lucide="x" class="w-3 h-3"></i></button>
+                        </td>
+                        <td class="p-1">
+                            <input type="date" value="${escapeHtml(fmtDate(r.date))}" onchange="pUpd('${escapeHtml(r.id)}','date',this.value)" class="w-full border-none focus:ring-2 focus:ring-indigo-500 p-2 rounded-lg bg-transparent text-xs font-mono">
+                        </td>
+                        <td class="p-1">
+                            <select onchange="pUpd('${escapeHtml(r.id)}','type',this.value)" class="w-full border-none focus:ring-2 focus:ring-indigo-500 p-2 rounded-lg bg-transparent font-bold text-xs ${isDr?'text-blue-700':'text-yellow-700'}">
+                                <option value="Debit" ${isDr?'selected':''}>Dr</option>
+                                <option value="Credit" ${!isDr?'selected':''}>Cr</option>
+                            </select>
+                        </td>
+                        <td class="p-1">
+                            <input type="text" value="${escapeHtml(r.category)}" onchange="pUpd('${escapeHtml(r.id)}','category',this.value)" class="w-full border-none focus:ring-2 focus:ring-indigo-500 p-2 rounded-lg bg-transparent text-gray-500 text-xs font-bold">
+                        </td>
+                        <td class="p-1">
+                            <input type="text" value="${escapeHtml(r.account)}" onchange="pUpd('${escapeHtml(r.id)}','account',this.value)" class="w-full border-none focus:ring-2 focus:ring-indigo-500 p-2 rounded-lg bg-transparent font-bold text-xs">
+                        </td>
+                        <td class="p-1">
+                            <input type="text" value="${escapeHtml(r.description)}" onchange="pUpd('${escapeHtml(r.id)}','description',this.value)" class="w-full border-none focus:ring-2 focus:ring-indigo-500 p-2 rounded-lg bg-transparent text-xs">
+                        </td>
+                        <td class="p-1">
+                            <input type="number" step="0.01" min="0" value="${amt}" onchange="pUpd('${escapeHtml(r.id)}','amount',this.value)" class="w-full border border-gray-200 p-2 rounded-lg text-right font-mono font-bold bg-white focus:ring-2 focus:ring-indigo-500 shadow-sm text-sm">
+                        </td>
+                    </tr>`;
+                });
+                
+                html += `</tbody></table>`; 
+                
+                let psc = document.getElementById('ps-canvas'); 
+                if(psc) psc.innerHTML = html;
+                
+                let pDr = document.getElementById('ps-dr'); if(pDr) pDr.innerText = 'Dr: '+formatMoney(tDr); 
+                let pCr = document.getElementById('ps-cr'); if(pCr) pCr.innerText = 'Cr: '+formatMoney(tCr);
+                let d = Math.abs(tDr-tCr); 
+                let pDiff = document.getElementById('ps-diff'); 
+                if(pDiff) { pDiff.innerText = 'Diff: '+formatMoney(d); pDiff.className = d<0.01 ? 'text-gray-300' : 'text-red-400 font-black animate-pulse'; }
+                lucide.createIcons();
+            } catch(e) { console.error("PDF Studio Render Error", e); }
+        }
+
+        function pUpd(id, f, v) { 
+            let i = pdfDraft.findIndex(r => String(r.id) === String(id)); 
+            if(i>-1) { 
+                if(f==='amount') pdfDraft[i][f] = Math.abs(parseFloat(v)||0); 
+                else pdfDraft[i][f] = v; 
+            } 
+            renderPdfStudio(); 
+        }
+
+        function pDel(id) { 
+            pdfDraft = pdfDraft.filter(r => String(r.id) !== String(id)); 
+            renderPdfStudio(); 
+        }
+
+        function pAddRow() {
+            const id = 'PDF-ONLY-' + Date.now() + '-' + Math.floor(Math.random() * 9999);
+            pdfDraft.unshift(normalizeAccountingRow({
+                id,
+                refId: 'PDF-ADJ-' + Date.now().toString().slice(-6),
+                date: fmtDate(new Date()),
+                type: 'Debit',
+                category: 'Asset',
+                account: 'PDF Only Adjustment',
+                description: 'PDF-only row - not saved to database',
+                amount: 0,
+                sourceModule: 'pdf_studio',
+                _pdfOnly: true
+            }));
+            renderPdfStudio();
+        }
+
+        function buildPdfHtml(dataSrc) {
+            const safeDataSrc = safeArray(dataSrc).map(normalizeAccountingRow);
+            const fin = computeFinancialsFromRows(safeDataSrc, globalYear);
+            const totals = fin.totals;
+            const statements = computeStructuredStatements(globalYear, safeDataSrc);
+
+            let html = `
+                <div style="display: flex; gap: 10px; margin-bottom: 30px; page-break-inside: avoid;">
+                    <div style="flex:1; background:#eff6ff; padding:12px; border-radius:8px; border:1px solid #bfdbfe;">
+                        <p style="font-size:8px; color:#1e40af; font-weight:bold; text-transform:uppercase; margin:0 0 4px 0;">Total Assets</p>
+                        <p style="font-size:15px; font-weight:900; margin:0; color:#1e3a8a; font-family:monospace;">${formatMoney(totals.Asset)}</p>
+                    </div>
+                    <div style="flex:1; background:#fef2f2; padding:12px; border-radius:8px; border:1px solid #fecaca;">
+                        <p style="font-size:8px; color:#991b1b; font-weight:bold; text-transform:uppercase; margin:0 0 4px 0;">Total Liabilities</p>
+                        <p style="font-size:15px; font-weight:900; margin:0; color:#7f1d1d; font-family:monospace;">${formatMoney(totals.Liability)}</p>
+                    </div>
+                    <div style="flex:1; background:#ecfdf5; padding:12px; border-radius:8px; border:1px solid #a7f3d0;">
+                        <p style="font-size:8px; color:#065f46; font-weight:bold; text-transform:uppercase; margin:0 0 4px 0;">Total Equity</p>
+                        <p style="font-size:15px; font-weight:900; margin:0; color:#064e3b; font-family:monospace;">${formatMoney(totals.Equity)}</p>
+                    </div>
+                    <div style="flex:1; background:#fffbeb; padding:12px; border-radius:8px; border:1px solid #fde68a;">
+                        <p style="font-size:8px; color:#b45309; font-weight:bold; text-transform:uppercase; margin:0 0 4px 0;">Gross Revenue</p>
+                        <p style="font-size:15px; font-weight:900; margin:0; color:#78350f; font-family:monospace;">${formatMoney(totals.Revenue)}</p>
+                    </div>
+                    <div style="flex:1; background:#fdf2f8; padding:12px; border-radius:8px; border:1px solid #fbcfe8;">
+                        <p style="font-size:8px; color:#9d174d; font-weight:bold; text-transform:uppercase; margin:0 0 4px 0;">Total Expenses</p>
+                        <p style="font-size:15px; font-weight:900; margin:0; color:#831843; font-family:monospace;">${formatMoney(totals.Expense)}</p>
+                    </div>
+                    <div style="flex:1; background:#f5f3ff; padding:12px; border-radius:8px; border:1px solid #ddd6fe;">
+                        <p style="font-size:8px; color:#5b21b6; font-weight:bold; text-transform:uppercase; margin:0 0 4px 0;">Net Profit</p>
+                        <p style="font-size:15px; font-weight:900; margin:0; color:${fin.netProfit>=0?'#166534':'#991b1b'}; font-family:monospace;">${formatMoney(fin.netProfit)}</p>
+                    </div>
+                </div>
+
+                ${buildStatementsPdfHtml(statements)}
+
+                <div style="background-color: #111827; color: white; padding: 10px 16px; border-radius: 6px 6px 0 0;">
+                    <h2 style="font-size: 14px; font-weight: 800; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Transaction Master Journal — FY ${escapeHtml(globalYear)}</h2>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 10px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;">
+                    <thead>
+                        <tr style="background-color: #f3f4f6;">
+                            <th style="padding: 10px; border-bottom: 2px solid #d1d5db; text-align: left; color: #4b5563;">Date</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #d1d5db; text-align: left; color: #4b5563;">Ref & Category</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #d1d5db; text-align: left; color: #4b5563;">Account & Description</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #d1d5db; text-align: right; color: #4b5563;">Debit</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #d1d5db; text-align: right; color: #4b5563;">Credit</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            let cDr=0; let cCr=0;
+
+            dataSrc.slice().sort((a,b)=> (parseDateSafe(b.date)||0) - (parseDateSafe(a.date)||0)).forEach((r, i) => {
+                let amt = parseAmount(r.amount);
+                let dr = isDebitRow(r);
+                if(dr) cDr+=amt; else cCr+=amt; 
+                let bg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+                
+                html += `
+                <tr style="background-color: ${bg}; page-break-inside: avoid;">
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-family: monospace;">${escapeHtml(fmtDate(r.date))}</td>
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb;">
+                        <span style="font-weight: 700; color: #111827; display: block;">${escapeHtml(r.refId)}</span>
+                        <span style="font-size: 8px; color: #9ca3af; text-transform: uppercase;">${escapeHtml(r.category)}</span>
+                    </td>
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb;">
+                        <span style="font-weight: 700; color: #111827; display: block;">${escapeHtml(r.account)}</span>
+                        <span style="font-size: 9px; color: #6b7280;">${escapeHtml(r.description || r.desc || '-')}</span>
+                    </td>
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-family: monospace; color: ${dr ? '#1d4ed8' : '#d1d5db'}; font-weight: bold;">${dr?formatMoney(amt):'-'}</td>
+                    <td style="padding: 8px 10px; border-bottom: 1px solid #e5e7eb; text-align: right; font-family: monospace; color: ${!dr ? '#b45309' : '#d1d5db'}; font-weight: bold;">${!dr?formatMoney(amt):'-'}</td>
+                </tr>`;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+                <div style="display: flex; justify-content: flex-end; background-color: #f9fafb; border: 1px solid #e5e7eb; border-top: none; padding: 12px 16px; border-radius: 0 0 6px 6px;">
+                    <table style="width: 300px; font-size: 11px;">
+                        <tr><td style="padding: 4px 0; color: #6b7280; font-weight: bold;">Total View Debits:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold; color: #1d4ed8;">${formatMoney(cDr)}</td></tr>
+                        <tr><td style="padding: 4px 0; color: #6b7280; font-weight: bold;">Total View Credits:</td><td style="padding: 4px 0; text-align: right; font-family: monospace; font-weight: bold; color: #b45309;">${formatMoney(cCr)}</td></tr>
+                    </table>
+                </div>`;
+                
+            return html;
+        }
+
+        async function generateEditedPdf() {
+            const integrity = getLedgerIntegrity(pdfDraft);
+            if(integrity.diff >= 0.01) {
+                let proceed = await customConfirm('PDF Studio rows are not balanced. Difference: Rs. ' + formatMoney(integrity.diff) + '. Generate PDF anyway?');
+                if(!proceed) return;
+            }
+            let el = document.getElementById('pdf-content'); 
+            if(el) el.innerHTML = buildPdfHtml(pdfDraft);
+            document.querySelectorAll('.pdf-date').forEach(e => { e.innerText = new Date().toLocaleString(); });
+            closePdfStudio(); 
+            setTimeout(() => { triggerPdfDownload(`Custom_Audit_Report_${globalYear}.pdf`); }, 500);
+        }
+        
+        async function exportStandardPDF() {
+            let filtered = snapshotForPdf();
+            let el = document.getElementById('pdf-content'); 
+            if(el) el.innerHTML = buildPdfHtml(filtered);
+            document.querySelectorAll('.pdf-date').forEach(e => { e.innerText = new Date().toLocaleString(); });
+            setTimeout(() => { triggerPdfDownload(`Master_Audit_Report_${globalYear}.pdf`); }, 500);
+        }
+        
+        async function triggerPdfDownload(name) {
+            let el = document.getElementById('pdf-container');
+            if(!el) return;
+            el.classList.remove('hidden');
+            
+            showLoader(true, "Structuring High-Res Print View...");
+            
+            try {
+                await ensurePdfLibrary();
+                let opt = { 
+                    margin: 0, 
+                    filename: name, 
+                    image: {type: 'jpeg', quality: 1}, 
+                    html2canvas: {scale: 3, useCORS: true}, 
+                    pagebreak: { mode: ['css', 'legacy'] },
+                    jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'} 
+                };
+
+                await html2pdf().set(opt).from(el).toPdf().get('pdf').then(function (pdf) {
+                    window.open(pdf.output('bloburl'), '_blank');
+                });
+                showToast("PDF generated and opened!");
+            } catch(e) {
+                showToast("Failed to generate PDF", "error");
+            } finally {
+                el.classList.add('hidden');
+                showLoader(false);
+            }
+        }
+
+        // --- INIT ---
+        addJournalLine(); addJournalLine(); 
+        
+        let __lastForegroundSync = 0;
+        function syncFreshOnForeground(){
+            if(!backendUrl || document.visibilityState === 'hidden') return;
+            const now=Date.now(); if(now-__lastForegroundSync < 15000) return;
+            __lastForegroundSync=now; fetchData(true);
+        }
+        window.addEventListener('focus', syncFreshOnForeground);
+        document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') syncFreshOnForeground(); });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if(!checkAuth()) return;
+            populateYearSelectors();
+            if(backendUrl) fetchData();
+        });
+    </script>
+</body>
+</html>

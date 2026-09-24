@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+.git
+.env
+.env.local
+backend/.env
+backend/.venv
+legacy-html
+.agents
+agent
+*.log
+

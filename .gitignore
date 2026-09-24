@@ -1,0 +1,26 @@
+# Frontend
+node_modules/
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+backend/.venv/
+
+# Secrets (examples stay committed)
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Local tooling
+.idea/
+.vscode/
+*.log
+

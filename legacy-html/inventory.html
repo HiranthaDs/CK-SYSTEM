@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Enterprise ERP | Advanced Inventory Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --mac-bg: #f5f5f7; --mac-window: #ffffff; --mac-sidebar: rgba(245, 245, 247, 0.85); --mac-border: #e5e5e5; --mac-text: #1d1d1f; }
+        body { background-color: var(--mac-bg); color: var(--mac-text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+        .mac-window { background: var(--mac-window); box-shadow: 0 20px 40px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1); overflow: hidden; }
+        @media (min-width: 768px) { .mac-window { border-radius: 12px; } }
+
+        .mac-titlebar { background: linear-gradient(to bottom, #ffffff, #f6f6f6); border-bottom: 1px solid var(--mac-border); height: 40px; display: flex; align-items: center; padding: 0 16px; user-select: none; }
+        .mac-traffic-lights { display: flex; gap: 8px; } .traffic-light { width: 12px; height: 12px; border-radius: 50%; } .tl-red { background-color: #ff5f56; } .tl-yellow { background-color: #ffbd2e; } .tl-green { background-color: #27c93f; }
+
+        .glass-panel { background: var(--mac-sidebar); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+        .nav-item { border-radius: 8px; transition: all 0.2s ease; } .nav-item:hover, .nav-item.active { background-color: rgba(0, 0, 0, 0.05); } .nav-item.active { background-color: #007aff; color: white !important; }
+        .mobile-nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #8e8e93; transition: color 0.2s; padding: 4px 0; width: 20%; } .mobile-nav-item.active { color: #007aff; } .mobile-nav-item span { font-size: 10px; margin-top: 4px; font-weight: 500; }
+
+        .mac-input { border: 1px solid #d1d1d6; border-radius: 8px; padding: 10px 14px; transition: border-color 0.2s, box-shadow 0.2s; background: #ffffff; font-size: 14px; width: 100%; }
+        .mac-input:focus { outline: none; border-color: #007aff; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2); }
+        .tab-btn { border-bottom: 2px solid transparent; transition: all 0.2s; } .tab-btn.active { border-bottom-color: #007aff; color: #007aff; font-weight: bold; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Stripe-like Advanced PDF Styles */
+        .stripe-pdf { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111827; }
+        .stripe-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .stripe-table th { background-color: #f8fafc; color: #6b7280; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 10px; border-bottom: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; font-weight: 700; text-align: left; }
+        .stripe-table th.text-right { text-align: right; }
+        .stripe-table th.text-center { text-align: center; }
+        .stripe-table td { padding: 14px 10px; border-bottom: 1px solid #f1f5f9; color: #1f2937; font-size: 11px; }
+        .stripe-table tr:last-child td { border-bottom: 2px solid #e2e8f0; }
+        .stripe-totals { width: 300px; margin-left: auto; margin-top: 20px; }
+        .stripe-totals-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+        .stripe-totals-row.grand { border-bottom: none; border-top: 2px solid #111827; padding-top: 12px; font-weight: 900; font-size: 16px; }
+    
+
+        /* ==============================================================
+           HICH FIX PACK V7 - Professional responsive ERP shell
+           ============================================================== */
+        html, body { width: 100%; height: 100%; min-height: 100dvh; overflow: hidden; background: #f3f4f6 !important; }
+        body { display: block !important; padding: 0 !important; }
+        .mac-window { width: 100% !important; height: 100dvh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; border: 0 !important; box-shadow: none !important; }
+        .mac-titlebar { height: 56px !important; background: #ffffff !important; border-bottom: 1px solid #e5e7eb !important; box-shadow: none !important; }
+        .mac-traffic-lights, .traffic-light { display: none !important; }
+        .glass-panel { background: #ffffff !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+        .nav-item { border-radius: 10px !important; }
+        .nav-item.active { background: #111827 !important; color: #ffffff !important; }
+        .nav-item.active svg { color: #ffffff !important; }
+        .mac-input { min-height: 42px; border-radius: 10px !important; }
+        .admin-scroll, .overflow-x-auto { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+        table { border-collapse: separate; border-spacing: 0; }
+        main { min-width: 0 !important; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+        @media (min-width: 768px) {
+            .mac-window > .flex.flex-1 { height: calc(100dvh - 56px) !important; min-height: 0 !important; }
+            aside { height: calc(100dvh - 56px) !important; }
+            main { height: 100% !important; }
+            .mobile-only { display: none !important; }
+        }
+
+        @media (max-width: 767px) {
+            html, body { height: 100dvh !important; overflow: hidden !important; }
+            .mac-window { height: 100dvh !important; min-height: 100dvh !important; overflow: hidden !important; }
+            .mac-window > .flex.flex-1 { height: calc(100dvh - 68px - env(safe-area-inset-bottom)) !important; min-height: 0 !important; padding-bottom: 0 !important; overflow: hidden !important; }
+            main { height: 100% !important; overflow-y: auto !important; overflow-x: hidden !important; padding: 12px !important; -webkit-overflow-scrolling: touch; }
+            .mac-input, input, select, textarea { font-size: 16px !important; min-height: 44px !important; }
+            .fixed.inset-0 { padding: 10px !important; }
+            .fixed.inset-0 > .bg-white, .fixed.inset-0 .rounded-2xl { max-height: 92dvh !important; overflow-y: auto !important; }
+            table { min-width: 720px; }
+            .text-4xl { font-size: 1.75rem !important; line-height: 2rem !important; }
+            .text-3xl { font-size: 1.5rem !important; line-height: 1.9rem !important; }
+            .text-2xl { font-size: 1.25rem !important; line-height: 1.65rem !important; }
+            .mobile-nav-item { min-height: 60px; color: #6b7280 !important; }
+            .mobile-nav-item.active { color: #111827 !important; font-weight: 800 !important; }
+            .mobile-nav-item span { font-size: 10px !important; }
+            #toast { width: calc(100vw - 24px) !important; justify-content: center; border-radius: 14px !important; }
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex items-center justify-center md:p-6 pb-0 bg-gray-100">
+
+    <!-- Microsoft Login Overlay (Password Only) -->
+    <div id="ms-login-overlay" class="fixed inset-0 bg-[#f3f2f1] z-[99999] flex flex-col items-center justify-center hidden">
+        <div class="bg-white p-10 w-full max-w-[440px] shadow-[0_2px_6px_rgba(0,0,0,0.2)]">
+            <div class="flex items-center gap-2 mb-6">
+                <svg viewBox="0 0 23 23" class="w-6 h-6"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>
+                <span class="text-xl font-semibold text-[#737373]">Microsoft</span>
+            </div>
+            <h2 class="text-2xl font-semibold text-[#1b1b1b] mb-4 tracking-tight">Sign in</h2>
+            <p class="text-sm text-gray-500 mb-6 font-medium">to continue to Enterprise ERP</p>
+            <form onsubmit="doLogin(event)" class="space-y-4">
+                <p id="ms-err" class="text-[#e81123] text-[13px] hidden">Incorrect password. Please try again.</p>
+                <div>
+                    <input type="password" id="ms-pass" placeholder="Enter Access Password" required class="w-full border-b border-black outline-none py-2 focus:border-b-2 focus:border-[#0067b8] text-[15px] transition-all bg-transparent placeholder-gray-600">
+                </div>
+                <p class="text-[13px] text-[#0067b8] hover:text-[#333] cursor-pointer mt-4 inline-block">Can't access your account?</p>
+                <div class="flex justify-end mt-8">
+                    <button type="submit" class="bg-[#0067b8] hover:bg-[#005da6] text-white px-8 py-2 font-semibold text-[15px] transition-colors">Sign in</button>
+                </div>
+            </form>
+        </div>
+        <div class="mt-8 text-center text-xs text-gray-500 font-mono">
+            <p>Super Admin Pass: superadmin123</p>
+            <p>Admin Pass: admin123</p>
+        </div>
+        <div class="fixed bottom-4 flex gap-4 text-xs text-gray-500">
+            <a href="#" class="hover:underline">Terms of use</a>
+            <a href="#" class="hover:underline">Privacy & cookies</a>
+            <span>...</span>
+        </div>
+    </div>
+
+    <!-- Global Loading Overlay -->
+    <div id="loader" class="hidden fixed inset-0 bg-white/90 backdrop-blur-sm z-[800] flex flex-col items-center justify-center transition-opacity">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"></div>
+        <p class="text-sm font-bold text-gray-800 tracking-wider uppercase" id="loader-msg">Loading System...</p>
+    </div>
+
+    <!-- Global Toast Notification -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 -translate-y-20 opacity-0 transition-all duration-300 bg-gray-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 z-[900]">
+        <i data-lucide="info" class="w-5 h-5 text-blue-400" id="toast-icon"></i>
+        <span id="toast-msg" class="text-sm font-bold"></span>
+    </div>
+
+    <!-- Main Window Interface -->
+    <div class="mac-window w-full h-full md:max-w-7xl flex flex-col relative bg-white">
+        <div class="mac-titlebar shrink-0 hidden md:flex justify-between">
+            <div class="mac-traffic-lights items-center">
+                <div class="traffic-light tl-red"></div>
+                <div class="traffic-light tl-yellow"></div>
+                <div class="traffic-light tl-green"></div>
+            </div>
+            <div class="text-xs font-semibold text-gray-600 absolute left-1/2 transform -translate-x-1/2">Advanced Inventory Analytics & Tracking</div>
+            <div class="flex items-center gap-2">
+                <span id="user-role-badge" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-gray-100 text-gray-600 border border-gray-200 rounded shadow-inner hidden md:inline-block"></span>
+                <span id="sync-status" class="text-[10px] font-bold px-2 py-1 bg-green-50 text-green-600 border border-green-200 rounded shadow-inner">Online</span>
+                <button onclick="doLogout()" class="text-[9px] uppercase tracking-widest font-bold px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded shadow-inner hover:bg-red-100 transition flex items-center gap-1"><i data-lucide="log-out" class="w-3 h-3"></i> Logout</button>
+            </div>
+        </div>
+
+        <div class="flex flex-1 overflow-hidden flex-col md:flex-row pb-16 md:pb-0 min-h-0">
+            <aside class="glass-panel w-64 flex-shrink-0 hidden md:flex flex-col p-4 border-r border-gray-200 overflow-y-auto">
+                <div class="mb-6">
+                    <nav class="space-y-1">
+                        <a href="index.html" id="nav-acc-link" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="pie-chart" class="w-4 h-4"></i> Accounting / Reports</a>
+                        <a href="production.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="factory" class="w-4 h-4"></i> Production</a>
+                        <a href="sales.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="shopping-cart" class="w-4 h-4"></i> Sales & Invoices</a>
+                        <a href="inventory.html" class="nav-item active w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="package" class="w-4 h-4"></i> Inventory</a>
+                        <a href="employees.html" class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700"><i data-lucide="users" class="w-4 h-4"></i> Staff & Payroll</a>
+                    </nav>
+                </div>
+                <div class="mt-auto space-y-3">
+                    <button onclick="openAdjModal()" class="w-full bg-white border border-gray-200 text-gray-800 px-4 py-3 rounded-xl text-sm font-bold shadow-sm hover:shadow transition flex items-center justify-center gap-2">
+                        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Adjust Stock
+                    </button>
+                    <button onclick="generateInventoryPDF(this)" class="w-full bg-blue-600 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-blue-700 transition transform active:scale-95 flex items-center justify-center gap-2">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Generate PDF Report
+                    </button>
+                </div>
+            </aside>
+
+            <main class="flex-1 bg-gray-50 p-4 md:p-6 flex flex-col min-w-0 min-h-0 overflow-hidden relative">
+
+                <div class="bg-white p-3 border-b border-gray-200 rounded-t-xl shrink-0 flex justify-between items-center mb-4 shadow-sm">
+                    <div class="flex gap-4 md:gap-6 px-2 overflow-x-auto">
+                        <button onclick="switchView('stock-view')" id="btn-stock-view" class="tab-btn active pb-1 text-sm font-medium text-gray-500 whitespace-nowrap">Live Stock & Analytics</button>
+                        <button onclick="switchView('log-view')" id="btn-log-view" class="tab-btn pb-1 text-sm font-medium text-gray-500 whitespace-nowrap">Adjustment Logs</button>
+                        <button onclick="switchView('material-view')" id="btn-material-view" class="tab-btn pb-1 text-sm font-medium text-gray-500 whitespace-nowrap">Bulk & Chip Stock</button>
+                    </div>
+                    <div class="md:hidden flex gap-2 shrink-0 pl-2">
+                        <button onclick="openAdjModal()" class="bg-gray-200 px-3 py-1.5 rounded-lg text-[10px] font-bold">Adjust</button>
+                        <button onclick="generateInventoryPDF(this)" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold">PDF</button>
+                    </div>
+                </div>
+
+                <!-- STOCK & ANALYTICS VIEW -->
+                <div id="stock-view" class="flex-1 flex flex-col min-h-0">
+                    <div class="flex justify-between items-center mb-4 shrink-0">
+                        <h1 class="text-xl md:text-2xl font-bold text-gray-800">Dynamic Live Stock</h1>
+                        <button onclick="toggleInfoBox()" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200 hover:bg-indigo-100 flex items-center gap-1 transition shadow-sm">
+                            <i data-lucide="help-circle" class="w-3 h-3"></i> How it works
+                        </button>
+                    </div>
+
+                    <div id="info-box" class="hidden bg-indigo-50 border border-indigo-200 p-4 rounded-xl mb-4 text-sm text-indigo-900 shrink-0 transition-all shadow-inner">
+                        <div class="flex gap-3">
+                            <i data-lucide="brain-circuit" class="w-5 h-5 shrink-0 text-indigo-500 mt-0.5"></i>
+                            <p class="leading-relaxed"><strong>System Logic:</strong> You cannot manually type stock balances. The system calculates Live Stock accurately using: <br><code class="bg-white px-1.5 py-0.5 rounded shadow-sm text-xs font-mono font-bold text-indigo-700 mt-2 inline-block">Production (In) - Sales (Out) &plusmn; Formal Adjustments</code>.<br>Adjustments directly impact the Financial Balance Sheet as Gains or Losses.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 shrink-0">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center">
+                            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lifetime FG Prod.</h3>
+                            <p class="text-2xl font-bold mt-1 text-gray-800" id="dash-prod">0</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-center">
+                            <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Lifetime FG Sold</h3>
+                            <p class="text-2xl font-bold mt-1 text-gray-800" id="dash-sold">0</p>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 shadow-sm flex flex-col justify-center">
+                            <h3 class="text-[10px] font-bold text-blue-500 uppercase tracking-widest">Total Active Stock</h3>
+                            <p class="text-2xl font-bold text-blue-700 mt-1 font-mono tracking-tight" id="dash-items">0</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-xl border border-green-100 shadow-sm flex flex-col justify-center">
+                            <h3 class="text-[10px] font-bold text-green-600 uppercase tracking-widest">Est. Asset Value</h3>
+                            <p class="text-xl md:text-2xl font-bold text-green-700 mt-1 font-mono tracking-tight" id="dash-val">0.00</p>
+                        </div>
+                    </div>
+
+                    <!-- Line Chart Analytics -->
+                    <div class="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm shrink-0 h-40 md:h-56">
+                        <canvas id="inventoryChart"></canvas>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col min-h-0">
+                        <div class="p-2 md:p-3 bg-gray-50 border-b flex flex-wrap gap-2 shrink-0 items-center rounded-t-xl">
+                            <div class="relative flex-1 min-w-[200px]">
+                                <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-2.5"></i>
+                                <input type="text" id="i-search" placeholder="Search product..." class="mac-input py-2 pl-9 text-xs w-full shadow-inner" onkeyup="updateUI()">
+                            </div>
+                            <select id="i-status" class="mac-input py-2 text-xs w-32 font-bold shrink-0" onchange="updateUI()">
+                                <option value="all">All Status</option>
+                                <option value="in">In Stock Only</option>
+                                <option value="low">Low Stock (&lt;10)</option>
+                                <option value="out">Depleted</option>
+                            </select>
+                            <select id="i-sort" class="mac-input py-2 text-xs w-48 text-gray-600 hidden md:block shrink-0" onchange="updateUI()">
+                                <option value="name">Sort: A-Z</option>
+                                <option value="qtyDesc">Stock: Highest First</option>
+                                <option value="qtyAsc">Stock: Lowest First</option>
+                                <option value="valDesc">Value: Highest First</option>
+                            </select>
+                        </div>
+
+                        <!-- SCROLLABLE TABLE CONTAINER -->
+                        <div class="flex-1 overflow-auto bg-white rounded-b-xl">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[800px]">
+                                <thead class="bg-white sticky top-0 shadow-sm border-b text-[10px] uppercase text-gray-500 tracking-wider z-10">
+                                    <tr>
+                                        <th class="p-3 bg-white">Product Description</th>
+                                        <th class="p-3 bg-white text-right">Lifetime Prod.</th>
+                                        <th class="p-3 bg-white text-right">Lifetime Sold</th>
+                                        <th class="p-3 bg-white text-right text-gray-400">Adj.</th>
+                                        <th class="p-3 bg-blue-50 text-blue-800 text-right font-bold border-l border-r border-blue-100">Current Stock</th>
+                                        <th class="p-3 bg-white text-right">Avg. Cost</th>
+                                        <th class="p-3 bg-white text-right">Asset Value (Rs)</th>
+                                        <th class="p-3 bg-white text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body" class="divide-y divide-gray-100"></tbody>
+                                <tfoot>
+                                    <tr class="border-t-2 border-gray-200 bg-gray-50 font-bold sticky bottom-0">
+                                        <td class="p-3 text-[10px] uppercase tracking-widest text-gray-500">Totals (Filtered)</td>
+                                        <td class="p-3 text-right font-mono text-gray-600" id="foot-prod">0</td>
+                                        <td class="p-3 text-right font-mono text-gray-600" id="foot-sold">0</td>
+                                        <td class="p-3 text-right font-mono text-gray-400" id="foot-adj">0</td>
+                                        <td class="p-3 text-right font-mono font-black text-blue-900 bg-blue-50 border-l border-r border-blue-100" id="foot-stock">0</td>
+                                        <td class="p-3"></td>
+                                        <td class="p-3 text-right font-mono font-black text-green-700" id="foot-val">0.00</td>
+                                        <td class="p-3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            <div id="table-empty" class="hidden p-8 text-center text-sm text-gray-400 italic">No inventory data found.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADJUSTMENT LOGS VIEW -->
+                <div id="log-view" class="flex-1 flex flex-col min-h-0 hidden">
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm flex-1 flex flex-col min-h-0">
+                        <div class="p-4 bg-gray-50 border-b shrink-0 flex justify-between items-center rounded-t-xl">
+                            <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-gray-500"></i> Stock Adjustment History</h2>
+                            <p class="text-[10px] text-gray-500 hidden md:block border bg-white px-2 py-1 rounded">Formal adjustments posted to Finance Ledger.</p>
+                        </div>
+
+                        <!-- SCROLLABLE LOG TABLE CONTAINER -->
+                        <div class="flex-1 overflow-auto bg-white rounded-b-xl">
+                            <table class="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
+                                <thead class="bg-white sticky top-0 shadow-sm border-b text-[10px] uppercase text-gray-500 tracking-wider z-10">
+                                    <tr>
+                                        <th class="p-3 bg-white">Date</th>
+                                        <th class="p-3 bg-white">Ref ID</th>
+                                        <th class="p-3 bg-white">Item Name</th>
+                                        <th class="p-3 bg-white text-center">Type</th>
+                                        <th class="p-3 bg-white text-right">Qty Impact</th>
+                                        <th class="p-3 bg-white text-right">Value (Rs)</th>
+                                        <th class="p-3 bg-white">Reason / Memo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="log-body" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                            <div id="log-empty" class="hidden p-8 text-center text-sm text-gray-400 italic">No adjustment logs found.</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <nav class="md:hidden glass-panel fixed bottom-0 w-full border-t flex justify-around items-center z-50 h-[65px] pb-safe">
+            <a href="index.html" id="mobile-nav-acc-link" class="mobile-nav-item"><i data-lucide="pie-chart" class="w-6 h-6"></i><span>Finance</span></a>
+            <a href="production.html" class="mobile-nav-item"><i data-lucide="factory" class="w-6 h-6"></i><span>Prod</span></a>
+            <a href="sales.html" class="mobile-nav-item"><i data-lucide="shopping-cart" class="w-6 h-6"></i><span>Sales</span></a>
+            <a href="inventory.html" class="mobile-nav-item active"><i data-lucide="package" class="w-6 h-6"></i><span>Inv</span></a>
+            <a href="employees.html" class="mobile-nav-item"><i data-lucide="users" class="w-6 h-6"></i><span>Staff</span></a>
+        </nav>
+    </div>
+
+                <!-- MATERIAL FLOW VIEW -->
+                <div id="material-view" class="flex-1 flex flex-col min-h-0 hidden">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 shrink-0">
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Bulk Plastic Balance</p><p id="mat-bulk-kg" class="text-xl font-black font-mono text-slate-800 mt-1">0.00 Kg</p></div>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm"><p class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Bulk Asset Value</p><p id="mat-bulk-value" class="text-xl font-black font-mono text-blue-800 mt-1">0.00</p></div>
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 shadow-sm"><p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Chip Balance</p><p id="mat-chip-kg" class="text-xl font-black font-mono text-emerald-900 mt-1">0.00 Kg</p></div>
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 shadow-sm"><p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Chip Asset Value</p><p id="mat-chip-value" class="text-xl font-black font-mono text-emerald-900 mt-1">0.00</p></div>
+                    </div>
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1 min-h-0">
+                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col min-h-0 overflow-hidden">
+                            <div class="p-4 border-b bg-gray-50"><h2 class="text-sm font-black text-gray-800 flex items-center gap-2"><i data-lucide="package-open" class="w-4 h-4 text-blue-600"></i> Bulk Raw Material Stock</h2><p class="text-[10px] text-gray-500 mt-1">Purchased bulk plastic minus material issued to chip conversion.</p></div>
+                            <div class="overflow-auto flex-1"><table class="w-full min-w-[700px] text-xs"><thead class="sticky top-0 bg-white border-b text-[9px] uppercase text-gray-500"><tr><th class="p-3 text-left">Material</th><th class="p-3 text-right">Purchased Kg</th><th class="p-3 text-right">Converted Kg</th><th class="p-3 text-right">Balance Kg</th><th class="p-3 text-right">Avg Cost/Kg</th><th class="p-3 text-right">Value</th></tr></thead><tbody id="bulk-stock-body" class="divide-y"></tbody></table></div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-emerald-200 shadow-sm flex flex-col min-h-0 overflow-hidden">
+                            <div class="p-4 border-b bg-emerald-50"><h2 class="text-sm font-black text-emerald-900 flex items-center gap-2"><i data-lucide="recycle" class="w-4 h-4 text-emerald-600"></i> Converted Chip Stock</h2><p class="text-[10px] text-emerald-700 mt-1">Conversion output minus chip quantity consumed by production.</p></div>
+                            <div class="overflow-auto flex-1"><table class="w-full min-w-[700px] text-xs"><thead class="sticky top-0 bg-white border-b text-[9px] uppercase text-gray-500"><tr><th class="p-3 text-left">Chip</th><th class="p-3 text-right">Converted Kg</th><th class="p-3 text-right">Consumed Kg</th><th class="p-3 text-right">Balance Kg</th><th class="p-3 text-right">Avg Cost/Kg</th><th class="p-3 text-right">Value</th></tr></thead><tbody id="chip-stock-body" class="divide-y"></tbody></table></div>
+                        </div>
+                    </div>
+                </div>
+
+    <!-- Add Adjustment Modal -->
+    <div id="add-modal" class="hidden fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[95vh]">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center rounded-t-2xl shrink-0">
+                <h2 class="text-lg font-bold text-gray-800">Formal Stock Adjustment</h2>
+                <button onclick="document.getElementById('add-modal').classList.add('hidden')" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300 transition"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto">
+                <div class="text-[11px] text-blue-800 mb-6 border border-blue-200 p-3 rounded-lg bg-blue-50 leading-relaxed flex gap-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-blue-500 mt-0.5"></i>
+                    <p><strong>Double-Entry Warning:</strong> Adjustments post directly to the accounting ledger as <strong>Inventory Gain (Revenue)</strong> or <strong>Inventory Loss (Expense)</strong>. Ensure values are mathematically accurate.</p>
+                </div>
+
+                <form id="add-form" class="space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Date</label><input type="date" id="f-date" required class="mac-input w-full bg-gray-50"></div>
+                        <div><label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Adjustment Type</label><select id="f-type" class="mac-input w-full font-bold border-gray-300 focus:ring-blue-500" onchange="calcAdjVal()"><option value="Positive">Gain (+) / Found</option><option value="Negative">Loss (-) / Damage</option></select></div>
+                    </div>
+
+                    <div class="border border-gray-200 p-5 rounded-xl bg-gray-50 shadow-inner">
+                        <div>
+                            <label class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1 block">Target Inventory Item</label>
+                            <input type="text" id="f-item" required class="mac-input w-full font-bold bg-white text-base border-blue-300 focus:ring-blue-500 shadow-sm" list="item-list" placeholder="Search database items..." oninput="fillAvgCost()" onchange="fillAvgCost()">
+                            <span id="f-item-stock" class="text-[10px] text-gray-500 mt-1 block leading-tight font-mono"></span>
+                        </div>
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Qty Impact</label>
+                                <input type="number" min="0" step="1" id="f-qty" required class="mac-input w-full font-mono text-xl text-center border-gray-300 focus:ring-blue-500 bg-white shadow-sm" placeholder="0" oninput="calcAdjVal()">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Unit Cost (Rs)</label>
+                                <input type="number" min="0" step="0.01" id="f-unit" required class="mac-input w-full font-mono text-sm text-right bg-white border-gray-300 focus:ring-blue-500 shadow-sm" placeholder="0.00" oninput="calcAdjVal()">
+                                <span class="text-[9px] text-gray-400 mt-1 block leading-tight">Auto-filled from prod. avg</span>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-red-600 uppercase tracking-widest block mb-1">Total Value Impact (Rs)</label>
+                                <input type="number" min="0" step="0.01" id="f-val" required class="mac-input w-full font-mono text-xl text-right bg-red-50 text-red-900 border-red-300 font-bold focus:ring-red-500 shadow-inner" placeholder="0.00" oninput="calcUnitFromVal()">
+                            </div>
+                        </div>
+                        <!-- Live resulting-stock preview -->
+                        <div class="mt-4 bg-white border border-gray-200 rounded-lg p-3 flex justify-between items-center shadow-sm">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Resulting Stock After Adjustment</span>
+                            <span class="text-lg font-mono font-black text-blue-700" id="f-result-stock">0</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-1">Authorized Notes (Optional)</label>
+                        <input type="text" id="f-notes" class="mac-input w-full bg-white border-gray-300 focus:ring-blue-500" placeholder="e.g. Annual audit correction, warehouse flood damage">
+                    </div>
+
+                    <button id="btn-submit" type="submit" class="w-full bg-indigo-600 text-white py-4 mt-2 rounded-xl text-base font-bold shadow-lg flex justify-center items-center gap-2 hover:bg-indigo-700 transform active:scale-95 transition">
+                        <i data-lucide="check-square" class="w-5 h-5"></i> Commit Financial Adjustment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <datalist id="item-list"></datalist>
+
+    <!-- Stripe-Style Advanced PDF Template -->
+    <div id="inventory-pdf-template" class="hidden bg-white stripe-pdf" style="width: 210mm; min-height: 297mm; padding: 50px;">
+
+        <div class="flex justify-between items-end border-b-2 border-gray-900 pb-6 mb-8">
+            <div>
+                <h1 class="text-4xl font-black tracking-tighter">AR PLASTIC DATA</h1>
+                <p class="text-[10px] text-gray-500 mt-1 uppercase tracking-widest font-bold">Enterprise Manufacturing Solutions</p>
+                <p class="text-[9px] text-red-500 mt-2 font-bold tracking-widest">CONFIDENTIAL SYSTEM AUDIT REPORT</p>
+            </div>
+            <div class="text-right">
+                <h2 class="text-3xl font-light text-gray-400 uppercase tracking-widest mb-1">Inventory Audit</h2>
+                <p class="text-xs font-bold text-gray-800 mt-2">Date: <span id="pdf-date" class="font-mono text-gray-600 font-normal"></span></p>
+            </div>
+        </div>
+
+        <div class="flex gap-6 mb-8">
+            <div class="flex-1 bg-gray-50 border border-gray-200 p-5 rounded-lg">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500">Active Items in System</p>
+                <p class="text-3xl font-black mt-1" id="pdf-tot-items"></p>
+            </div>
+            <div class="flex-1 bg-blue-50 border border-blue-200 p-5 rounded-lg">
+                <p class="text-[10px] uppercase tracking-widest font-bold text-blue-700">Total Capital Asset Value</p>
+                <p class="text-3xl font-black font-mono text-blue-900 mt-1 tracking-tight" id="pdf-tot-val"></p>
+            </div>
+        </div>
+
+        <table class="stripe-table">
+            <thead>
+                <tr>
+                    <th class="w-1/3">Item Description</th>
+                    <th class="text-center w-12">Prod</th>
+                    <th class="text-center w-12">Sold</th>
+                    <th class="text-center w-12 text-gray-400">Adj</th>
+                    <th class="text-right w-16 text-blue-700">Stock</th>
+                    <th class="text-right w-24">Avg Cost</th>
+                    <th class="text-right w-28">Total Value</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-table-body">
+                <!-- Dynamically populated -->
+            </tbody>
+        </table>
+
+        <div class="border-t border-gray-200 pt-8 mt-12 flex justify-between items-end">
+            <div>
+                <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Data Integrity Verification</p>
+                <p class="text-[10px] text-gray-500 w-80 leading-relaxed mt-1">This report is dynamically calculated via double-entry financial logs. Values represent strict internal Cost of Goods Sold (COGS). Unaudited modifications are strictly prohibited.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-48 border-b-2 border-gray-800 mb-2"></div>
+                <p class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Authorized Signature</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let backendUrl = localStorage.getItem('erp_backend_url') || 'https://script.google.com/macros/s/AKfycbyXl2ysDYn0ROMdTyWXPJ6FGmJAPiexRe3WwDGfXLyOVP9Rw-IREhZmFEYYsRkX5TKj_g/exec';
+        let sysData = { employees: [], conversions: [], production: [], sales: [], financials: [], payroll: [], adjustments: [], rmPurchases: [] };
+        let currentStockMap = {};
+        let inventoryChartInstance = null;
+        const LOW_STOCK_THRESHOLD = 10;
+
+        lucide.createIcons();
+        document.getElementById('f-date').valueAsDate = new Date();
+        document.getElementById('pdf-date').innerText = new Date().toLocaleString();
+
+        // --- AUTHENTICATION ENGINE ---
+        const authOverlay = document.getElementById('ms-login-overlay');
+        
+        function checkAuth() {
+            const userStr = localStorage.getItem('erp_user');
+            const path = window.location.pathname.toLowerCase();
+            const isAccounting = path.includes('index.html') || path.endsWith('/');
+
+            if (!userStr) {
+                if(authOverlay) authOverlay.classList.remove('hidden');
+                return false;
+            }
+
+            const user = JSON.parse(userStr);
+            if (user.role === 'Admin' && isAccounting) {
+                window.location.href = 'production.html';
+                return false;
+            }
+
+            if(authOverlay) authOverlay.classList.add('hidden');
+            
+            let roleBadge = document.getElementById('user-role-badge');
+            if(roleBadge) {
+                roleBadge.innerText = user.role;
+                roleBadge.classList.remove('hidden');
+            }
+
+            // Restrict UI for Admin
+            if(user.role === 'Admin') {
+                let n1 = document.getElementById('nav-acc-link'); if(n1) n1.classList.add('hidden');
+                let n2 = document.getElementById('mobile-nav-acc-link'); if(n2) n2.classList.add('hidden');
+            }
+            
+            return true;
+        }
+
+        function doLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('ms-pass').value;
+            const err = document.getElementById('ms-err');
+
+            if (pass === 'superadmin123') {
+                localStorage.setItem('erp_user', JSON.stringify({ role: 'Super Admin' }));
+                window.location.reload();
+            } else if (pass === 'admin123') {
+                localStorage.setItem('erp_user', JSON.stringify({ role: 'Admin' }));
+                window.location.href = 'production.html';
+            } else {
+                err.classList.remove('hidden');
+            }
+        }
+
+        function doLogout() {
+            localStorage.removeItem('erp_user');
+            window.location.href = 'index.html'; 
+        }
+
+        // --- CUSTOM MODALS ---
+        function customConfirm(msg) {
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm px-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-gray-200">
+                        <div class="flex items-center gap-3 mb-4 text-amber-600">
+                            <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                            <h3 class="text-lg font-black tracking-tight text-gray-900">Confirmation Required</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-6 font-medium leading-relaxed">${msg}</p>
+                        <div class="flex gap-3 justify-end">
+                            <button id="cc-cancel" class="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition text-sm">Cancel</button>
+                            <button id="cc-ok" class="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition text-sm shadow-md">Confirm Action</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                lucide.createIcons();
+                document.getElementById('cc-cancel').onclick = () => { modal.remove(); resolve(false); };
+                document.getElementById('cc-ok').onclick = () => { modal.remove(); resolve(true); };
+            });
+        }
+
+        function customPrompt(msg) {
+            return new Promise((resolve) => {
+                let modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center backdrop-blur-sm px-4';
+                modal.innerHTML = `
+                    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-red-200">
+                        <div class="flex items-center gap-3 mb-4 text-red-600">
+                            <i data-lucide="alert-octagon" class="w-6 h-6"></i>
+                            <h3 class="text-lg font-black tracking-tight text-gray-900">Critical Action</h3>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4 font-medium leading-relaxed">${msg.replace(/\n/g, '<br>')}</p>
+                        <input type="text" id="cp-input" class="w-full border border-gray-300 rounded-xl p-3 mb-6 focus:ring-2 focus:ring-red-500 outline-none transition" placeholder="Type here...">
+                        <div class="flex gap-3 justify-end">
+                            <button id="cp-cancel" class="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition text-sm">Cancel</button>
+                            <button id="cp-ok" class="px-4 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition text-sm shadow-md">Execute</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                lucide.createIcons();
+                document.getElementById('cp-input').focus();
+                document.getElementById('cp-cancel').onclick = () => { modal.remove(); resolve(null); };
+                document.getElementById('cp-ok').onclick = () => { resolve(document.getElementById('cp-input').value); modal.remove(); };
+            });
+        }
+
+        function switchView(vid) {
+            let sv = document.getElementById('stock-view'); if (sv) sv.classList.add('hidden');
+            let lv = document.getElementById('log-view'); if (lv) lv.classList.add('hidden');
+            let mv = document.getElementById('material-view'); if (mv) mv.classList.add('hidden');
+            let bsv = document.getElementById('btn-stock-view'); if (bsv) bsv.classList.remove('active');
+            let blv = document.getElementById('btn-log-view'); if (blv) blv.classList.remove('active');
+            let bmv = document.getElementById('btn-material-view'); if (bmv) bmv.classList.remove('active');
+
+            let tv = document.getElementById(vid); if (tv) tv.classList.remove('hidden');
+            let tb = document.getElementById('btn-' + vid); if (tb) tb.classList.add('active');
+        }
+
+        function toggleInfoBox() {
+            const box = document.getElementById('info-box');
+            if(box) box.classList.toggle('hidden');
+        }
+
+        function showLoader(show, msg="Processing...") {
+            let loader = document.getElementById('loader');
+            if(!loader) return;
+            document.getElementById('loader-msg').innerText = msg;
+            if(show) {
+                loader.classList.remove('hidden');
+                setTimeout(() => loader.classList.remove('opacity-0'), 10);
+            } else {
+                loader.classList.add('opacity-0');
+                setTimeout(() => loader.classList.add('hidden'), 300);
+            }
+        }
+
+        function showToast(msg, type="success") {
+            let t=document.getElementById('toast'), i=document.getElementById('toast-icon');
+            if(!t || !i) return;
+            document.getElementById('toast-msg').innerText=msg;
+            t.className=`fixed top-4 left-1/2 transform -translate-x-1/2 transition-all duration-300 px-5 py-3 rounded-full shadow-2xl flex items-center gap-3 z-[700] translate-y-0 opacity-100 ${type==='error'?'bg-red-600 text-white':'bg-gray-900 text-white'}`;
+            i.setAttribute('data-lucide', type==='error'?'alert-circle':'check-circle');
+            lucide.createIcons();
+            setTimeout(() => { t.classList.replace('translate-y-0', '-translate-y-20'); t.classList.replace('opacity-100', 'opacity-0'); }, 3000);
+        }
+
+        async function apiGet(force=false) {
+            try {
+                const joiner = backendUrl.includes('?') ? '&' : '?';
+                const url = backendUrl + joiner + 'modules=production,sales,adjustments,rmPurchases,conversions' + (force ? '&refresh=true&_ts='+Date.now() : '');
+                let res = await fetch(url, { cache:'no-store' });
+                if(!res.ok) throw new Error("Network Response Error");
+                return await res.json();
+            } catch(e) {
+                console.error("API GET Error:", e);
+                return null;
+            }
+        }
+        async function apiPost(payload) {
+            try {
+                let res = await fetch(backendUrl, { method:'POST', body:JSON.stringify(payload) });
+                if(!res.ok) throw new Error("Network Response Error");
+                return await res.json();
+            } catch(e) {
+                console.error("API POST Error:", e);
+                return null;
+            }
+        }
+
+        function safeArray(arr) { return Array.isArray(arr) ? arr : []; }
+        function formatMoney(num) {
+            let n = parseFloat(num);
+            if(isNaN(n)) n = 0;
+            return new Intl.NumberFormat('en-LK', { minimumFractionDigits:2, maximumFractionDigits:2 }).format(n);
+        }
+
+        function normalizeSysData() {
+            ['production','sales','adjustments','rmPurchases','conversions'].forEach(k => {
+                sysData[k] = safeArray(sysData[k]).map(r => {
+                    if(r && typeof r.parsedJson === 'string' && r.parsedJson.trim()) { try { r.parsedJson = JSON.parse(r.parsedJson); } catch(e){} }
+                    return r;
+                });
+            });
+        }
+
+        function loadScriptOnce(src, globalName) {
+            if(globalName && window[globalName]) return Promise.resolve();
+            return new Promise((resolve,reject)=>{
+                const exists=[...document.scripts].find(x=>x.src===src);
+                if(exists){ exists.addEventListener('load',resolve,{once:true}); exists.addEventListener('error',reject,{once:true}); return; }
+                const sc=document.createElement('script'); sc.src=src; sc.onload=resolve; sc.onerror=reject; document.head.appendChild(sc);
+            });
+        }
+        async function ensureHtml2Pdf(){ if(typeof html2pdf==='undefined') await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js','html2pdf'); }
+
+        async function fetchData(force=false) {
+            showLoader(true, "Calculating Live Inventory Engine...");
+            const cacheKey='cksys_v2_inventory_v13_final';
+            try {
+                let res = await apiGet(force);
+                if(res?.status==='success') {
+                    sysData=res.data;
+                    normalizeSysData();
+                    try { localStorage.setItem(cacheKey, JSON.stringify(sysData)); } catch(e){}
+                    updateUI();
+                } else {
+                    let c=localStorage.getItem(cacheKey);
+                    if(c){
+                        try {
+                            sysData=JSON.parse(c);
+                            updateUI();
+                            showToast("Operating offline with cached data.", "info");
+                        } catch(e) {
+                            localStorage.removeItem(cacheKey);
+                            showToast("Cache error. Using empty dataset.", "error");
+                            updateUI();
+                        }
+                    } else showToast("Failed to connect to Database", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                showToast("System Error while fetching data", "error");
+                updateUI();
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        function calculateInventory() {
+            let sm = {};
+            const seed = nm => { if(!sm[nm]) sm[nm]={name:nm, produced:0, sold:0, adjusted:0, current:0, value:0, totalCostIn:0, costOut:0, adjustmentValue:0, avgCost:0}; return sm[nm]; };
+            safeArray(sysData.production).forEach(p=>{ let nm=p.parsedJson?.item?.name; if(!nm)return; const x=seed(nm); x.produced += parseFloat(p.parsedJson?.item?.qty)||0; x.totalCostIn += parseFloat(p.parsedJson?.costing?.totalCost)||0; });
+            safeArray(sysData.sales).forEach(s=>{ safeArray(s.parsedJson?.items).forEach(i=>{ let nm=i.itemName; if(!nm)return; const x=seed(nm); const q=parseFloat(i.qty)||0; x.sold+=q; x.costOut += parseFloat(i.lineCost ?? (q*(parseFloat(i.unitCost)||0)))||0; }); });
+            safeArray(sysData.adjustments).forEach(a=>{ let nm=a.parsedJson?.item; if(!nm)return; const x=seed(nm),q=parseFloat(a.parsedJson?.qty)||0,v=parseFloat(a.parsedJson?.value)||0; if(a.parsedJson?.type==='Positive'){x.adjusted+=q;x.adjustmentValue+=v;}else{x.adjusted-=q;x.adjustmentValue-=v;} });
+            Object.values(sm).forEach(x=>{ x.current=x.produced-x.sold+x.adjusted; x.value=Math.max(0,x.totalCostIn-x.costOut+x.adjustmentValue); x.avgCost=x.current>0?x.value/x.current:(x.produced>0?x.totalCostIn/x.produced:0); });
+            return sm;
+        }
+
+        function calculateMaterialFlow() {
+            const bulk = {}, chips = {};
+            const seedBulk=n=>{if(!bulk[n])bulk[n]={name:n,totalIn:0,totalCost:0,totalOut:0,costOut:0,current:0,avgCost:0,value:0};return bulk[n];};
+            const seedChip=(n,t)=>{if(!chips[n])chips[n]={name:n,type:t||'',totalIn:0,totalCost:0,totalOut:0,costOut:0,current:0,avgCost:0,value:0};return chips[n];};
+            safeArray(sysData.rmPurchases).forEach(r=>{const q=r.parsedJson||{},n=q.materialName;if(!n)return;const x=seedBulk(n);x.totalIn+=parseFloat(q.qty)||0;x.totalCost+=parseFloat(q.totalCost)||0;});
+            safeArray(sysData.conversions).forEach(r=>{const q=r.parsedJson||{},m=q.sourceMaterial||{},n=m.name;if(n){const x=seedBulk(n);x.totalOut+=parseFloat(m.kg)||0;x.costOut+=parseFloat(m.cost)||0;}const c=q.chip||{},cn=c.name||c.type;if(cn){const x=seedChip(cn,c.type);x.totalIn+=parseFloat(c.outputKg)||0;x.totalCost+=parseFloat(q.costing?.totalConvertedCost)||0;}});
+            safeArray(sysData.production).forEach(r=>{const q=r.parsedJson||{},m=q.rawMaterial||{},n=m.name;if(!n)return;if(String(m.stage||'').toUpperCase()==='CHIP'){const x=seedChip(n,'');x.totalOut+=parseFloat(m.kg)||0;x.costOut+=parseFloat(m.cost)||0;}else{const x=seedBulk(n);x.totalOut+=parseFloat(m.kg)||0;x.costOut+=parseFloat(m.cost)||0;}});
+            Object.values(bulk).forEach(x=>{x.current=x.totalIn-x.totalOut;x.value=Math.max(0,x.totalCost-x.costOut);x.avgCost=x.current>0?x.value/x.current:(x.totalIn>0?x.totalCost/x.totalIn:0);});
+            Object.values(chips).forEach(x=>{x.current=x.totalIn-x.totalOut;x.value=Math.max(0,x.totalCost-x.costOut);x.avgCost=x.current>0?x.value/x.current:(x.totalIn>0?x.totalCost/x.totalIn:0);});
+            return {bulk,chips};
+        }
+
+        function renderMaterialFlow(){
+            const flow=calculateMaterialFlow(); let bulkKg=0,bulkVal=0,chipKg=0,chipVal=0;
+            const bulkRows=Object.values(flow.bulk).sort((a,b)=>a.name.localeCompare(b.name)).map(x=>{bulkKg+=x.current;bulkVal+=x.value;return `<tr class="hover:bg-blue-50"><td class="p-3 font-bold">${x.name}</td><td class="p-3 text-right font-mono">${x.totalIn.toFixed(2)}</td><td class="p-3 text-right font-mono text-violet-700">${x.totalOut.toFixed(2)}</td><td class="p-3 text-right font-mono font-black ${x.current<0?'text-red-600':'text-blue-800'}">${x.current.toFixed(2)}</td><td class="p-3 text-right font-mono">${formatMoney(x.avgCost)}</td><td class="p-3 text-right font-mono font-black">${formatMoney(x.value)}</td></tr>`;}).join('');
+            const chipRows=Object.values(flow.chips).sort((a,b)=>a.name.localeCompare(b.name)).map(x=>{chipKg+=x.current;chipVal+=x.value;return `<tr class="hover:bg-emerald-50"><td class="p-3"><span class="font-bold">${x.name}</span><span class="block text-[9px] uppercase text-gray-400">${x.type||'Chip'}</span></td><td class="p-3 text-right font-mono">${x.totalIn.toFixed(2)}</td><td class="p-3 text-right font-mono text-violet-700">${x.totalOut.toFixed(2)}</td><td class="p-3 text-right font-mono font-black ${x.current<0?'text-red-600':'text-emerald-800'}">${x.current.toFixed(2)}</td><td class="p-3 text-right font-mono">${formatMoney(x.avgCost)}</td><td class="p-3 text-right font-mono font-black">${formatMoney(x.value)}</td></tr>`;}).join('');
+            const bb=document.getElementById('bulk-stock-body'), cb=document.getElementById('chip-stock-body'); if(bb)bb.innerHTML=bulkRows||'<tr><td colspan="6" class="p-8 text-center text-gray-400">No bulk material purchases yet.</td></tr>'; if(cb)cb.innerHTML=chipRows||'<tr><td colspan="6" class="p-8 text-center text-gray-400">No converted chip stock yet.</td></tr>';
+            document.getElementById('mat-bulk-kg').innerText=bulkKg.toFixed(2)+' Kg'; document.getElementById('mat-bulk-value').innerText=formatMoney(bulkVal); document.getElementById('mat-chip-kg').innerText=chipKg.toFixed(2)+' Kg'; document.getElementById('mat-chip-value').innerText=formatMoney(chipVal);
+        }
+
+        function buildChartData() {
+            let monthlyData = {};
+
+            safeArray(sysData.production).forEach(p => {
+                if(!p.date) return; let m = String(p.date).substring(0,7);
+                if(!monthlyData[m]) monthlyData[m] = { in: 0, out: 0 };
+                monthlyData[m].in += parseFloat(p.parsedJson?.item?.qty) || 0;
+            });
+            safeArray(sysData.sales).forEach(s => {
+                if(!s.date) return; let m = String(s.date).substring(0,7);
+                if(!monthlyData[m]) monthlyData[m] = { in: 0, out: 0 };
+                safeArray(s.parsedJson?.items).forEach(i => monthlyData[m].out += parseFloat(i.qty) || 0);
+            });
+
+            let labels = Object.keys(monthlyData).sort();
+            if(labels.length > 12) labels = labels.slice(labels.length - 12);
+
+            let dataIn = labels.map(l => monthlyData[l].in);
+            let dataOut = labels.map(l => monthlyData[l].out);
+
+            return { labels, dataIn, dataOut };
+        }
+
+        function renderChart() {
+            let canvas = document.getElementById('inventoryChart');
+            if(!canvas || typeof Chart === 'undefined') return; // safeguard
+
+            let cd = buildChartData();
+            let ctx = canvas.getContext('2d');
+            if(inventoryChartInstance) inventoryChartInstance.destroy();
+
+            inventoryChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: cd.labels.map(l => {
+                        let d = new Date(l + '-01'); return d.toLocaleString('default', { month: 'short', year: 'numeric' });
+                    }),
+                    datasets: [
+                        { label: 'Mfg Volume (Qty In)', data: cd.dataIn, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 4, pointHoverRadius: 6 },
+                        { label: 'Sales Volume (Qty Out)', data: cd.dataOut, borderColor: '#ef4444', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.4, borderWidth: 2, pointRadius: 4, pointHoverRadius: 6 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { boxWidth: 12, usePointStyle: true, font: {size: 11, family: 'sans-serif'} } } }, scales: { x: { grid: {display: false}, ticks: {font: {size: 10}} }, y: { beginAtZero: true, grid: {color: '#f3f4f6'}, ticks: {font: {size: 10}} } } }
+            });
+        }
+
+        function updateUI() {
+            try {
+                currentStockMap = calculateInventory();
+                let html='', tp=0, ts=0, ti=0, tval=0, dl='';
+                let logHtml='', logCount=0, itemCount=0;
+                
+                // Filtered footer totals
+                let fProd=0, fSold=0, fAdj=0, fStock=0, fVal=0;
+
+                let qEl = document.getElementById('i-search');
+                let q = qEl ? qEl.value.toLowerCase() : '';
+
+                let statEl = document.getElementById('i-status');
+                let stat = statEl ? statEl.value : 'all';
+
+                let sortEl = document.getElementById('i-sort');
+                let sort = sortEl ? sortEl.value : 'name';
+
+                let arr = Object.values(currentStockMap);
+
+                // Sort Array
+                if(sort === 'name') arr.sort((a,b) => a.name.localeCompare(b.name));
+                if(sort === 'qtyDesc') arr.sort((a,b) => b.current - a.current);
+                if(sort === 'qtyAsc') arr.sort((a,b) => a.current - b.current);
+                if(sort === 'valDesc') arr.sort((a,b) => b.value - a.value);
+
+                arr.forEach(s => {
+                    dl += `<option value="${s.name}">`;
+                    tp += s.produced; ts += s.sold; ti++; tval += s.value;
+
+                    // UI Filters
+                    if(q && !s.name.toLowerCase().includes(q)) return;
+                    if(stat === 'in' && s.current <= 0) return;
+                    if(stat === 'low' && (s.current <= 0 || s.current > LOW_STOCK_THRESHOLD)) return;
+                    if(stat === 'out' && s.current > 0) return;
+
+                    itemCount++;
+                    // Filtered footer aggregation
+                    fProd += s.produced; fSold += s.sold; fAdj += s.adjusted; fStock += s.current; fVal += s.value;
+
+                    let st = s.current > LOW_STOCK_THRESHOLD ? '<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm border border-green-200">In Stock</span>' : (s.current > 0 ? '<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm border border-yellow-200">Low</span>' : '<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse shadow-sm border border-red-200">Out</span>');
+
+                    html += `<tr class="hover:bg-blue-50 transition">
+                                <td class="p-3 font-bold text-gray-800">${s.name}</td>
+                                <td class="p-3 text-right font-mono text-gray-500">${s.produced.toLocaleString()}</td>
+                                <td class="p-3 text-right font-mono text-gray-500">${s.sold.toLocaleString()}</td>
+                                <td class="p-3 text-right font-mono text-gray-400">${s.adjusted!==0?(s.adjusted>0?'+':'')+s.adjusted:'-'}</td>
+                                <td class="p-3 text-right font-mono font-black ${s.current<0?'text-red-600':'text-blue-900'} bg-blue-50 border-l border-r border-blue-100 text-lg">${s.current.toLocaleString()}</td>
+                                <td class="p-3 text-right font-mono text-gray-500 text-xs">${formatMoney(s.avgCost)}</td>
+                                <td class="p-3 text-right font-mono font-bold text-green-700">${formatMoney(s.value)}</td>
+                                <td class="p-3 text-center">${st}</td>
+                            </tr>`;
+                });
+
+                let tBody = document.getElementById('table-body');
+                if (tBody) tBody.innerHTML = html;
+
+                let tEmpty = document.getElementById('table-empty');
+                if (tEmpty) tEmpty.classList.toggle('hidden', itemCount > 0);
+
+                // Filtered footer
+                let setTxt = (id, v) => { let el = document.getElementById(id); if(el) el.innerText = v; };
+                setTxt('foot-prod', fProd.toLocaleString());
+                setTxt('foot-sold', fSold.toLocaleString());
+                setTxt('foot-adj', (fAdj>0?'+':'') + fAdj.toLocaleString());
+                setTxt('foot-stock', fStock.toLocaleString());
+                setTxt('foot-val', formatMoney(fVal));
+
+                let itemList = document.getElementById('item-list');
+                if (itemList) itemList.innerHTML = dl;
+
+                let dProd = document.getElementById('dash-prod'); if(dProd) dProd.innerText = tp.toLocaleString();
+                let dSold = document.getElementById('dash-sold'); if(dSold) dSold.innerText = ts.toLocaleString();
+                let dItems = document.getElementById('dash-items'); if(dItems) dItems.innerText = ti.toLocaleString();
+                let dVal = document.getElementById('dash-val'); if(dVal) dVal.innerText = formatMoney(tval);
+
+                // Update Logs Table safely
+                safeArray(sysData.adjustments).sort((a,b) => {
+                    let d1 = a.date ? new Date(a.date) : 0;
+                    let d2 = b.date ? new Date(b.date) : 0;
+                    return d2 - d1;
+                }).forEach(a => {
+                    let p = a.parsedJson; if(!p) return;
+                    logCount++;
+                    let isGain = p.type === 'Positive';
+                    logHtml += `<tr class="hover:bg-gray-50 transition">
+                                    <td class="p-3 text-xs text-gray-500">${a.date ? String(a.date).substring(0,10) : ''}</td>
+                                    <td class="p-3 text-[10px] font-mono text-gray-400">${a.refId||'-'}</td>
+                                    <td class="p-3 font-bold text-gray-800">${p.item}</td>
+                                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase ${isGain?'bg-green-100 text-green-700 border border-green-200':'bg-red-100 text-red-700 border border-red-200'}">${isGain?'Gain':'Loss'}</span></td>
+                                    <td class="p-3 text-right font-mono font-bold ${isGain?'text-green-600':'text-red-600'}">${isGain?'+':'-'}${parseFloat(p.qty)||0}</td>
+                                    <td class="p-3 text-right font-mono font-bold text-gray-700">${formatMoney(p.value)}</td>
+                                    <td class="p-3 text-xs text-gray-500 truncate max-w-[200px]" title="${p.notes||'-'}">${p.notes||'-'}</td>
+                                </tr>`;
+                });
+
+                let logBody = document.getElementById('log-body');
+                if (logBody) logBody.innerHTML = logHtml;
+
+                let lEmpty = document.getElementById('log-empty');
+                if (lEmpty) lEmpty.classList.toggle('hidden', logCount > 0);
+
+                renderMaterialFlow();
+                if(typeof Chart === 'undefined') loadScriptOnce('https://cdn.jsdelivr.net/npm/chart.js','Chart').then(renderChart).catch(()=>{}); else renderChart();
+                lucide.createIcons();
+            } catch (err) {
+                console.error("UI Update Error:", err);
+            }
+        }
+
+        function openAdjModal() {
+            // Ensure fresh stock map for live previews and avg-cost auto-fill
+            currentStockMap = calculateInventory();
+            document.getElementById('add-form').reset();
+            document.getElementById('f-date').valueAsDate = new Date();
+            document.getElementById('f-item-stock').innerText = '';
+            document.getElementById('f-result-stock').innerText = '0';
+            document.getElementById('add-modal').classList.remove('hidden');
+        }
+
+        // Auto-calculate financial value of adjustment based on avg cost + show current stock
+        function fillAvgCost() {
+            let nm = document.getElementById('f-item').value;
+            let info = document.getElementById('f-item-stock');
+            if(currentStockMap[nm]) {
+                document.getElementById('f-unit').value = currentStockMap[nm].avgCost.toFixed(2);
+                if(info) info.innerText = `Current stock: ${currentStockMap[nm].current.toLocaleString()}  |  Avg cost: Rs. ${formatMoney(currentStockMap[nm].avgCost)}`;
+            } else {
+                document.getElementById('f-unit').value = '';
+                if(info) info.innerText = nm ? 'New item (not yet in inventory database).' : '';
+            }
+            calcAdjVal();
+        }
+
+        function calcAdjVal() {
+            let q = Math.abs(parseFloat(document.getElementById('f-qty').value) || 0);
+            let c = Math.abs(parseFloat(document.getElementById('f-unit').value) || 0);
+            document.getElementById('f-val').value = (q * c).toFixed(2);
+            updateResultStock();
+        }
+
+        // Allow reverse calculation if they type Total Value manually
+        function calcUnitFromVal() {
+            let q = Math.abs(parseFloat(document.getElementById('f-qty').value) || 0);
+            let v = Math.abs(parseFloat(document.getElementById('f-val').value) || 0);
+            if (q > 0) {
+                document.getElementById('f-unit').value = (v / q).toFixed(2);
+            }
+            updateResultStock();
+        }
+
+        // Live preview of what the stock will become after this adjustment posts
+        function updateResultStock() {
+            let nm = document.getElementById('f-item').value;
+            let type = document.getElementById('f-type').value;
+            let q = Math.abs(parseFloat(document.getElementById('f-qty').value) || 0);
+            let base = currentStockMap[nm] ? currentStockMap[nm].current : 0;
+            let result = type === 'Positive' ? base + q : base - q;
+            let el = document.getElementById('f-result-stock');
+            if(el) {
+                el.innerText = result.toLocaleString();
+                el.className = `text-lg font-mono font-black ${result < 0 ? 'text-red-600' : 'text-blue-700'}`;
+            }
+        }
+
+        document.getElementById('add-form').onsubmit = async (e) => {
+            e.preventDefault();
+
+            let item = document.getElementById('f-item').value.trim();
+            let type = document.getElementById('f-type').value;
+            let qty = Math.abs(parseFloat(document.getElementById('f-qty').value) || 0);
+            let val = Math.abs(parseFloat(document.getElementById('f-val').value) || 0);
+
+            // Validation
+            if(!item) return showToast("Please choose a target inventory item.", "error");
+            if(qty <= 0) return showToast("Quantity impact must be greater than zero.", "error");
+            if(val <= 0) return showToast("Total value impact must be greater than zero.", "error");
+
+            // Never allow finished-goods stock to become negative. The backend re-checks this too.
+            if(type === 'Negative') {
+                let base = currentStockMap[item] ? currentStockMap[item].current : 0;
+                if(qty > base) return showToast(`Adjustment blocked. Only ${base} units are available for "${item}".`, "error");
+            }
+
+            // Confirm Save
+            let confirmSave = await customConfirm("Are you sure you want to permanently post this stock adjustment to the accounting ledger?");
+            if(!confirmSave) return;
+
+            let btn = document.getElementById('btn-submit');
+            let originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Committing Data...`;
+            lucide.createIcons();
+            btn.disabled = true;
+
+            try {
+                let data = {
+                    date: document.getElementById('f-date').value,
+                    type: type,
+                    item: item,
+                    qty: qty,
+                    value: val,
+                    notes: document.getElementById('f-notes').value || "Manual Adjustment"
+                };
+
+                showLoader(true, "Posting Accounting Ledger...");
+                let res = await apiPost({ action: 'add_stock_adjustment', data: { parsedJson: data, date: data.date } });
+
+                if(res?.status==='success') {
+                    showToast("Double-Entry Adjustment Saved!");
+                    document.getElementById('add-modal').classList.add('hidden');
+                    document.getElementById('add-form').reset();
+                    await fetchData(true);
+                } else {
+                    showToast(res?.message || "Failed to post to ledger", "error");
+                }
+            } catch (err) {
+                showToast(err?.message || "System Error occurred", "error");
+            } finally {
+                btn.innerHTML = originalBtnHtml;
+                lucide.createIcons();
+                btn.disabled = false;
+                showLoader(false);
+            }
+        };
+
+        async function generateInventoryPDF(btnElement) {
+            let originalContent = btnElement.innerHTML;
+            btnElement.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Generating';
+            lucide.createIcons();
+            btnElement.disabled = true;
+
+            let tBody = '';
+            let arr = Object.values(currentStockMap).sort((a,b) => a.name.localeCompare(b.name));
+
+            if(arr.length === 0) {
+                tBody = `<tr><td colspan="7" style="text-align:center; color:#9ca3af; padding:24px;">No inventory data available.</td></tr>`;
+            }
+
+            arr.forEach(s => {
+                tBody += `<tr>
+                    <td class="font-medium">${s.name}</td>
+                    <td class="text-center font-mono">${s.produced.toLocaleString()}</td>
+                    <td class="text-center font-mono">${s.sold.toLocaleString()}</td>
+                    <td class="text-center font-mono">${s.adjusted!==0?(s.adjusted>0?'+':'')+s.adjusted:'-'}</td>
+                    <td class="text-right font-mono font-bold ${s.current<0?'text-red-600':'text-blue-700'} bg-blue-50">${s.current.toLocaleString()}</td>
+                    <td class="text-right font-mono text-gray-500">${formatMoney(s.avgCost)}</td>
+                    <td class="text-right font-mono font-bold">${formatMoney(s.value)}</td>
+                </tr>`;
+            });
+            document.getElementById('pdf-table-body').innerHTML = tBody;
+            document.getElementById('pdf-tot-items').innerText = arr.length;
+            document.getElementById('pdf-tot-val').innerText = document.getElementById('dash-val').innerText;
+            document.getElementById('pdf-date').innerText = new Date().toLocaleString();
+
+            let el = document.getElementById('inventory-pdf-template');
+            el.classList.remove('hidden');
+            showLoader(true, "Structuring Stripe-Style Audit PDF...");
+
+            try {
+                await ensureHtml2Pdf();
+                await html2pdf().set({ margin: 0, filename: `Inventory_Audit_${new Date().toISOString().split('T')[0]}.pdf`, image: {type: 'jpeg', quality: 1}, html2canvas: {scale: 2, useCORS: true}, jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'} }).from(el).save();
+                showToast("Audit Report Downloaded!");
+            } catch (err) {
+                showToast("Failed to generate PDF", "error");
+            } finally {
+                el.classList.add('hidden');
+                showLoader(false);
+                btnElement.innerHTML = originalContent;
+                lucide.createIcons();
+                btnElement.disabled = false;
+            }
+        }
+
+        // Initialize Call
+        let __lastForegroundSync = 0;
+        function syncFreshOnForeground(){
+            if(!backendUrl || document.visibilityState === 'hidden') return;
+            const now=Date.now(); if(now-__lastForegroundSync < 15000) return;
+            __lastForegroundSync=now; fetchData(true);
+        }
+        window.addEventListener('focus', syncFreshOnForeground);
+        document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') syncFreshOnForeground(); });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if(!checkAuth()) return;
+            if(backendUrl) fetchData();
+        });
+    </script>
+</body>
+</html>
