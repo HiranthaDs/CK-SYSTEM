@@ -36,7 +36,7 @@ function inventoryItemCount(rows: JsonRecord[]) {
 }
 
 export function DashboardPage() {
-  const { year, me, hasAnyPermission } = useAppContext()
+  const { year, me, basePath } = useAppContext()
   const query = useQuery({
     queryKey: ['dashboard', year],
     queryFn: ({ signal }) => api.get<DashboardSummary>('/dashboard', { year }, signal),
@@ -61,12 +61,12 @@ export function DashboardPage() {
     { label: 'Finished goods', rows: finished, icon: Boxes },
   ]
   const workspaces = [
-    { to: '/production', icon: Factory, title: 'Manufacturing', description: 'Purchases, conversions, piecework, and production', permissions: ['production.read', 'inventory.read'] },
-    { to: '/inventory', icon: PackageCheck, title: 'Inventory', description: 'Live position, valuation, and stock adjustments', permissions: ['inventory.read'] },
-    { to: '/sales', icon: ShoppingCart, title: 'Sales', description: 'Invoices, receipts, and outstanding balances', permissions: ['sales.read'] },
-    { to: '/employees', icon: Users, title: 'Staff & payroll', description: 'Employees, daily work, earnings, and settlements', permissions: ['employees.read', 'payroll.read'] },
-    { to: '/accounting', icon: Scale, title: 'Accounting', description: 'Journals, account balances, ledger, and statements', permissions: ['finance.read'] },
-  ].filter((item) => hasAnyPermission(...item.permissions))
+    { to: '/production', icon: Factory, title: 'Manufacturing', description: 'Purchases, conversions, piecework, and production' },
+    { to: '/inventory', icon: PackageCheck, title: 'Inventory', description: 'Live position, valuation, and stock adjustments' },
+    { to: '/sales', icon: ShoppingCart, title: 'Sales', description: 'Invoices, receipts, and outstanding balances' },
+    { to: '/employees', icon: Users, title: 'Staff & payroll', description: 'Employees, daily work, earnings, and settlements' },
+    { to: '/accounting', icon: Scale, title: 'Accounting', description: 'Journals, account balances, ledger, and statements' },
+  ]
 
   return (
     <div className="page-stack">
@@ -120,10 +120,10 @@ export function DashboardPage() {
       </Card>
 
       <section>
-        <SectionTitle title="Workspaces" description="Open a workspace allowed by your assigned permissions." />
+        <SectionTitle title="Workspaces" description="Every signed-in user can open and update each workspace." />
         <div className="workspace-grid">
           {workspaces.map(({ to, icon: Icon, title, description }) => (
-            <Link to={to} className="workspace-card" key={to}>
+            <Link to={`${basePath}${to}`} className="workspace-card" key={to}>
               <Icon size={22} aria-hidden="true" />
               <div><strong>{title}</strong><span>{description}</span></div>
               <ArrowRight size={18} aria-hidden="true" />

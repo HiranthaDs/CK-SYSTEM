@@ -28,7 +28,7 @@ function FieldEditor({ field, label, update }: { field: FinancialReportField; la
 
 function RecordEditor({ table, update }: { table: FinancialReportTable; update: UpdateField }) {
   if (!table.rows.length) return <EmptyState message={`No ${table.title.toLowerCase()} in this snapshot.`} />
-  return <TableWrap><table className="studio-record-table">
+  return <TableWrap><table className="studio-edit-table studio-record-table">
     <caption className="sr-only">{table.title}</caption>
     <thead><tr><th scope="col">Row</th>{table.columns.map((column) => <th scope="col" key={column.key}>{column.label}</th>)}</tr></thead>
     <tbody>{table.rows.map((row, index) => <tr key={row.id}>
@@ -43,9 +43,9 @@ function RecordEditor({ table, update }: { table: FinancialReportTable; update: 
 
 function SectionEditor({ section, update, parent = '' }: { section: FinancialReportSection; update: UpdateField; parent?: string }) {
   const title = parent ? `${parent} / ${section.title}` : section.title
-  return <section className="studio-section">
+  return <section className="studio-section studio-section--summary">
     <h3>{title}</h3>
-    {section.fields.length ? <TableWrap><table className="studio-summary-table">
+    {section.fields.length ? <TableWrap><table className="studio-edit-table studio-summary-table">
       <caption className="sr-only">{title} fields</caption>
       <thead><tr><th scope="col">Financial field</th><th scope="col">Original value</th><th scope="col">Report value · editable</th></tr></thead>
       <tbody>{section.fields.map((field) => <tr key={field.id} className={financialFieldChanged(field) ? 'studio-row--edited' : undefined}>
@@ -63,7 +63,7 @@ function PreviewTable({ table }: { table: FinancialExportTable }) {
   return <section className="accounting-pdf-section"><h3>{table.title}</h3>
     {table.rows.length ? <TableWrap><table className="accounting-pdf-table">
       <thead><tr>{table.columns.map((column) => <th key={column.key}>{column.label}</th>)}</tr></thead>
-      <tbody>{table.rows.map((row) => <tr key={row.id}>{row.cells.map((cell) => <td key={cell.key} className={['money', 'number'].includes(cell.kind) ? 'numeric' : undefined}>{cell.display}{cell.changed ? ' *' : ''}</td>)}</tr>)}</tbody>
+      <tbody>{table.rows.map((row) => <tr key={row.id}>{row.cells.map((cell) => <td key={cell.key} className={['money', 'number'].includes(cell.kind) ? 'numeric' : undefined}>{cell.display}</td>)}</tr>)}</tbody>
     </table></TableWrap> : <p>No records</p>}
   </section>
 }
@@ -110,14 +110,12 @@ export function AccountingPdfStudio({ summary, accountBalances, year, onExit }: 
       <Card><SectionTitle title="Account balances" description="Edit account labels and amounts. All amounts are in LKR." /><RecordEditor table={model.accountBalances} update={update} /></Card>
     </div> : <Card className="studio-full-preview">
       <article className="accounting-pdf-document">
-        <header className="accounting-pdf-header"><div><span>CK SYS · Financial report</span><h1>{report.title}</h1><p>{report.subtitle} · {report.currency}</p></div></header>
-        <div className="accounting-pdf-warning"><strong>INTERNAL USE ONLY · UNAUDITED</strong><span>{report.disclaimer}</span></div>
+        <header className="accounting-pdf-header"><div><span>CK SYS · Financial report</span><h1>{report.title}</h1><p>Fiscal year {report.year} · {report.currency}</p></div></header>
         <main className="accounting-pdf-body">
           {[{ title: 'Income statement', lines: report.incomeStatement }, { title: 'Statement of financial position', lines: report.financialPosition }].map(({ title, lines }) => <section className="accounting-pdf-section" key={title}><h2>{title}</h2><table className="accounting-pdf-table"><thead><tr><th>Description</th><th className="numeric">Amount (LKR)</th></tr></thead><tbody>{lines.map((line) => <tr key={line.label}><th scope="row">{line.label}</th><td className="numeric">{displayFinancialValue(line.value, 'money')}</td></tr>)}</tbody></table></section>)}
           {report.summaryTables.map((table) => <PreviewTable key={table.id} table={table} />)}
           <PreviewTable table={report.accountBalances} />
         </main>
-        <footer className="accounting-pdf-footer">* Edited report value · INTERNAL USE ONLY · UNAUDITED</footer>
       </article>
     </Card>}
   </div>

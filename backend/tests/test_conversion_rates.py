@@ -11,12 +11,15 @@ from app.config import Settings
 from app.dependencies import Principal, get_gateway, get_principal
 from app.main import create_app
 from app.models import (
+    CompanyAccess,
     ConversionWorkerInput,
     MutationResponse,
     PieceworkRateUpsert,
     ProfileAccess,
 )
 from app.supabase import SupabaseGateway
+
+COMPANY_ID = UUID("10000000-0000-0000-0000-000000000001")
 
 
 def settings() -> Settings:
@@ -30,6 +33,14 @@ def settings() -> Settings:
 
 def principal(*permissions: str) -> Principal:
     user_id = UUID("00000000-0000-0000-0000-000000000001")
+    company = CompanyAccess(
+        company_id=COMPANY_ID,
+        code="CK",
+        name="CK Plastics",
+        is_primary=True,
+        role_codes=["operations"],
+        permission_codes=list(permissions),
+    )
     return Principal(
         user_id=user_id,
         token="test-token",
@@ -38,9 +49,10 @@ def principal(*permissions: str) -> Principal:
             user_id=user_id,
             display_name="Operations user",
             is_active=True,
-            role_codes=["operations"],
-            permission_codes=list(permissions),
+            companies=[company],
         ),
+        company_id=company.company_id,
+        company=company,
     )
 
 
@@ -56,6 +68,7 @@ class MutationGateway:
         *,
         token: str,
         request_id: str,
+        company_id: UUID | str,
     ) -> MutationResponse:
         self.calls.append(
             {
@@ -64,6 +77,7 @@ class MutationGateway:
                 "idempotency_key": idempotency_key,
                 "token": token,
                 "request_id": request_id,
+                "company_id": str(company_id),
             }
         )
         return MutationResponse(

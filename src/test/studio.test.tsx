@@ -58,4 +58,18 @@ describe('PDF Studio', () => {
     expect(screen.getByRole('spinbutton', { name: 'Finance: Revenue' })).toHaveValue(100)
     expect(screen.getByRole('button', { name: 'Save PDF' })).toBeEnabled()
   })
+
+  it('uses a compact summary table and keeps export disclaimers out of the preview', async () => {
+    const user = userEvent.setup()
+    render(<ToastProvider><AccountingPdfStudio summary={{ finance: { revenue: 100, expenses: 25 } }} accountBalances={[]} year={2026} onExit={vi.fn()} /></ToastProvider>)
+
+    const summaryTable = screen.getByRole('table', { name: 'Finance fields' })
+    expect(summaryTable).toHaveClass('studio-edit-table', 'studio-summary-table')
+    expect(summaryTable.closest('section')).toHaveClass('studio-section--summary')
+
+    await user.click(screen.getByRole('tab', { name: 'Report preview' }))
+    expect(screen.queryByText(/INTERNAL USE ONLY/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/UNAUDITED/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/export-only working draft/i)).not.toBeInTheDocument()
+  })
 })

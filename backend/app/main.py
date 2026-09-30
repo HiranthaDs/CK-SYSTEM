@@ -97,6 +97,7 @@ def create_app(
     # - Authorization
     # - Content-Type
     # - Idempotency-Key
+    # - X-Company-ID
     # - X-Request-ID
     # - Cache-Control
     # - Pragma
@@ -119,6 +120,7 @@ def create_app(
             "Authorization",
             "Content-Type",
             "Idempotency-Key",
+            "X-Company-ID",
             "X-Request-ID",
             "Cache-Control",
             "Pragma",

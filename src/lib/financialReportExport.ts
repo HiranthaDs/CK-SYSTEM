@@ -76,10 +76,10 @@ export async function createFinancialPdfBlob(model: FinancialReportModel): Promi
 
   document.setProperties({
     title: `${report.title} - FY ${report.year}`,
-    subject: 'Internal, unaudited financial summary and account balances',
+    subject: 'Financial summary and account balances',
     author: 'CK SYS',
     creator: 'CK SYS Financial Report Studio',
-    keywords: 'financial summary, account balances, internal, unaudited',
+    keywords: 'financial summary, account balances',
   })
 
   let cursorY = 18
@@ -140,18 +140,13 @@ export async function createFinancialPdfBlob(model: FinancialReportModel): Promi
       rowPageBreak: 'avoid',
       showHead: 'everyPage',
       head: [table.columns.map((column) => column.label)],
-      body: table.rows.map((row) => row.cells.map((cell) => `${cell.display}${cell.changed ? ' *' : ''}`)),
+      body: table.rows.map((row) => row.cells.map((cell) => cell.display)),
       theme: 'grid',
       styles: { font: 'helvetica', fontSize: table.columns.length > 5 ? 6.6 : 7.7, cellPadding: 1.8, lineColor: [208, 213, 221], lineWidth: 0.12, overflow: 'linebreak' },
       headStyles: { fillColor: [234, 236, 240], textColor: [29, 41, 57], fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [249, 250, 251] },
-      didParseCell: ({ row, cell, column, section }) => {
+      didParseCell: ({ cell, column }) => {
         if (numericColumns.has(column.index)) cell.styles.halign = 'right'
-        if (section === 'body' && table.rows[row.index]?.cells[column.index]?.changed) {
-          cell.styles.fillColor = [255, 250, 235]
-          cell.styles.textColor = [181, 71, 8]
-          cell.styles.fontStyle = 'bold'
-        }
       },
     })
     cursorY = ((document as AutoTableDocument).lastAutoTable?.finalY ?? cursorY) + 7
@@ -166,23 +161,11 @@ export async function createFinancialPdfBlob(model: FinancialReportModel): Promi
   document.setTextColor(`#${GREY}`)
   document.setFont('helvetica', 'normal')
   document.setFontSize(9)
-  document.text(report.subtitle, margin, cursorY)
+  document.text(`Fiscal year ${report.year}`, margin, cursorY)
   cursorY += 5
   document.setFontSize(7.4)
   document.text(`Snapshot generated: ${report.generatedAt ? new Date(report.generatedAt).toLocaleString('en-LK') : 'Not supplied'} · Export generated: ${new Date().toLocaleString('en-LK')} · Currency: ${report.currency}`, margin, cursorY)
   cursorY += 8
-
-  document.setFillColor(254, 243, 242)
-  document.setDrawColor(254, 205, 202)
-  document.roundedRect(margin, cursorY, contentWidth, 16, 1.5, 1.5, 'FD')
-  document.setTextColor(180, 35, 24)
-  document.setFont('helvetica', 'bold')
-  document.setFontSize(8)
-  document.text('INTERNAL USE ONLY · UNAUDITED', margin + 3, cursorY + 5)
-  document.setFont('helvetica', 'normal')
-  document.setFontSize(6.7)
-  document.text(document.splitTextToSize(report.disclaimer, contentWidth - 6) as string[], margin + 3, cursorY + 9)
-  cursorY += 21
 
   autoTable(document, {
     startY: cursorY,
@@ -194,7 +177,6 @@ export async function createFinancialPdfBlob(model: FinancialReportModel): Promi
       ['Trial balance', report.integrity.trialBalanceOk ? 'Balanced' : 'Review required', pdfMoney(report.integrity.trialBalanceDifference)],
       ['Financial position', report.integrity.positionOk ? 'Balanced' : 'Review required', pdfMoney(report.integrity.positionDifference)],
       ['Summary reconciliation', report.integrity.summaryReconciled === null ? 'Not comparable' : report.integrity.summaryReconciled ? 'Reconciled' : 'Review required', report.integrity.summaryRevenueDifference === null ? '—' : pdfMoney(report.integrity.summaryRevenueDifference)],
-      ['Edited fields', report.changeCount ? 'User-edited draft' : 'Live snapshot', String(report.changeCount)],
     ],
     theme: 'grid',
     styles: { fontSize: 7.6, cellPadding: 2, lineColor: [208, 213, 221], lineWidth: 0.15 },
@@ -203,7 +185,7 @@ export async function createFinancialPdfBlob(model: FinancialReportModel): Promi
     didParseCell: ({ cell, column, section }) => {
       if (section !== 'body' || column.index !== 1) return
       const value = typeof cell.raw === 'string' ? cell.raw : ''
-      if (value === 'Balanced' || value === 'Reconciled' || value === 'Live snapshot') cell.styles.textColor = [2, 122, 72]
+      if (value === 'Balanced' || value === 'Reconciled') cell.styles.textColor = [2, 122, 72]
       else if (value === 'Review required') cell.styles.textColor = [180, 35, 24]
       else cell.styles.textColor = [181, 71, 8]
       cell.styles.fontStyle = 'bold'
@@ -221,12 +203,10 @@ export async function createFinancialPdfBlob(model: FinancialReportModel): Promi
     document.setPage(page)
     document.setDrawColor(208, 213, 221)
     document.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15)
-    document.setFont('helvetica', 'bold')
-    document.setFontSize(6.5)
-    document.setTextColor(180, 35, 24)
-    document.text(report.changeCount ? 'INTERNAL · USER-EDITED · UNAUDITED' : 'INTERNAL · UNMODIFIED SNAPSHOT · UNAUDITED', margin, pageHeight - 10)
     document.setFont('helvetica', 'normal')
+    document.setFontSize(6.5)
     document.setTextColor(102, 112, 133)
+    document.text('CK SYS · Financial report', margin, pageHeight - 10)
     document.text(`FY ${report.year} · Page ${page} of ${pages}`, pageWidth - margin, pageHeight - 10, { align: 'right' })
   }
 
@@ -299,25 +279,17 @@ export async function createFinancialExcelBlob(model: FinancialReportModel): Pro
   workbook.lastModifiedBy = 'CK SYS Financial Report Studio'
   workbook.created = new Date()
   workbook.modified = new Date()
-  workbook.subject = 'Internal, unaudited financial summary and account balances'
+  workbook.subject = 'Financial summary and account balances'
   workbook.title = `${report.title} - FY ${report.year}`
-  workbook.description = report.disclaimer
   workbook.calcProperties.fullCalcOnLoad = true
 
-  const summary = workbook.addWorksheet('Executive Summary', { views: [{ state: 'frozen', ySplit: 5 }] })
+  const summary = workbook.addWorksheet('Executive Summary', { views: [{ state: 'frozen', ySplit: 4 }] })
   summary.columns = [{ width: 37 }, { width: 26 }, { width: 26 }, { width: 26 }]
   summary.mergeCells('A1:D1')
   summary.getCell('A1').value = `${report.title} · FY ${report.year}`
   styleTitle(summary.getRow(1), 4)
-  summary.mergeCells('A2:D2')
-  summary.getCell('A2').value = report.disclaimer
-  summary.getCell('A2').alignment = { wrapText: true, vertical: 'middle' }
-  summary.getCell('A2').font = { bold: true, color: { argb: RED }, size: 9 }
-  summary.getCell('A2').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: PALE_RED } }
-  summary.getRow(2).height = 46
   summary.addRow(['Report period', `Fiscal year ${report.year}`, 'Currency', report.currency])
   summary.addRow(['Snapshot generated', report.generatedAt ?? 'Not supplied', 'Export generated', new Date().toISOString()])
-  summary.addRow(['Edited fields', report.changeCount, 'Draft status', report.changeCount ? 'USER-EDITED' : 'UNMODIFIED SNAPSHOT'])
   summary.addRow([])
   const integrityHeader = summary.addRow(['Integrity check', 'Status', 'Difference', 'Notes'])
   styleHeader(integrityHeader)
@@ -360,15 +332,15 @@ export async function createFinancialExcelBlob(model: FinancialReportModel): Pro
     'Code', 'Account', 'Category',
     'Source Debit', 'Report Debit',
     'Source Credit', 'Report Credit',
-    'Source Balance', 'Report Balance', 'Edited',
+    'Source Balance', 'Report Balance',
   ]
   accounts.columns = [
     { width: 18 }, { width: 34 }, { width: 18 },
-    { width: 19 }, { width: 19 }, { width: 19 }, { width: 19 }, { width: 19 }, { width: 19 }, { width: 12 },
+    { width: 19 }, { width: 19 }, { width: 19 }, { width: 19 }, { width: 19 }, { width: 19 },
   ]
-  accounts.mergeCells('A1:J1')
+  accounts.mergeCells('A1:I1')
   accounts.getCell('A1').value = `Account Balances · FY ${report.year}`
-  styleTitle(accounts.getRow(1), 10)
+  styleTitle(accounts.getRow(1), 9)
   accounts.addRow(accountHeaders)
   styleHeader(accounts.getRow(2))
   report.accountBalances.rows.forEach((record) => {
@@ -386,7 +358,6 @@ export async function createFinancialExcelBlob(model: FinancialReportModel): Pro
       credit ? excelCellValue(credit) : 0,
       balance ? excelSourceValue(balance) : 0,
       balance ? excelCellValue(balance) : 0,
-      record.changed ? 'Yes' : 'No',
     ])
     ;[4, 5, 6, 7, 8, 9].forEach((column) => {
       const cell = row.getCell(column)
@@ -394,24 +365,23 @@ export async function createFinancialExcelBlob(model: FinancialReportModel): Pro
     })
     if (record.changed) {
       row.eachCell((cell) => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: PALE_AMBER } } })
-      row.getCell(10).font = { bold: true, color: { argb: AMBER } }
     }
   })
   const totalRow = accounts.addRow([
-    '', 'TRIAL BALANCE TOTAL', '', '', report.integrity.debitTotal, '', report.integrity.creditTotal, '', '', '',
+    '', 'TRIAL BALANCE TOTAL', '', '', report.integrity.debitTotal, '', report.integrity.creditTotal, '', '',
   ])
   totalRow.font = { bold: true, color: { argb: NAVY } }
   totalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: PALE_BLUE } }
   ;[5, 7].forEach((column) => styleMoney(totalRow.getCell(column), Number(totalRow.getCell(column).value ?? 0)))
-  accounts.autoFilter = { from: 'A2', to: 'J2' }
+  accounts.autoFilter = { from: 'A2', to: 'I2' }
   accounts.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 }
 
   const details = workbook.addWorksheet('Snapshot Details', { views: [{ state: 'frozen', ySplit: 2 }] })
-  details.columns = [{ width: 38 }, { width: 30 }, { width: 28 }, { width: 28 }, { width: 12 }]
-  details.mergeCells('A1:E1')
+  details.columns = [{ width: 38 }, { width: 30 }, { width: 28 }, { width: 28 }]
+  details.mergeCells('A1:D1')
   details.getCell('A1').value = `Financial Summary Field Detail · FY ${report.year}`
-  styleTitle(details.getRow(1), 5)
-  details.addRow(['Section / table', 'Field', 'Source value', 'Report value', 'Edited'])
+  styleTitle(details.getRow(1), 4)
+  details.addRow(['Section / table', 'Field', 'Source value', 'Report value'])
   styleHeader(details.getRow(2))
   report.summaryTables.forEach((table) => {
     table.rows.forEach((record) => {
@@ -423,7 +393,6 @@ export async function createFinancialExcelBlob(model: FinancialReportModel): Pro
           fieldCell?.display ?? cell.label,
           excelSourceValue(cell),
           excelCellValue(cell),
-          cell.changed ? 'Yes' : 'No',
         ])
         if (cell.kind === 'money') {
           if (typeof row.getCell(3).value === 'number') styleMoney(row.getCell(3), Number(row.getCell(3).value))
@@ -435,12 +404,11 @@ export async function createFinancialExcelBlob(model: FinancialReportModel): Pro
         if (cell.changed) {
           row.getCell(4).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: PALE_AMBER } }
           row.getCell(4).font = { bold: true, color: { argb: AMBER } }
-          row.getCell(5).font = { bold: true, color: { argb: AMBER } }
         }
       })
     })
   })
-  details.autoFilter = { from: 'A2', to: 'E2' }
+  details.autoFilter = { from: 'A2', to: 'D2' }
   details.pageSetup = { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 }
 
   const changes = workbook.addWorksheet('Edit Audit')
@@ -461,12 +429,10 @@ export async function createFinancialExcelBlob(model: FinancialReportModel): Pro
   notes.addRow(['Item', 'Value'])
   styleHeader(notes.getRow(1), NAVY)
   notes.addRows([
-    ['Status', report.changeCount ? 'Internal, user-edited and unaudited' : 'Internal, unmodified server snapshot and unaudited'],
     ['Fiscal year', report.year],
     ['Currency', report.currency],
     ['Snapshot generated', report.generatedAt ?? 'Not supplied'],
     ['Workbook generated', new Date().toISOString()],
-    ['Disclaimer', report.disclaimer],
     ['Interpretation', 'Source values are the server snapshot. Report values include local PDF Studio edits. These edits were not written to the database.'],
   ])
   notes.getColumn(2).alignment = { wrapText: true, vertical: 'top' }
@@ -474,7 +440,7 @@ export async function createFinancialExcelBlob(model: FinancialReportModel): Pro
   workbook.eachSheet((sheet) => {
     sheet.properties.defaultRowHeight = 22
     sheet.pageSetup = { ...sheet.pageSetup, fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, printTitlesRow: sheet.name === 'Edit Audit' || sheet.name === 'Notes' ? '1:1' : '1:2' }
-    sheet.headerFooter.oddFooter = `&LCK SYS · INTERNAL · UNAUDITED&C${report.changeCount ? 'USER-EDITED' : 'UNMODIFIED SNAPSHOT'}&RPage &P of &N`
+    sheet.headerFooter.oddFooter = '&LCK SYS&CFinancial report&RPage &P of &N'
     sheet.eachRow((row) => row.eachCell((cell) => {
       cell.alignment = { vertical: 'middle', wrapText: true, ...cell.alignment }
     }))

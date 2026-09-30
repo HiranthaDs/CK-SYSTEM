@@ -113,7 +113,6 @@ export interface FinancialExportDocument {
   financialPosition: FinancialStatementLine[]
   summaryTables: FinancialExportTable[]
   accountBalances: FinancialExportTable
-  disclaimer: string
 }
 
 const CURRENCY_KEYS = /(amount|value|cost|cogs|revenue|expense|profit|asset|liabilit|equity|balance|paid|due|gross|net|debit|credit|payable|receivable|cash|wage|salary|rate|income|tax)/i
@@ -138,13 +137,20 @@ function isScalar(value: unknown): value is FinancialReportScalar | undefined {
 function scalarValue(value: unknown): FinancialReportScalar {
   if (value === null || value === undefined) return null
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value
-  return JSON.stringify(value)
+  return JSON.stringify(value) ?? null
 }
 
 function numericValue(value: unknown): number | null {
-  if (value === '' || value === null || value === undefined || typeof value === 'boolean') return null
+  if (value === null || value === undefined || typeof value === 'boolean') return null
+  if (typeof value === 'string' && value.trim() === '') return null
   const parsed = typeof value === 'number' ? value : Number(value)
   return Number.isFinite(parsed) ? parsed : null
+}
+
+function roundFinancialAmount(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  const sign = value < 0 ? -1 : 1
+  return sign * Math.round((Math.abs(value) + Number.EPSILON) * 100) / 100
 }
 
 function pathId(path: readonly FinancialPathPart[]) {
@@ -159,7 +165,7 @@ function inferKind(key: string, value: unknown): FinancialFieldKind {
   if (typeof value === 'boolean') return 'boolean'
   if (/(_at|timestamp|generated_at)$/i.test(key) && typeof value === 'string') return 'datetime'
   if (/(^|_)(date|as_of)$/i.test(key) && typeof value === 'string') return 'date'
-  if (CURRENCY_KEYS.test(key) && numericValue(value) !== null) return 'money'
+  if (CURRENCY_KEYS.test(key) && (numericValue(value) !== null || value === null || (typeof value === 'string' && value.trim() === ''))) return 'money'
   if (typeof value === 'number' || (typeof value === 'string' && numericValue(value) !== null)) return 'number'
   return 'text'
 }
@@ -375,13 +381,14 @@ function tableField(row: FinancialReportTableRow, key: string) {
 }
 
 function fieldAmount(field: FinancialReportField | undefined) {
-  return numericValue(field?.value) ?? 0
+  return roundFinancialAmount(numericValue(field?.value) ?? 0)
 }
 
 function findSummaryField(model: FinancialReportModel, pathSuffix: readonly string[]) {
   return model.summarySections
     .flatMap(collectSectionFields)
-    .find((field) => pathSuffix.every((part, index) => field.path.at(index - pathSuffix.length) === part))
+    .find((field) => field.path.length >= pathSuffix.length
+      && pathSuffix.every((part, index) => field.path[field.path.length - pathSuffix.length + index] === part))
 }
 
 export function calculateFinancialReportIntegrity(model: FinancialReportModel): FinancialReportIntegrity {
@@ -405,19 +412,27 @@ export function calculateFinancialReportIntegrity(model: FinancialReportModel): 
     else if (category === 'expense') accountExpenses += balance
   })
 
-  const currentEarnings = accountRevenue - accountExpenses
-  const equityAndEarnings = equity + currentEarnings
-  const trialBalanceDifference = debitTotal - creditTotal
-  const positionDifference = assets - liabilities - equityAndEarnings
+  debitTotal = roundFinancialAmount(debitTotal)
+  creditTotal = roundFinancialAmount(creditTotal)
+  assets = roundFinancialAmount(assets)
+  liabilities = roundFinancialAmount(liabilities)
+  equity = roundFinancialAmount(equity)
+  accountRevenue = roundFinancialAmount(accountRevenue)
+  accountExpenses = roundFinancialAmount(accountExpenses)
+  const currentEarnings = roundFinancialAmount(accountRevenue - accountExpenses)
+  const equityAndEarnings = roundFinancialAmount(equity + currentEarnings)
+  const trialBalanceDifference = roundFinancialAmount(debitTotal - creditTotal)
+  const positionDifference = roundFinancialAmount(assets - liabilities - equityAndEarnings)
   const revenueField = findSummaryField(model, ['summary', 'finance', 'revenue'])
   const cogsField = findSummaryField(model, ['summary', 'finance', 'cogs'])
   const expensesField = findSummaryField(model, ['summary', 'finance', 'expenses'])
-  const summaryRevenue = revenueField ? numericValue(revenueField.value) : null
+  const parsedSummaryRevenue = revenueField ? numericValue(revenueField.value) : null
+  const summaryRevenue = parsedSummaryRevenue === null ? null : roundFinancialAmount(parsedSummaryRevenue)
   const summaryExpenses = cogsField || expensesField
-    ? fieldAmount(cogsField) + fieldAmount(expensesField)
+    ? roundFinancialAmount(fieldAmount(cogsField) + fieldAmount(expensesField))
     : null
-  const summaryRevenueDifference = summaryRevenue === null ? null : summaryRevenue - accountRevenue
-  const summaryExpensesDifference = summaryExpenses === null ? null : summaryExpenses - accountExpenses
+  const summaryRevenueDifference = summaryRevenue === null ? null : roundFinancialAmount(summaryRevenue - accountRevenue)
+  const summaryExpensesDifference = summaryExpenses === null ? null : roundFinancialAmount(summaryExpenses - accountExpenses)
   const summaryReconciled = summaryRevenueDifference === null || summaryExpensesDifference === null
     ? null
     : Math.abs(summaryRevenueDifference) < EPSILON && Math.abs(summaryExpensesDifference) < EPSILON
@@ -542,12 +557,12 @@ function sectionExportTables(section: FinancialReportSection, parentTitle = ''):
 
 export function createFinancialExportDocument(model: FinancialReportModel): FinancialExportDocument {
   const integrity = calculateFinancialReportIntegrity(model)
-  const revenue = integrity.summaryRevenue ?? integrity.accountRevenue
-  const totalExpenses = integrity.summaryExpenses ?? integrity.accountExpenses
+  const revenue = roundFinancialAmount(integrity.summaryRevenue ?? integrity.accountRevenue)
+  const totalExpenses = roundFinancialAmount(integrity.summaryExpenses ?? integrity.accountExpenses)
   const cogs = fieldAmount(findSummaryField(model, ['summary', 'finance', 'cogs']))
-  const operatingExpenses = Math.max(0, totalExpenses - cogs)
-  const grossProfit = revenue - cogs
-  const netProfit = revenue - totalExpenses
+  const operatingExpenses = roundFinancialAmount(totalExpenses - cogs)
+  const grossProfit = roundFinancialAmount(revenue - cogs)
+  const netProfit = roundFinancialAmount(revenue - totalExpenses)
   const changeCount = countFinancialReportChanges(model)
 
   return {
@@ -570,11 +585,10 @@ export function createFinancialExportDocument(model: FinancialReportModel): Fina
       { label: 'Liabilities', value: integrity.liabilities },
       { label: 'Posted equity', value: integrity.equity },
       { label: 'Current earnings', value: integrity.currentEarnings },
-      { label: 'Equity and liabilities', value: integrity.liabilities + integrity.equityAndEarnings, emphasis: 'subtotal' },
+      { label: 'Equity and liabilities', value: roundFinancialAmount(integrity.liabilities + integrity.equityAndEarnings), emphasis: 'subtotal' },
       { label: 'Balance check difference', value: integrity.positionDifference, emphasis: 'total' },
     ],
     summaryTables: model.summarySections.flatMap((section) => sectionExportTables(section)),
     accountBalances: exportTable(model.accountBalances),
-    disclaimer: 'INTERNAL USE ONLY · USER-EDITED WHEN MARKED · UNAUDITED. This report is an export-only working draft. Figures must be independently verified and are not approved for statutory, tax, banking, lending, audit, certification, or other official use.',
   }
 }

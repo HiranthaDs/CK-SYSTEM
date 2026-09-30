@@ -5,7 +5,9 @@ function saleLines(sale: Sale) {
   return sale.sale_items ?? []
 }
 
-export function suggestedUnitPrice(item: Pick<InventoryPosition, 'average_unit_cost'>) {
+export function suggestedUnitPrice(item: Pick<InventoryPosition, 'average_unit_cost' | 'selling_price'>) {
+  const cataloguePrice = numberValue(item.selling_price)
+  if (cataloguePrice > 0) return cataloguePrice
   return Math.round(numberValue(item.average_unit_cost) * 1.5 * 100) / 100
 }
 

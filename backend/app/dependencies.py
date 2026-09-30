@@ -10,10 +10,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from .config import Settings, get_settings
 from .errors import ApiError
-from .models import ProfileAccess
+from .models import CompanyAccess, ProfileAccess
 from .security import VerifiedToken
 from .supabase import SupabaseGateway
-
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -24,14 +23,20 @@ class Principal:
     token: str
     claims: dict[str, Any]
     profile: ProfileAccess
+    company_id: UUID
+    company: CompanyAccess
 
     @property
     def permissions(self) -> frozenset[str]:
-        return frozenset(self.profile.permission_codes)
+        return frozenset(self.company.permission_codes)
 
     @property
     def roles(self) -> frozenset[str]:
-        return frozenset(self.profile.role_codes)
+        return frozenset(self.company.role_codes)
+
+    @property
+    def is_super_admin(self) -> bool:
+        return self.profile.is_super_admin
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +70,10 @@ async def get_principal(
     request: Request,
     verified: Annotated[tuple[str, VerifiedToken], Depends(get_verified_token)],
     gateway: Annotated[SupabaseGateway, Depends(get_gateway)],
+    requested_company_id: Annotated[
+        str | None,
+        Header(alias="X-Company-ID", min_length=1, max_length=64),
+    ] = None,
 ) -> Principal:
     token, claims = verified
     profile = await gateway.fetch_profile(
@@ -72,11 +81,65 @@ async def get_principal(
         request.state.request_id,
         expected_user_id=str(claims.subject),
     )
+    company = resolve_company_access(profile, requested_company_id)
+    profile = profile.model_copy(
+        update={
+            "active_company_id": company.company_id,
+            "active_company_code": company.code,
+            "active_company_name": company.name,
+            "role_codes": list(company.role_codes),
+            "permission_codes": list(company.permission_codes),
+        }
+    )
     return Principal(
         user_id=claims.subject,
         token=token,
         claims=claims.claims,
         profile=profile,
+        company_id=company.company_id,
+        company=company,
+    )
+
+
+def resolve_company_access(
+    profile: ProfileAccess,
+    requested_company_id: str | UUID | None,
+) -> CompanyAccess:
+    """Resolve a request's company solely from the database-backed access profile."""
+    if not profile.companies:
+        raise ApiError(
+            403,
+            "No active company access is assigned",
+            code="company_access_required",
+        )
+
+    requested: UUID | None = None
+    if requested_company_id is not None:
+        try:
+            requested = UUID(str(requested_company_id))
+        except ValueError:
+            raise ApiError(
+                400,
+                "X-Company-ID must be a valid UUID",
+                code="invalid_company_id",
+            ) from None
+
+    if requested is not None:
+        selected = next(
+            (company for company in profile.companies if company.company_id == requested),
+            None,
+        )
+        if selected is None:
+            raise ApiError(
+                403,
+                "You do not have active access to the requested company",
+                code="company_access_denied",
+            )
+        return selected
+
+    return next(
+        (company for company in profile.companies if company.is_primary),
+        profile.companies[0],
     )
 
 

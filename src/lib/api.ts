@@ -40,6 +40,16 @@ export class ApiError extends Error {
 
 const apiBase = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '')
 let refreshInFlight: Promise<string | null> | null = null
+let activeCompanyId: string | null = null
+
+export function setActiveCompanyId(companyId: string | null | undefined) {
+  const normalized = companyId?.trim()
+  activeCompanyId = normalized || null
+}
+
+export function getActiveCompanyId() {
+  return activeCompanyId
+}
 
 export function makeRequestId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -126,6 +136,7 @@ export async function apiRequest<TResponse, TBody = unknown>(
     })
     if (options.body !== undefined) headers.set('Content-Type', 'application/json')
     if (idempotencyKey) headers.set('Idempotency-Key', idempotencyKey)
+    if (activeCompanyId) headers.set('X-Company-ID', activeCompanyId)
 
     const init: RequestInit = {
       method,

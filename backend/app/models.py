@@ -332,6 +332,7 @@ class ProductionPost(ERPModel):
     output_quantity: PositiveQuantity
     working_hours: Quantity | None = None
     overhead_cost: Money = Decimal("0")
+    selling_price: PositiveMoney | None = None
     notes: Annotated[str, Field(max_length=2000)] | None = None
 
     @model_validator(mode="after")
@@ -540,6 +541,74 @@ class ReverseRequest(ERPModel):
 class PurgeBusinessDataRequest(ERPModel):
     confirmation: Literal["DELETE ALL BUSINESS DATA"]
     acknowledge_irreversible: Literal[True]
+    company_code: Literal["CK", "AR"]
+
+
+class AdminUserStatusUpdate(ERPModel):
+    is_active: bool
+
+
+class AdminUserRemove(ERPModel):
+    confirmation_pin: Annotated[str, Field(pattern=r"^[0-9]{4}$")]
+
+
+class AdminUserCreate(ERPModel):
+    email: Annotated[str, Field(min_length=3, max_length=320)]
+    display_name: Annotated[str, Field(min_length=1, max_length=200)]
+    temporary_password: Annotated[str, Field(min_length=10, max_length=72)]
+    company_access: Literal["CK", "AR", "BOTH"]
+    role_codes: list[Literal["admin", "accountant", "operations", "payroll", "viewer"]]
+    is_super_admin: bool = False
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized.count("@") != 1 or normalized.startswith("@") or normalized.endswith("@"):
+            raise ValueError("Enter a valid email address")
+        return normalized
+
+    @field_validator("display_name")
+    @classmethod
+    def normalize_display_name(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("temporary_password")
+    @classmethod
+    def require_strong_password(cls, value: str) -> str:
+        if not any(char.islower() for char in value):
+            raise ValueError("Password requires a lowercase letter")
+        if not any(char.isupper() for char in value):
+            raise ValueError("Password requires an uppercase letter")
+        if not any(char.isdigit() for char in value):
+            raise ValueError("Password requires a number")
+        if not any(not char.isalnum() for char in value):
+            raise ValueError("Password requires a symbol")
+        return value
+
+    @model_validator(mode="after")
+    def validate_access(self) -> "AdminUserCreate":
+        self.role_codes = list(dict.fromkeys(self.role_codes))
+        if self.is_super_admin:
+            self.company_access = "BOTH"
+            self.role_codes = ["admin"]
+        elif not self.role_codes:
+            raise ValueError("Select at least one access role")
+        return self
+
+
+class AdminUserAccessRecord(FlexibleRecord):
+    company_id: UUID
+    company_code: str
+    company_name: str
+    user_id: UUID
+    display_name: str | None = None
+    email: str | None = None
+    profile_active: bool
+    is_super_admin: bool
+    membership_active: bool
+    is_primary: bool
+    role_codes: list[str] = Field(default_factory=list)
 
 
 class LegacyActionRequest(ERPModel):
@@ -548,11 +617,27 @@ class LegacyActionRequest(ERPModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
+class CompanyAccess(FlexibleRecord):
+    company_id: UUID
+    code: Annotated[str, Field(min_length=1, max_length=40)]
+    name: Annotated[str, Field(min_length=1, max_length=160)]
+    is_primary: bool = False
+    role_codes: list[str] = Field(default_factory=list)
+    permission_codes: list[str] = Field(default_factory=list)
+
+
 class ProfileAccess(FlexibleRecord):
     user_id: UUID
     display_name: str | None = None
     email: str | None = None
     is_active: bool = True
+    is_super_admin: bool = False
+    active_company_id: UUID | None = None
+    active_company_code: str | None = None
+    active_company_name: str | None = None
+    companies: list[CompanyAccess] = Field(default_factory=list)
+    # Retained while clients migrate from the original global-access response.
+    # Authorization always uses the selected Company's scoped arrays.
     role_codes: list[str] = Field(default_factory=list)
     permission_codes: list[str] = Field(default_factory=list)
 
@@ -617,8 +702,10 @@ class InventoryPositionRecord(FlexibleRecord):
     stage: InventoryStage
     unit: str
     quantity_on_hand: Decimal
+    shared_quantity_on_hand: Decimal = Decimal("0")
     inventory_value: Decimal
     average_unit_cost: Decimal
+    selling_price: Decimal = Decimal("0")
     last_movement_at: datetime | None = None
     is_active: bool = True
 
@@ -896,6 +983,7 @@ class PageResponse(BaseModel, Generic[T]):
 class InventoryStageSummary(BaseModel):
     item_count: int = Field(ge=0)
     total_quantity: Decimal
+    shared_total_quantity: Decimal = Decimal("0")
     total_value: Decimal
 
 
@@ -904,6 +992,7 @@ class InventorySummary(BaseModel):
     chips: InventoryStageSummary
     finished: InventoryStageSummary
     total_quantity: Decimal
+    shared_total_quantity: Decimal = Decimal("0")
     total_value: Decimal
 
 

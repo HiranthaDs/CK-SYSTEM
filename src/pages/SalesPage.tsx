@@ -83,9 +83,7 @@ function statusTone(status: string | null | undefined) {
 }
 
 export function SalesPage() {
-  const { year, can } = useAppContext()
-  const canWrite = can('sales.write')
-  const canReport = can('reports.read')
+  const { year } = useAppContext()
   const toast = useToast()
   const queryClient = useQueryClient()
   const [tab, setTab] = useState<SalesTab>('invoices')
@@ -112,7 +110,7 @@ export function SalesPage() {
   const reportQuery = useQuery({
     queryKey: ['report', 'sales', year, page, search],
     queryFn: ({ signal }) => api.list<Sale>('/reports/sales', { ...dateQuery, page, page_size: pageSize, q: search }, signal),
-    enabled: tab === 'report' && canReport,
+    enabled: tab === 'report',
   })
 
   const invalidate = async () => {
@@ -121,6 +119,7 @@ export function SalesPage() {
       queryClient.invalidateQueries({ queryKey: ['sales-outstanding'] }),
       queryClient.invalidateQueries({ queryKey: ['report', 'sales'] }),
       queryClient.invalidateQueries({ queryKey: ['inventory'] }),
+      queryClient.invalidateQueries({ queryKey: ['lookup'] }),
       queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       queryClient.invalidateQueries({ queryKey: ['ledger'] }),
     ])
@@ -177,8 +176,7 @@ export function SalesPage() {
 
   return (
     <div className="page-stack">
-      <PageHeader eyebrow={`${year} sales`} title="Sales & receivables" description="Create invoices, settle balances, and inspect server-calculated customer receivables." actions={<Button icon={Plus} disabled={!canWrite} onClick={() => { setEditingSale(null); setSaleOpen(true) }}>New invoice</Button>} />
-      {!canWrite ? <InlineNotice title="Read-only access">You can inspect sales but cannot post invoices or receipts.</InlineNotice> : null}
+      <PageHeader eyebrow={`${year} sales`} title="Sales & receivables" description="Create invoices, settle balances, and inspect server-calculated customer receivables." actions={<Button icon={Plus} onClick={() => { setEditingSale(null); setSaleOpen(true) }}>New invoice</Button>} />
       <div className="stats-grid stats-grid--four">
         <StatCard label="Visible invoices" value={pageData?.total ?? 0} icon={ReceiptText} tone="blue" />
         <StatCard label="Visible sales" value={money(visibleRevenue)} icon={ShoppingCart} tone="green" />
@@ -188,21 +186,20 @@ export function SalesPage() {
       <Tabs value={tab} onChange={changeTab} ariaLabel="Sales sections" items={[
         { value: 'invoices', label: 'Invoices', icon: ReceiptText },
         { value: 'outstanding', label: 'Outstanding', icon: WalletCards },
-        ...(canReport ? [{ value: 'report' as const, label: 'Sales report', icon: FileBarChart }] : []),
+        { value: 'report', label: 'Sales report', icon: FileBarChart },
       ]} />
 
       <Card className={tab === 'report' ? 'print-area' : undefined}>
         <SectionTitle
           title={tab === 'outstanding' ? 'Outstanding invoices' : tab === 'report' ? 'Sales report' : 'Posted invoices'}
           description="Search is executed by the API and results remain server-paginated."
-          actions={tab === 'report' ? <Button variant="secondary" onClick={() => window.print()}>Print / save PDF</Button> : <Button icon={Plus} disabled={!canWrite} onClick={() => { setEditingSale(null); setSaleOpen(true) }}>New invoice</Button>}
+          actions={tab === 'report' ? <Button variant="secondary" onClick={() => window.print()}>Print / save PDF</Button> : <Button icon={Plus} onClick={() => { setEditingSale(null); setSaleOpen(true) }}>New invoice</Button>}
         />
         <div className="toolbar no-print"><SearchBox value={search} onChange={(value) => { setSearch(value); setPage(1) }} placeholder="Search invoice number" /></div>
         <SalesTable
           query={tab === 'outstanding' ? outstandingQuery : tab === 'report' ? reportQuery : salesQuery}
           page={page}
           setPage={setPage}
-          canWrite={canWrite}
           editingSaleId={editSaleMutation.isPending ? editSaleMutation.variables : undefined}
           onInvoice={(sale) => setInvoiceActionId(sale.id)}
           onEdit={(sale) => editSaleMutation.mutate(sale.id)}
@@ -220,11 +217,10 @@ export function SalesPage() {
   )
 }
 
-function SalesTable({ query, page, setPage, canWrite, editingSaleId, onInvoice, onEdit, onPayment, onReverse }: {
+function SalesTable({ query, page, setPage, editingSaleId, onInvoice, onEdit, onPayment, onReverse }: {
   query: ReturnType<typeof useQuery<Page<Sale>>>
   page: number
   setPage: (page: number) => void
-  canWrite: boolean
   editingSaleId?: string | undefined
   onInvoice: (sale: Sale) => void
   onEdit: (sale: Sale) => void
@@ -242,7 +238,7 @@ function SalesTable({ query, page, setPage, canWrite, editingSaleId, onInvoice, 
         <td><strong>{sale.customer_name}</strong><span className="table-subtext">{sale.customer_phone || 'No phone'}</span></td>
         <td className="numeric">{saleLines(sale).length}</td><td className="numeric">{money(sale.total_amount)}</td><td className="numeric">{money(sale.paid_amount)}</td><td className="numeric"><strong>{money(sale.balance_due)}</strong></td>
         <td><Badge tone={statusTone(sale.status === 'reversed' ? 'reversed' : sale.payment_status)}>{titleCase(sale.status === 'reversed' ? sale.status : sale.payment_status ?? 'unpaid')}</Badge></td>
-        <td className="no-print"><div className="row-actions"><Button size="small" variant="ghost" icon={ReceiptText} onClick={() => onInvoice(sale)}>Invoice</Button><Button size="small" variant="ghost" icon={Banknote} disabled={!canWrite || sale.status === 'reversed'} onClick={() => onPayment(sale)}>Receipts</Button><Button size="small" variant="ghost" icon={Pencil} loading={editingSaleId === sale.id} disabled={!canWrite || sale.status === 'reversed' || Boolean(editingSaleId && editingSaleId !== sale.id)} onClick={() => onEdit(sale)}>Correct</Button><Button size="small" variant="ghost" icon={RotateCcw} disabled={!canWrite || sale.status === 'reversed'} onClick={() => onReverse(sale)}>Reverse</Button></div></td>
+        <td className="no-print"><div className="row-actions"><Button size="small" variant="ghost" icon={ReceiptText} onClick={() => onInvoice(sale)}>Invoice</Button><Button size="small" variant="ghost" icon={Banknote} disabled={sale.status === 'reversed'} onClick={() => onPayment(sale)}>Receipts</Button><Button size="small" variant="ghost" icon={Pencil} loading={editingSaleId === sale.id} disabled={sale.status === 'reversed' || Boolean(editingSaleId && editingSaleId !== sale.id)} onClick={() => onEdit(sale)}>Correct</Button><Button size="small" variant="ghost" icon={RotateCcw} disabled={sale.status === 'reversed'} onClick={() => onReverse(sale)}>Reverse</Button></div></td>
       </tr>)}</tbody></table></TableWrap><Pagination page={query.data?.page ?? page} pages={query.data?.pages ?? 0} total={query.data?.total ?? 0} onChange={setPage} /></>
   )
 }
@@ -286,7 +282,7 @@ function SaleDialog({ open, record, mutation, onClose }: {
           <Field label="Initial payment method" required><Select {...form.register('payment_method')}>{paymentMethods.map((method) => <option value={method} key={method}>{titleCase(method)}</option>)}</Select></Field>
           <Field label="Initial amount paid" error={form.formState.errors.amount_paid?.message}><Input type="number" min="0" step="0.01" {...form.register('amount_paid')} /></Field>
         </div>
-        <SectionTitle title="Invoice items" description="Selecting a finished product loads live stock and suggests the legacy 50% markup price. Quantity and price remain editable." actions={<Button type="button" size="small" variant="secondary" icon={Plus} onClick={() => fields.append({ item_id: '', quantity: 1, unit_price: 0, discount: 0 })}>Add line</Button>} />
+        <SectionTitle title="Invoice items" description="Selecting a finished product loads its saved selling price (or a 50% cost fallback for older products). Quantity, offer discount, and price remain editable." actions={<Button type="button" size="small" variant="secondary" icon={Plus} onClick={() => fields.append({ item_id: '', quantity: 1, unit_price: 0, discount: 0 })}>Add line</Button>} />
         <div className="line-card-list">
           {fields.fields.map((field, index) => {
             const line = items[index]
@@ -326,7 +322,7 @@ function SaleDialog({ open, record, mutation, onClose }: {
               <div className="calculated-field calculated-field--stock" aria-live="polite">
                 <span>Available stock</span>
                 <strong>{available === null ? 'Select item' : `${quantity(available, 3)} ${selectedItem?.unit ?? ''}`}</strong>
-                <small>{selectedItem ? `Weighted cost ${money(selectedItem.average_unit_cost)}` : 'Loaded from live finished-goods stock'}</small>
+                <small>{selectedItem ? `Saved price ${money(selectedItem.selling_price)} · weighted cost ${money(selectedItem.average_unit_cost)}` : 'Loaded from live finished-goods stock'}</small>
               </div>
               <Field label="Quantity" required error={form.formState.errors.items?.[index]?.quantity?.message}><Input type="number" min="0.000001" step="0.001" {...form.register(`items.${index}.quantity`)} /></Field>
               <Field label="Unit price" required hint="Auto-filled; you can change it." error={form.formState.errors.items?.[index]?.unit_price?.message}><Input type="number" min="0.01" step="0.01" {...form.register(`items.${index}.unit_price`)} /></Field>

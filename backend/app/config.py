@@ -35,6 +35,9 @@ class Settings(BaseSettings):
 
     supabase_url: AnyHttpUrl
     supabase_publishable_key: SecretStr = Field(min_length=20)
+    # Server-only Auth Admin key used solely for super-admin account creation.
+    # It must never be exposed through a VITE_ variable or sent to the browser.
+    supabase_secret_key: SecretStr | None = Field(default=None, min_length=20)
     supabase_jwks_url: AnyHttpUrl | None = None
     supabase_schema: str = Field(default="public", pattern=r"^[a-z_][a-z0-9_]*$")
 
@@ -94,6 +97,16 @@ class Settings(BaseSettings):
             )
         return value
 
+    @field_validator("supabase_secret_key")
+    @classmethod
+    def require_secret_key(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is None:
+            return None
+        raw = value.get_secret_value()
+        if not raw.startswith("sb_secret_"):
+            raise ValueError("SUPABASE_SECRET_KEY must be an sb_secret_ server key")
+        return value
+
     @model_validator(mode="after")
     def validate_page_sizes(self) -> Settings:
         if self.default_page_size > self.max_page_size:
@@ -139,6 +152,10 @@ class Settings(BaseSettings):
     @property
     def publishable_key(self) -> str:
         return self.supabase_publishable_key.get_secret_value()
+
+    @property
+    def secret_key(self) -> str | None:
+        return self.supabase_secret_key.get_secret_value() if self.supabase_secret_key else None
 
     @property
     def is_production(self) -> bool:

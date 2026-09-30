@@ -35,7 +35,7 @@ Every operational event owns one posted journal. Journal lines enforce one posit
 
 ## Authentication and roles
 
-Supabase Auth owns identities. `profiles`, `roles`, and `user_roles` add one or more ERP roles:
+Supabase Auth owns identities and passwords. `profiles`, `company_memberships`, `company_user_roles`, roles, and permissions authorize each legal company independently:
 
 - `admin`: user and configuration administration, all ERP functions
 - `accountant`: accounting, sales settlements, payroll, and reporting
@@ -44,6 +44,8 @@ Supabase Auth owns identities. `profiles`, `roles`, and `user_roles` add one or 
 - `viewer`: read-only access
 
 The database policies and FastAPI both enforce access. UI guards are convenience only.
+
+Group super administrators can use the server-only Auth Admin endpoint to create an identity, then the database atomically assigns CK, AR, or both plus the selected roles. If database provisioning fails immediately after Auth creation, FastAPI deletes the just-created orphan identity as a compensating action. The secret Auth key never reaches the browser.
 
 ## Failure behavior
 

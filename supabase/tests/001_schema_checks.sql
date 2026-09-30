@@ -23,12 +23,16 @@ begin
   if pg_catalog.to_regprocedure('public.erp_dashboard(integer)') is null then
     raise exception 'Missing public.erp_dashboard(integer)';
   end if;
+  if pg_catalog.to_regprocedure('public.erp_company_dashboard(uuid,integer)') is null then
+    raise exception 'Missing public.erp_company_dashboard(uuid,integer)';
+  end if;
 
   foreach v_name in array array[
     'current_user_access', 'inventory_position', 'inventory_stage_summary',
     'production_daily_summary', 'account_balances', 'account_balances_by_year',
     'employee_open_earnings', 'sales_outstanding', 'payroll_outstanding',
-    'ledger_view', 'overtime_work_view'
+    'ledger_view', 'overtime_work_view',
+    'shared_inventory_availability'
   ]
   loop
     if pg_catalog.to_regclass('public.' || v_name) is null then
@@ -67,6 +71,9 @@ begin
       and c.relkind in ('r', 'p')
       and c.relname = any(array[
         'profiles', 'roles', 'permissions', 'user_roles', 'role_permissions',
+        'companies', 'company_memberships', 'company_user_roles',
+        'company_inventory_balances', 'fiscal_periods',
+        'inventory_ownership_transfers',
         'employees', 'employee_compensation_history', 'conversion_types',
         'piecework_rates',
         'inventory_items', 'accounts',
@@ -102,6 +109,11 @@ begin
   ) then
     raise exception 'authenticated must execute public.erp_execute';
   end if;
+  if not pg_catalog.has_function_privilege(
+    'authenticated', 'public.erp_company_dashboard(uuid,integer)', 'execute'
+  ) then
+    raise exception 'authenticated must execute public.erp_company_dashboard';
+  end if;
   if pg_catalog.has_schema_privilege('anon', 'private', 'usage')
      or pg_catalog.has_schema_privilege('authenticated', 'private', 'usage') then
     raise exception 'Data API roles must not have USAGE on private schema';
@@ -128,16 +140,46 @@ begin
     from public.profiles p
     where p.is_active
       and not exists (
-        select 1 from public.user_roles ur where ur.user_id = p.user_id
+        select 1
+        from public.company_memberships cm
+        join public.company_user_roles cur
+          on cur.company_id = cm.company_id and cur.user_id = cm.user_id
+        where cm.user_id = p.user_id and cm.is_active
       )
   ) then
-    raise exception 'An active profile has no assigned role';
+    raise exception 'An active profile has no active company role';
+  end if;
+  if exists (
+    select 1
+    from public.profiles p
+    cross join public.companies c
+    where p.is_active
+      and c.is_active
+      and not exists (
+        select 1
+        from public.company_memberships cm
+        join public.company_user_roles cur
+          on cur.company_id = cm.company_id and cur.user_id = cm.user_id
+        join public.roles r on r.id = cur.role_id
+        where cm.user_id = p.user_id
+          and cm.company_id = c.id
+          and cm.is_active
+          and r.code = 'admin'
+      )
+  ) then
+    raise exception 'Every active profile must be an administrator in every active company';
   end if;
   if not exists (
     select 1 from pg_catalog.pg_indexes
-    where schemaname = 'public' and indexname = 'sales_invoice_no_posted_idx'
+    where schemaname = 'public' and indexname = 'sales_company_invoice_no_posted_idx'
   ) then
-    raise exception 'Missing live-invoice uniqueness index';
+    raise exception 'Missing company-scoped live-invoice uniqueness index';
+  end if;
+  if not exists (
+    select 1 from pg_catalog.pg_indexes
+    where schemaname = 'public' and indexname = 'profiles_one_super_admin_idx'
+  ) then
+    raise exception 'Missing unique group super-administrator index';
   end if;
   if pg_catalog.to_regclass('public.conversion_types') is null then
     raise exception 'Missing public.conversion_types';
@@ -169,6 +211,24 @@ begin
       and not t.tgisinternal
   ) then
     raise exception 'Overtime write guards are incomplete';
+  end if;
+  if not exists (
+    select 1
+    from pg_catalog.pg_attribute a
+    where a.attrelid = 'public.inventory_items'::regclass
+      and a.attname = 'selling_price'
+      and not a.attisdropped
+  ) then
+    raise exception 'Inventory catalogue selling price is missing';
+  end if;
+  if not exists (
+    select 1
+    from information_schema.columns c
+    where c.table_schema = 'public'
+      and c.table_name = 'company_inventory_position'
+      and c.column_name = 'selling_price'
+  ) then
+    raise exception 'Company inventory read model does not expose selling price';
   end if;
 end;
 $checks$;

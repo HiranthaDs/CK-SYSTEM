@@ -27,8 +27,34 @@ export interface Me extends JsonRecord {
   email?: string | null
   display_name?: string | null
   is_active: boolean
+  active_company_id: Id
+  active_company_code: string
+  active_company_name: string
+  is_super_admin: boolean
   role_codes: string[]
   permission_codes: string[]
+  companies?: Array<{
+    company_id: Id
+    code: string
+    name: string
+    is_primary: boolean
+    role_codes: string[]
+    permission_codes: string[]
+  }>
+}
+
+export interface AdminUserAccess extends JsonRecord {
+  company_id: Id
+  company_code: string
+  company_name: string
+  user_id: Id
+  display_name?: string | null
+  email?: string | null
+  profile_active: boolean
+  is_super_admin: boolean
+  membership_active: boolean
+  is_primary: boolean
+  role_codes: string[]
 }
 
 export interface InventoryPosition extends JsonRecord {
@@ -38,8 +64,10 @@ export interface InventoryPosition extends JsonRecord {
   stage: 'bulk' | 'chip' | 'finished'
   unit: string
   quantity_on_hand: Numeric
+  shared_quantity_on_hand: Numeric
   inventory_value: Numeric
   average_unit_cost: Numeric
+  selling_price?: Numeric
   last_movement_at?: string | null
   is_active: boolean
 }
@@ -60,6 +88,7 @@ export interface InventoryItem extends JsonRecord {
   current_quantity?: Numeric
   available?: Numeric
   average_unit_cost?: Numeric
+  selling_price?: Numeric
   average_cost?: Numeric
   avg_cost?: Numeric
   inventory_value?: Numeric
@@ -72,12 +101,14 @@ export interface InventorySummary {
   chips: InventoryStageSummary
   finished: InventoryStageSummary
   total_quantity: Numeric
+  shared_total_quantity: Numeric
   total_value: Numeric
 }
 
 export interface InventoryStageSummary {
   item_count: number
   total_quantity: Numeric
+  shared_total_quantity: Numeric
   total_value: Numeric
 }
 
@@ -353,7 +384,7 @@ export interface ProductionRun extends JsonRecord {
   raw_material_quantity_kg?: Numeric
   unit_cost?: Numeric
   chip_item?: { name: string; sku?: string | null } | null
-  finished_item?: { name: string; sku?: string | null } | null
+  finished_item?: { name: string; sku?: string | null; selling_price?: Numeric } | null
   operator?: { name: string; employee_no?: string | null } | null
 }
 

@@ -23,6 +23,10 @@ from .dependencies import (
 from .errors import ApiError
 from .models import (
     AccountBalanceRecord,
+    AdminUserAccessRecord,
+    AdminUserCreate,
+    AdminUserRemove,
+    AdminUserStatusUpdate,
     AdjustmentPost,
     AdjustmentRecord,
     ConversionPost,
@@ -69,7 +73,6 @@ from .models import (
     SaleRecord,
 )
 from .supabase import QueryFilter, SupabaseGateway
-
 
 router = APIRouter(prefix="/api/v1")
 Gateway = Annotated[SupabaseGateway, Depends(get_gateway)]
@@ -212,6 +215,7 @@ async def _list(
         filters=filters,
         pagination_mode=pagination.mode,
         cursor=pagination.cursor,
+        company_id=principal.company_id,
     )
 
 
@@ -230,6 +234,7 @@ async def _get(
         token=principal.token,
         request_id=request.state.request_id,
         select=select,
+        company_id=principal.company_id,
     )
 
 
@@ -240,6 +245,8 @@ async def _execute(
     idempotency_key: str,
     operation: str,
     payload: dict[str, Any],
+    *,
+    company_id: UUID | None = None,
 ) -> MutationResponse:
     return await gateway.execute(
         operation,
@@ -247,6 +254,7 @@ async def _execute(
         idempotency_key,
         token=principal.token,
         request_id=request.state.request_id,
+        company_id=company_id or principal.company_id,
     )
 
 
@@ -317,6 +325,7 @@ async def dashboard(
         year,
         token=principal.token,
         request_id=request.state.request_id,
+        company_id=principal.company_id,
     )
 
 
@@ -868,11 +877,12 @@ async def inventory_summary(
     principal: Annotated[Principal, _principal("inventory.read")],
 ) -> InventorySummary:
     rows = await gateway.select_all(
-        "inventory_stage_summary",
+        "company_inventory_stage_summary",
         token=principal.token,
         request_id=request.state.request_id,
         order="stage.asc",
         max_rows=3,
+        company_id=principal.company_id,
     )
     empty = InventoryStageSummary(item_count=0, total_quantity=Decimal("0"), total_value=Decimal("0"))
     summaries = {
@@ -888,6 +898,11 @@ async def inventory_summary(
         chips=chips,
         finished=finished,
         total_quantity=bulk.total_quantity + chips.total_quantity + finished.total_quantity,
+        shared_total_quantity=(
+            bulk.shared_total_quantity
+            + chips.shared_total_quantity
+            + finished.shared_total_quantity
+        ),
         total_value=bulk.total_value + chips.total_value + finished.total_value,
     )
 
@@ -905,7 +920,7 @@ async def _inventory_stage_page(
         gateway,
         principal,
         pagination,
-        source="inventory_position",
+        source="company_inventory_position",
         order=_order(
             filters,
             allowed={"item_name", "quantity_on_hand", "inventory_value", "last_movement_at"},
@@ -1254,7 +1269,7 @@ async def list_production(
         source="production_runs",
         select=(
             "*,chip_item:inventory_items!production_runs_chip_item_id_fkey(name,sku),"
-            "finished_item:inventory_items!production_runs_finished_item_id_fkey(name,sku),"
+            "finished_item:inventory_items!production_runs_finished_item_id_fkey(name,sku,selling_price),"
             "operator:employees!production_runs_operator_employee_id_fkey(name,employee_no)"
         ),
         order=_order(filters, allowed={"production_date", "reference_no", "created_at"}, default="production_date"),
@@ -1284,13 +1299,15 @@ async def production_summary(
                 QueryFilter("production_date", "lte", anchor.isoformat()),
             ],
             max_rows=38,
+            company_id=principal.company_id,
         ),
         gateway.select_all(
-            "inventory_stage_summary",
+            "company_inventory_stage_summary",
             token=principal.token,
             request_id=request.state.request_id,
             order="stage.asc",
             max_rows=3,
+            company_id=principal.company_id,
         ),
     )
     daily = [ProductionDailySummaryRecord.model_validate(row) for row in daily_rows]
@@ -1342,7 +1359,7 @@ async def get_production(
         record_id=production_id,
         select=(
             "*,chip_item:inventory_items!production_runs_chip_item_id_fkey(name,sku),"
-            "finished_item:inventory_items!production_runs_finished_item_id_fkey(name,sku),"
+            "finished_item:inventory_items!production_runs_finished_item_id_fkey(name,sku,selling_price),"
             "operator:employees!production_runs_operator_employee_id_fkey(name,employee_no)"
         ),
     )
@@ -2067,7 +2084,7 @@ async def inventory_report(
         gateway,
         principal,
         pagination,
-        source="inventory_position",
+        source="company_inventory_position",
         order=_order(filters, allowed={"item_name", "stage", "quantity_on_hand", "inventory_value"}, default="item_name"),
         filters=_filters(
             filters,
@@ -2168,10 +2185,139 @@ async def financial_summary_report(
         year,
         token=principal.token,
         request_id=request.state.request_id,
+        company_id=principal.company_id,
     )
 
 
 # System administration
+
+
+@router.get(
+    "/admin/users",
+    response_model=PageResponse[AdminUserAccessRecord],
+    tags=["administration"],
+)
+async def list_admin_users(
+    request: Request,
+    gateway: Gateway,
+    pagination: PageParams,
+    principal: Annotated[Principal, _principal("access.manage")],
+) -> PageResponse[dict[str, Any]]:
+    return await gateway.select_page(
+        "admin_user_access",
+        token=principal.token,
+        request_id=request.state.request_id,
+        page=pagination.page,
+        page_size=pagination.page_size,
+        select="*",
+        order="display_name.asc",
+        pagination_mode=pagination.mode,
+        cursor=pagination.cursor,
+        company_id=principal.company_id,
+    )
+
+
+@router.post(
+    "/admin/users",
+    response_model=MutationResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["administration"],
+)
+async def create_admin_user(
+    payload: AdminUserCreate,
+    request: Request,
+    gateway: Gateway,
+    principal: Annotated[Principal, _principal("access.manage")],
+    _: IdempotencyKey,
+) -> MutationResponse:
+    if not principal.is_super_admin:
+        raise ApiError(
+            403,
+            "Only a group super administrator can create login accounts",
+            code="super_admin_required",
+        )
+
+    company_codes = ["CK", "AR"] if payload.company_access == "BOTH" else [payload.company_access]
+    created_user_id = await gateway.create_auth_user(
+        email=payload.email,
+        password=payload.temporary_password,
+        display_name=payload.display_name,
+        request_id=request.state.request_id,
+    )
+    try:
+        return await gateway.provision_user_access(
+            target_user_id=created_user_id,
+            display_name=payload.display_name,
+            company_codes=company_codes,
+            role_codes=list(payload.role_codes),
+            is_super_admin=payload.is_super_admin,
+            token=principal.token,
+            request_id=request.state.request_id,
+        )
+    except Exception:
+        # Auth and Postgres cannot share a transaction. Compensate a failed
+        # first-time provision so no orphan login remains.
+        try:
+            await gateway.delete_auth_user(created_user_id, request_id=request.state.request_id)
+        except Exception:
+            pass
+        raise
+
+
+@router.patch(
+    "/admin/users/{target_user_id}/status",
+    response_model=MutationResponse,
+    tags=["administration"],
+)
+async def update_admin_user_status(
+    target_user_id: UUID,
+    body: AdminUserStatusUpdate,
+    request: Request,
+    gateway: Gateway,
+    principal: Annotated[Principal, _principal("access.manage")],
+    idempotency_key: IdempotencyKey,
+) -> MutationResponse:
+    if not principal.is_super_admin:
+        raise ApiError(
+            403,
+            "Only a group super administrator can change login status",
+            code="super_admin_required",
+        )
+    return await gateway.set_user_account_status(
+        target_user_id=target_user_id,
+        is_active=body.is_active,
+        token=principal.token,
+        request_id=request.state.request_id,
+        idempotency_key=idempotency_key,
+    )
+
+
+@router.delete(
+    "/admin/users/{target_user_id}",
+    response_model=MutationResponse,
+    tags=["administration"],
+)
+async def remove_admin_user(
+    target_user_id: UUID,
+    body: AdminUserRemove,
+    request: Request,
+    gateway: Gateway,
+    principal: Annotated[Principal, _principal("access.manage")],
+    idempotency_key: IdempotencyKey,
+) -> MutationResponse:
+    if not principal.is_super_admin:
+        raise ApiError(
+            403,
+            "Only a group super administrator can remove login accounts",
+            code="super_admin_required",
+        )
+    return await gateway.remove_user_account(
+        target_user_id=target_user_id,
+        confirmation_pin=body.confirmation_pin,
+        token=principal.token,
+        request_id=request.state.request_id,
+        idempotency_key=idempotency_key,
+    )
 
 
 @router.post(
@@ -2186,6 +2332,12 @@ async def purge_business_data(
     idempotency_key: IdempotencyKey,
     principal: Annotated[Principal, _principal("system.admin")],
 ) -> MutationResponse:
+    if body.company_code != principal.company.code:
+        raise ApiError(
+            422,
+            "The purge company does not match the selected portal",
+            code="company_confirmation_mismatch",
+        )
     return await _execute(
         request,
         gateway,

@@ -11,16 +11,30 @@ function fixture() {
 }
 
 describe('financial downloads', () => {
-  it('creates a real Excel workbook with numeric amounts, source values, and edit audit', async () => {
+  it('creates a clean Excel workbook with numeric amounts, source values, and edit audit', async () => {
     const blob = await createFinancialExcelBlob(fixture())
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.load(await blob.arrayBuffer())
-    expect(workbook.worksheets.map((sheet) => sheet.name)).toContain('Account Balances')
+    const accounts = workbook.getWorksheet('Account Balances')
+    const details = workbook.getWorksheet('Snapshot Details')
+    expect(accounts).toBeDefined()
+    expect(details).toBeDefined()
     expect(workbook.getWorksheet('Income Statement')?.getCell('B3').value).toBe(1500)
     expect(workbook.getWorksheet('Income Statement')?.getCell('B3').numFmt).toContain('LKR')
-    expect(workbook.getWorksheet('Snapshot Details')?.getCell('C3').value).toBe(1000)
-    expect(workbook.getWorksheet('Snapshot Details')?.getCell('D3').value).toBe(1500)
+    expect(details?.getCell('C3').value).toBe(1000)
+    expect(details?.getCell('D3').value).toBe(1500)
+    expect(accounts?.getRow(2).values).not.toContain('Edited')
+    expect(details?.getRow(2).values).not.toContain('Edited')
+    expect(accounts?.columnCount).toBe(9)
+    expect(details?.columnCount).toBe(4)
     expect(workbook.getWorksheet('Edit Audit')?.getCell('A2').value).toContain('summary.finance.revenue')
+
+    const exportedText: Array<string | undefined> = [workbook.subject, workbook.description]
+    workbook.eachSheet((sheet) => {
+      exportedText.push(sheet.headerFooter.oddFooter)
+      sheet.eachRow((row) => row.eachCell((cell) => exportedText.push(cell.text)))
+    })
+    expect(exportedText.join('\n')).not.toMatch(/INTERNAL USE ONLY|UNAUDITED|USER-EDITED WHEN MARKED|export-only working draft|not approved for statutory/i)
   })
 
   it('creates a multipage PDF for long tables without throwing in cell formatting', async () => {
@@ -32,5 +46,6 @@ describe('financial downloads', () => {
     const bytes = await blob.text()
     expect(bytes.startsWith('%PDF-')).toBe(true)
     expect(bytes.match(/\/Type \/Page\b/g)?.length).toBeGreaterThan(2)
+    expect(bytes).not.toMatch(/INTERNAL USE ONLY|UNAUDITED|USER-EDITED|export-only working draft/i)
   })
 })

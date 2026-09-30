@@ -2,11 +2,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Controller, useFieldArray, useForm, type Resolver, type UseFieldArrayReturn, type UseFormReturn } from 'react-hook-form'
 import { useEffect, useState } from 'react'
-import { Banknote, BriefcaseBusiness, CalendarCheck, Clock3, Download, FileBarChart, Pencil, Plus, ReceiptText, RotateCcw, Trash2, UserRound, Users } from 'lucide-react'
+import { Banknote, BriefcaseBusiness, CalendarCheck, Clock3, Download, FileBarChart, MessageCircle, Pencil, Plus, Printer, ReceiptText, RotateCcw, Trash2, UserRound, Users } from 'lucide-react'
 import { z } from 'zod'
 import { api } from '../lib/api'
 import { localIsoDate, localIsoMonth, money, monthLabel, numberValue, quantity, shortDate, titleCase } from '../lib/format'
 import { downloadPayrollExcel } from '../lib/payrollReportExport'
+import { payrollWhatsAppMessage } from '../lib/payrollMessage'
+import { normalizeWhatsAppPhone } from '../lib/salesInvoice'
 import type { DailyWork, Employee, MutationReceipt, OpenEarning, OvertimeRecord, Page, Payment, Payroll, PayrollLine } from '../types/api'
 import { useAppContext } from '../layout/AppShell'
 import { useToast } from '../components/Toast'
@@ -21,7 +23,6 @@ import {
   EmptyState,
   ErrorState,
   Field,
-  InlineNotice,
   Input,
   LoadingState,
   PageHeader,
@@ -191,15 +192,10 @@ function monthForYear(year: number, current = localIsoMonth()) {
 }
 
 export function EmployeesPage() {
-  const { year, can, hasAnyPermission } = useAppContext()
-  const canReadEmployees = can('employees.read')
-  const canWriteEmployees = can('employees.write')
-  const canReadPayroll = can('payroll.read')
-  const canWritePayroll = can('payroll.write')
-  const canReport = can('reports.read')
+  const { year, me } = useAppContext()
   const toast = useToast()
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState<StaffTab>(canReadEmployees ? 'employees' : 'payroll')
+  const [tab, setTab] = useState<StaffTab>('employees')
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [employeeOpen, setEmployeeOpen] = useState(false)
@@ -209,6 +205,8 @@ export function EmployeesPage() {
   const [editingWork, setEditingWork] = useState<DailyWork | null>(null)
   const [reverseWork, setReverseWork] = useState<DailyWork | null>(null)
   const [overtimeOpen, setOvertimeOpen] = useState(false)
+  const [overtimeEmployee, setOvertimeEmployee] = useState<Employee | null>(null)
+  const [overtimePrefillEmployee, setOvertimePrefillEmployee] = useState<Employee | null>(null)
   const [editingOvertime, setEditingOvertime] = useState<OvertimeRecord | null>(null)
   const [reverseOvertime, setReverseOvertime] = useState<OvertimeRecord | null>(null)
   const [payrollOpen, setPayrollOpen] = useState(false)
@@ -217,6 +215,8 @@ export function EmployeesPage() {
   const [reversePayroll, setReversePayroll] = useState<Payroll | null>(null)
   const [reversePayment, setReversePayment] = useState<{ payroll: Payroll; payment: Payment } | null>(null)
   const [profilePayroll, setProfilePayroll] = useState<Payroll | null>(null)
+  const [postPayroll, setPostPayroll] = useState<Payroll | null>(null)
+  const [postPayrollStep, setPostPayrollStep] = useState<'payment' | 'delivery'>('payment')
   const [reportMonthSelection, setReportMonthSelection] = useState(() => localIsoMonth())
   const reportMonth = monthForYear(year, reportMonthSelection)
   const [exportingPayroll, setExportingPayroll] = useState(false)
@@ -225,27 +225,27 @@ export function EmployeesPage() {
   const employeesQuery = useQuery({
     queryKey: ['employees', page, search],
     queryFn: ({ signal }) => api.list<Employee>('/employees', { page, page_size: pageSize, q: search, descending: false }, signal),
-    enabled: tab === 'employees' && canReadEmployees,
+    enabled: tab === 'employees',
   })
   const dailyWorkQuery = useQuery({
     queryKey: ['daily-work', year, page],
     queryFn: ({ signal }) => api.list<DailyWork>('/daily-work', { ...period, page, page_size: pageSize }, signal),
-    enabled: tab === 'daily-work' && canReadEmployees,
+    enabled: tab === 'daily-work',
   })
   const overtimeQuery = useQuery({
     queryKey: ['overtime', year, page],
     queryFn: ({ signal }) => api.list<OvertimeRecord>('/overtime', { ...period, page, page_size: pageSize, descending: true }, signal),
-    enabled: tab === 'overtime' && canReadEmployees,
+    enabled: tab === 'overtime',
   })
   const earningsQuery = useQuery({
     queryKey: ['open-earnings', year, page, search],
     queryFn: ({ signal }) => api.list<OpenEarning>('/open-earnings', { ...period, page, page_size: pageSize, q: search }, signal),
-    enabled: tab === 'earnings' && canReadPayroll,
+    enabled: tab === 'earnings',
   })
   const payrollQuery = useQuery({
     queryKey: ['payroll', year, page, search],
     queryFn: ({ signal }) => api.list<Payroll>('/payroll', { ...period, page, page_size: pageSize, q: search }, signal),
-    enabled: tab === 'payroll' && canReadPayroll,
+    enabled: tab === 'payroll',
   })
   const reportQuery = useQuery({
     queryKey: ['report', 'payroll', reportMonth, page, search],
@@ -284,7 +284,7 @@ export function EmployeesPage() {
         total,
       } satisfies Page<Payroll>
     },
-    enabled: tab === 'report' && canReport && Boolean(reportMonth),
+    enabled: tab === 'report' && Boolean(reportMonth),
   })
 
   const exportMonthlyPayroll = async () => {
@@ -381,12 +381,37 @@ export function EmployeesPage() {
   })
   const payrollMutation = useMutation({
     mutationFn: ({ id, body }: { id?: string | undefined; body: Omit<PayrollValues, 'claim_ids' | 'overtime_ids'> & { overtime_ids: string[]; daily_work_ids: string[]; conversion_worker_ids: string[]; manual_piecework_ids: string[] } }) => id ? api.patch<MutationReceipt, typeof body>(`/payroll/${id}`, body) : api.post<MutationReceipt, typeof body>('/payroll', body),
-    onSuccess: async () => { setPayrollOpen(false); setEditingPayroll(null); await invalidate(); toast.success('Payroll posted', 'Earnings, deductions, contributions, and claims were posted atomically.') },
+    onSuccess: async (receipt) => {
+      setPayrollOpen(false)
+      setEditingPayroll(null)
+      await invalidate()
+      toast.success('Payroll posted', 'Earnings, deductions, contributions, and claims were posted atomically.')
+      if (!receipt.id) return
+      try {
+        const saved = await api.get<Payroll>(`/payroll/${receipt.id}`)
+        setPostPayroll(saved)
+        setPostPayrollStep(numberValue(saved.balance_due) > 0 ? 'payment' : 'delivery')
+      } catch (error) {
+        toast.error('Payroll saved, but the next-step prompt could not load', error instanceof Error ? error.message : 'Open the posted payroll to continue.')
+      }
+    },
     onError: (error) => toast.error('Payroll was not posted', error instanceof Error ? error.message : 'Try again.'),
   })
   const payrollPaymentMutation = useMutation({
     mutationFn: ({ payrollId, body }: { payrollId: string; body: PayrollPaymentValues }) => api.post<MutationReceipt, PayrollPaymentValues>(`/payroll/${payrollId}/payments`, body),
-    onSuccess: async () => { setPaymentPayroll(null); await invalidate(); toast.success('Payroll payment posted') },
+    onSuccess: async (_receipt, variables) => {
+      setPaymentPayroll(null)
+      await invalidate()
+      toast.success('Payroll payment posted')
+      if (!postPayroll || postPayroll.id !== variables.payrollId) return
+      try {
+        const saved = await api.get<Payroll>(`/payroll/${variables.payrollId}`)
+        setPostPayroll(saved)
+        setPostPayrollStep('delivery')
+      } catch {
+        setPostPayrollStep('delivery')
+      }
+    },
     onError: (error) => toast.error('Payment was not posted', error instanceof Error ? error.message : 'Try again.'),
   })
   const reversePayrollMutation = useMutation({
@@ -402,20 +427,22 @@ export function EmployeesPage() {
 
   const changeTab = (value: StaffTab) => { setTab(value); setPage(1); setSearch('') }
   const tabItems = [
-    ...(canReadEmployees ? [{ value: 'employees' as const, label: 'Employees', icon: Users }, { value: 'daily-work' as const, label: 'Daily work', icon: CalendarCheck }, { value: 'overtime' as const, label: 'OT hours', icon: Clock3 }] : []),
-    ...(canReadPayroll ? [{ value: 'earnings' as const, label: 'Open earnings', icon: BriefcaseBusiness }, { value: 'payroll' as const, label: 'Payroll', icon: ReceiptText }] : []),
-    ...(canReport ? [{ value: 'report' as const, label: 'Payroll report', icon: FileBarChart }] : []),
+    { value: 'employees' as const, label: 'Employees', icon: Users },
+    { value: 'daily-work' as const, label: 'Daily work', icon: CalendarCheck },
+    { value: 'overtime' as const, label: 'OT hours', icon: Clock3 },
+    { value: 'earnings' as const, label: 'Open earnings', icon: BriefcaseBusiness },
+    { value: 'payroll' as const, label: 'Payroll', icon: ReceiptText },
+    { value: 'report' as const, label: 'Payroll report', icon: FileBarChart },
   ]
 
   return (
     <div className="page-stack">
-      <PageHeader eyebrow="People operations" title="Staff & payroll" description="Maintain employee terms, record daily work and OT hours, claim earnings once, and settle payroll." actions={canReadEmployees ? <Button icon={Plus} disabled={!canWriteEmployees} onClick={() => { setEditingEmployee(null); setEmployeeOpen(true) }}>New employee</Button> : undefined} />
-      {!hasAnyPermission('employees.write', 'payroll.write') ? <InlineNotice title="Read-only access">Your permissions allow review only; posting actions are disabled.</InlineNotice> : null}
+      <PageHeader eyebrow="People operations" title="Staff & payroll" description="Maintain employee terms, record daily work and OT hours, claim earnings once, and settle payroll." actions={<Button icon={Plus} onClick={() => { setEditingEmployee(null); setEmployeeOpen(true) }}>New employee</Button>} />
       <Tabs value={tab} onChange={changeTab} ariaLabel="Staff and payroll sections" items={tabItems} />
 
-      {tab === 'employees' ? <EmployeeList query={employeesQuery} page={page} setPage={setPage} search={search} setSearch={(value) => { setSearch(value); setPage(1) }} canWrite={canWriteEmployees} onAdd={() => { setEditingEmployee(null); setEmployeeOpen(true) }} onEdit={(row) => { setEditingEmployee(row); setEmployeeOpen(true) }} onDelete={setDeleteEmployee} /> : null}
-      {tab === 'daily-work' ? <DailyWorkList query={dailyWorkQuery} page={page} setPage={setPage} canWrite={canWriteEmployees} onAdd={() => { setEditingWork(null); setWorkOpen(true) }} onEdit={(row) => { setEditingWork(row); setWorkOpen(true) }} onReverse={setReverseWork} /> : null}
-      {tab === 'overtime' ? <OvertimeList query={overtimeQuery} page={page} setPage={setPage} canWrite={canWriteEmployees} onAdd={() => { setEditingOvertime(null); setOvertimeOpen(true) }} onEdit={(row) => { setEditingOvertime(row); setOvertimeOpen(true) }} onReverse={setReverseOvertime} /> : null}
+      {tab === 'employees' ? <EmployeeList query={employeesQuery} page={page} setPage={setPage} search={search} setSearch={(value) => { setSearch(value); setPage(1) }} onAdd={() => { setEditingEmployee(null); setEmployeeOpen(true) }} onOvertime={setOvertimeEmployee} onEdit={(row) => { setEditingEmployee(row); setEmployeeOpen(true) }} onDelete={setDeleteEmployee} /> : null}
+      {tab === 'daily-work' ? <DailyWorkList query={dailyWorkQuery} page={page} setPage={setPage} onAdd={() => { setEditingWork(null); setWorkOpen(true) }} onEdit={(row) => { setEditingWork(row); setWorkOpen(true) }} onReverse={setReverseWork} /> : null}
+      {tab === 'overtime' ? <OvertimeList query={overtimeQuery} page={page} setPage={setPage} onAdd={() => { setEditingOvertime(null); setOvertimePrefillEmployee(null); setOvertimeOpen(true) }} onEdit={(row) => { setEditingOvertime(row); setOvertimePrefillEmployee(null); setOvertimeOpen(true) }} onReverse={setReverseOvertime} /> : null}
       {tab === 'earnings' ? <EarningsList query={earningsQuery} page={page} setPage={setPage} search={search} setSearch={(value) => { setSearch(value); setPage(1) }} /> : null}
       {tab === 'payroll' || tab === 'report' ? (
         <PayrollList
@@ -424,7 +451,6 @@ export function EmployeesPage() {
           setPage={setPage}
           search={search}
           setSearch={(value) => { setSearch(value); setPage(1) }}
-          canWrite={canWritePayroll && tab !== 'report'}
           report={tab === 'report'}
           reportMonth={reportMonth}
           onReportMonthChange={(value) => { setReportMonthSelection(value); setPage(1) }}
@@ -440,10 +466,12 @@ export function EmployeesPage() {
 
       <EmployeeDialog open={employeeOpen} record={editingEmployee} mutation={employeeMutation} onClose={() => { setEmployeeOpen(false); setEditingEmployee(null) }} />
       <DailyWorkDialog open={workOpen} record={editingWork} mutation={workMutation} onClose={() => { setWorkOpen(false); setEditingWork(null) }} />
-      <OvertimeDialog open={overtimeOpen} record={editingOvertime} mutation={overtimeMutation} onClose={() => { setOvertimeOpen(false); setEditingOvertime(null) }} />
+      <EmployeeOvertimeDialog employee={overtimeEmployee} year={year} onAdd={() => { const employee = overtimeEmployee; setOvertimeEmployee(null); setEditingOvertime(null); setOvertimePrefillEmployee(employee); setOvertimeOpen(true) }} onEdit={(record) => { setOvertimeEmployee(null); setEditingOvertime(record); setOvertimePrefillEmployee(null); setOvertimeOpen(true) }} onReverse={(record) => { setOvertimeEmployee(null); setReverseOvertime(record) }} onClose={() => setOvertimeEmployee(null)} />
+      <OvertimeDialog open={overtimeOpen} record={editingOvertime} initialEmployee={overtimePrefillEmployee} mutation={overtimeMutation} onClose={() => { setOvertimeOpen(false); setEditingOvertime(null); setOvertimePrefillEmployee(null) }} />
       <PayrollDialog open={payrollOpen} record={editingPayroll} mutation={payrollMutation} onClose={() => { setPayrollOpen(false); setEditingPayroll(null) }} />
       <PayrollPaymentDialog payroll={paymentPayroll} mutation={payrollPaymentMutation} onReverse={(payment) => { if (paymentPayroll) setReversePayment({ payroll: paymentPayroll, payment }) }} onClose={() => setPaymentPayroll(null)} />
-      <EmployeePayrollProfileDialog key={profilePayroll?.id ?? 'no-paysheet'} payroll={profilePayroll} onClose={() => setProfilePayroll(null)} />
+      <PayrollPostFollowupDialog payroll={postPayroll} step={postPayrollStep} companyName={me.active_company_name} hidden={Boolean(paymentPayroll)} onPayLater={() => setPostPayrollStep('delivery')} onPayment={() => { if (postPayroll) setPaymentPayroll(postPayroll) }} onPrint={() => { if (postPayroll) setProfilePayroll(postPayroll); setPostPayroll(null) }} onDone={() => setPostPayroll(null)} />
+      <EmployeePayrollProfileDialog key={profilePayroll?.id ?? 'no-paysheet'} payroll={profilePayroll} companyName={me.active_company_name} onClose={() => setProfilePayroll(null)} />
       <ConfirmDialog open={Boolean(deleteEmployee)} title="Deactivate this employee?" message={`${deleteEmployee?.name ?? 'This employee'} will no longer appear in active staff selections. Historical records remain intact.`} destructive confirmLabel="Deactivate" busy={employeeDeleteMutation.isPending} onCancel={() => setDeleteEmployee(null)} onConfirm={() => { if (deleteEmployee) employeeDeleteMutation.mutate(deleteEmployee) }} />
       <ConfirmDialog open={Boolean(reverseWork)} title="Reverse this daily-work record?" message="The record remains in the audit trail and any unclaimed earnings are removed." destructive confirmLabel="Post reversal" busy={reverseWorkMutation.isPending} onCancel={() => setReverseWork(null)} onConfirm={() => { if (reverseWork) reverseWorkMutation.mutate(reverseWork) }} />
       <ConfirmDialog open={Boolean(reverseOvertime)} title="Reverse this OT record?" message="The OT entry remains in the audit trail and can no longer be claimed by payroll." destructive confirmLabel="Reverse OT" busy={reverseOvertimeMutation.isPending} onCancel={() => setReverseOvertime(null)} onConfirm={() => { if (reverseOvertime) reverseOvertimeMutation.mutate(reverseOvertime) }} />
@@ -453,22 +481,72 @@ export function EmployeesPage() {
   )
 }
 
-function EmployeeList({ query, page, setPage, search, setSearch, canWrite, onAdd, onEdit, onDelete }: { query: ReturnType<typeof useQuery<Page<Employee>>>; page: number; setPage: (page: number) => void; search: string; setSearch: (value: string) => void; canWrite: boolean; onAdd: () => void; onEdit: (employee: Employee) => void; onDelete: (employee: Employee) => void }) {
+function EmployeeList({ query, page, setPage, search, setSearch, onAdd, onOvertime, onEdit, onDelete }: { query: ReturnType<typeof useQuery<Page<Employee>>>; page: number; setPage: (page: number) => void; search: string; setSearch: (value: string) => void; onAdd: () => void; onOvertime: (employee: Employee) => void; onEdit: (employee: Employee) => void; onDelete: (employee: Employee) => void }) {
   const rows = query.data?.items ?? []
-  return <Card><SectionTitle title="Employee master" description="Pay terms and statutory references are read from Supabase at posting time." actions={<Button icon={Plus} disabled={!canWrite} onClick={onAdd}>New employee</Button>} /><div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder="Search employee name" /></div>{query.isLoading ? <LoadingState /> : query.isError ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : rows.length ? <><TableWrap><table><thead><tr><th>Employee</th><th>Role / shift</th><th>Pay model</th><th className="numeric">Monthly</th><th className="numeric">Daily</th><th>Joined</th><th>Status</th><th /></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><strong>{row.name}</strong><span className="table-subtext mono">{row.employee_no || 'Not assigned'} · {row.nic || 'No NIC'}</span></td><td>{row.job_role || '—'}<span className="table-subtext">{row.shift || 'No shift'}</span></td><td>{titleCase(row.pay_model)}</td><td className="numeric">{money(row.monthly_rate)}</td><td className="numeric">{money(row.daily_rate)}</td><td>{shortDate(row.joined_date)}</td><td><Badge tone={statusTone(row.status)}>{titleCase(row.status)}</Badge></td><td><div className="row-actions"><Button size="small" variant="ghost" icon={Pencil} disabled={!canWrite} onClick={() => onEdit(row)}>Edit</Button><Button size="small" variant="ghost" icon={Trash2} disabled={!canWrite || row.status === 'inactive'} onClick={() => onDelete(row)}>Deactivate</Button></div></td></tr>)}</tbody></table></TableWrap><Pagination page={query.data?.page ?? page} pages={query.data?.pages ?? 0} total={query.data?.total ?? 0} onChange={setPage} /></> : <EmptyState message="No employees match the search." action={<Button icon={Plus} disabled={!canWrite} onClick={onAdd}>Add first employee</Button>} />}</Card>
+  return <Card><SectionTitle title="Employee master" description="Pay terms and statutory references are read from Supabase at posting time." actions={<Button icon={Plus} onClick={onAdd}>New employee</Button>} /><div className="toolbar"><SearchBox value={search} onChange={setSearch} placeholder="Search employee name" /></div>{query.isLoading ? <LoadingState /> : query.isError ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : rows.length ? <><TableWrap><table><thead><tr><th>Employee</th><th>Role / shift</th><th>Pay model</th><th className="numeric">Monthly</th><th className="numeric">Daily</th><th>Joined</th><th>Status</th><th /></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><strong>{row.name}</strong><span className="table-subtext mono">{row.employee_no || 'Not assigned'} · {row.nic || 'No NIC'}</span></td><td>{row.job_role || '—'}<span className="table-subtext">{row.shift || 'No shift'}</span></td><td>{titleCase(row.pay_model)}</td><td className="numeric">{money(row.monthly_rate)}</td><td className="numeric">{money(row.daily_rate)}</td><td>{shortDate(row.joined_date)}</td><td><Badge tone={statusTone(row.status)}>{titleCase(row.status)}</Badge></td><td><div className="row-actions"><Button size="small" variant="ghost" icon={Clock3} onClick={() => onOvertime(row)}>OT details</Button><Button size="small" variant="ghost" icon={Pencil} onClick={() => onEdit(row)}>Edit</Button><Button size="small" variant="ghost" icon={Trash2} disabled={row.status === 'inactive'} onClick={() => onDelete(row)}>Deactivate</Button></div></td></tr>)}</tbody></table></TableWrap><Pagination page={query.data?.page ?? page} pages={query.data?.pages ?? 0} total={query.data?.total ?? 0} onChange={setPage} /></> : <EmptyState message="No employees match the search." action={<Button icon={Plus} onClick={onAdd}>Add first employee</Button>} />}</Card>
 }
 
-function DailyWorkList({ query, page, setPage, canWrite, onAdd, onEdit, onReverse }: { query: ReturnType<typeof useQuery<Page<DailyWork>>>; page: number; setPage: (page: number) => void; canWrite: boolean; onAdd: () => void; onEdit: (work: DailyWork) => void; onReverse: (work: DailyWork) => void }) {
+function EmployeeOvertimeDialog({ employee, year, onAdd, onEdit, onReverse, onClose }: {
+  employee: Employee | null
+  year: number
+  onAdd: () => void
+  onEdit: (record: OvertimeRecord) => void
+  onReverse: (record: OvertimeRecord) => void
+  onClose: () => void
+}) {
+  const query = useQuery({
+    queryKey: ['overtime', 'employee-profile', employee?.id, year],
+    queryFn: async ({ signal }) => {
+      const rows: OvertimeRecord[] = []
+      for (let apiPage = 1; ; apiPage += 1) {
+        const result = await api.list<OvertimeRecord>('/overtime', {
+          employee_id: employee!.id,
+          from_date: `${year}-01-01`,
+          to_date: `${year}-12-31`,
+          page: apiPage,
+          page_size: 100,
+          descending: true,
+        }, signal)
+        rows.push(...result.items)
+        if (apiPage >= Math.max(1, result.pages || 1)) break
+      }
+      return rows
+    },
+    enabled: Boolean(employee),
+  })
+  const rows = query.data ?? []
+  const activeRows = rows.filter((row) => row.status !== 'reversed')
+  const totalHours = activeRows.reduce((sum, row) => sum + numberValue(row.hours), 0)
+  const totalAmount = activeRows.reduce((sum, row) => sum + (numberValue(row.amount) || numberValue(row.hours) * numberValue(row.rate)), 0)
+
+  return (
+    <Dialog open={Boolean(employee)} title={`OT details · ${employee?.name ?? ''}`} description={`${year} overtime history for this employee only.`} size="workspace" onClose={onClose} footer={<><Button variant="secondary" onClick={onClose}>Close</Button><Button icon={Plus} onClick={onAdd}>Add OT hours</Button></>}>
+      <div className="stats-grid stats-grid--four">
+        <Card><span className="table-subtext">Employee</span><strong>{employee?.employee_no || 'No employee number'}</strong></Card>
+        <Card><span className="table-subtext">Active OT entries</span><strong>{activeRows.length}</strong></Card>
+        <Card><span className="table-subtext">Total OT hours</span><strong>{quantity(totalHours, 2)}</strong></Card>
+        <Card><span className="table-subtext">Total OT amount</span><strong>{money(totalAmount)}</strong></Card>
+      </div>
+      {query.isLoading ? <LoadingState /> : query.isError ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : rows.length ? (
+        <TableWrap><table><thead><tr><th>Date / reference</th><th className="numeric">Hours</th><th className="numeric">Rate</th><th className="numeric">Amount</th><th>Notes</th><th>Payroll / status</th><th /></tr></thead><tbody>{rows.map((row) => {
+          const claimed = Boolean(row.claimed_payroll_id || row.claimed_payroll_reference || row.status === 'claimed' || row.status === 'paid')
+          return <tr key={row.id}><td><strong className="mono">{row.reference_no}</strong><span className="table-subtext">{shortDate(row.work_date)}</span></td><td className="numeric">{quantity(row.hours, 2)}</td><td className="numeric">{money(row.rate)}</td><td className="numeric"><strong>{money(numberValue(row.amount) || numberValue(row.hours) * numberValue(row.rate))}</strong></td><td>{row.notes || '—'}</td><td>{row.claimed_payroll_reference || (claimed ? 'Claimed' : 'Not claimed')}<span className="table-subtext"><Badge tone={statusTone(claimed ? 'partial' : row.status)}>{titleCase(claimed ? 'claimed' : row.status)}</Badge></span></td><td><div className="row-actions"><Button size="small" variant="ghost" icon={Pencil} disabled={claimed || row.status === 'reversed'} onClick={() => onEdit(row)}>Edit</Button><Button size="small" variant="ghost" icon={RotateCcw} disabled={row.status === 'reversed'} onClick={() => onReverse(row)}>Reverse</Button></div></td></tr>
+        })}</tbody></table></TableWrap>
+      ) : <EmptyState message={`No OT hours have been recorded for ${employee?.name ?? 'this employee'} in ${year}.`} action={<Button icon={Plus} onClick={onAdd}>Add first OT entry</Button>} />}
+    </Dialog>
+  )
+}
+
+function DailyWorkList({ query, page, setPage, onAdd, onEdit, onReverse }: { query: ReturnType<typeof useQuery<Page<DailyWork>>>; page: number; setPage: (page: number) => void; onAdd: () => void; onEdit: (work: DailyWork) => void; onReverse: (work: DailyWork) => void }) {
   const rows = query.data?.items ?? []
-  return <Card><SectionTitle title="Daily work" description="Daily wage and manual piecework are available to payroll exactly once." actions={<Button icon={Plus} disabled={!canWrite} onClick={onAdd}>Record work</Button>} />{query.isLoading ? <LoadingState /> : query.isError ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : rows.length ? <><TableWrap><table><thead><tr><th>Date / reference</th><th>Employee</th><th className="numeric">Units</th><th className="numeric">Daily rate</th><th className="numeric">Base amount</th><th className="numeric">Piecework</th><th>Status</th><th /></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><strong className="mono">{row.reference_no || row.id.slice(0, 8)}</strong><span className="table-subtext">{shortDate(row.work_date)}</span></td><td className="mono">{row.employee_id.slice(0, 8)}…</td><td className="numeric">{quantity(row.work_units)}</td><td className="numeric">{money(row.daily_rate)}</td><td className="numeric">{money(row.base_amount ?? numberValue(row.work_units) * numberValue(row.daily_rate))}</td><td className="numeric">{money(row.daily_work_piecework.reduce((sum, item) => sum + numberValue(item.amount), 0))}</td><td><Badge tone={statusTone(row.status)}>{titleCase(row.status ?? 'posted')}</Badge></td><td><div className="row-actions"><Button size="small" variant="ghost" icon={Pencil} disabled={!canWrite || row.status === 'reversed'} onClick={() => onEdit(row)}>Correct</Button><Button size="small" variant="ghost" icon={RotateCcw} disabled={!canWrite || row.status === 'reversed'} onClick={() => onReverse(row)}>Reverse</Button></div></td></tr>)}</tbody></table></TableWrap><Pagination page={query.data?.page ?? page} pages={query.data?.pages ?? 0} total={query.data?.total ?? 0} onChange={setPage} /></> : <EmptyState message="No daily-work records exist for this year." />}</Card>
+  return <Card><SectionTitle title="Daily work" description="Daily wage and manual piecework are available to payroll exactly once." actions={<Button icon={Plus} onClick={onAdd}>Record work</Button>} />{query.isLoading ? <LoadingState /> : query.isError ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : rows.length ? <><TableWrap><table><thead><tr><th>Date / reference</th><th>Employee</th><th className="numeric">Units</th><th className="numeric">Daily rate</th><th className="numeric">Base amount</th><th className="numeric">Piecework</th><th>Status</th><th /></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td><strong className="mono">{row.reference_no || row.id.slice(0, 8)}</strong><span className="table-subtext">{shortDate(row.work_date)}</span></td><td className="mono">{row.employee_id.slice(0, 8)}…</td><td className="numeric">{quantity(row.work_units)}</td><td className="numeric">{money(row.daily_rate)}</td><td className="numeric">{money(row.base_amount ?? numberValue(row.work_units) * numberValue(row.daily_rate))}</td><td className="numeric">{money(row.daily_work_piecework.reduce((sum, item) => sum + numberValue(item.amount), 0))}</td><td><Badge tone={statusTone(row.status)}>{titleCase(row.status ?? 'posted')}</Badge></td><td><div className="row-actions"><Button size="small" variant="ghost" icon={Pencil} disabled={row.status === 'reversed'} onClick={() => onEdit(row)}>Correct</Button><Button size="small" variant="ghost" icon={RotateCcw} disabled={row.status === 'reversed'} onClick={() => onReverse(row)}>Reverse</Button></div></td></tr>)}</tbody></table></TableWrap><Pagination page={query.data?.page ?? page} pages={query.data?.pages ?? 0} total={query.data?.total ?? 0} onChange={setPage} /></> : <EmptyState message="No daily-work records exist for this year." />}</Card>
 }
 
 
-function OvertimeList({ query, page, setPage, canWrite, onAdd, onEdit, onReverse }: {
+function OvertimeList({ query, page, setPage, onAdd, onEdit, onReverse }: {
   query: ReturnType<typeof useQuery<Page<OvertimeRecord>>>
   page: number
   setPage: (page: number) => void
-  canWrite: boolean
   onAdd: () => void
   onEdit: (record: OvertimeRecord) => void
   onReverse: (record: OvertimeRecord) => void
@@ -479,7 +557,7 @@ function OvertimeList({ query, page, setPage, canWrite, onAdd, onEdit, onReverse
       <SectionTitle
         title="OT hours"
         description="Record overtime by employee and date. Each entry keeps the OT rate used on that day and can be claimed once in payroll."
-        actions={<Button icon={Plus} disabled={!canWrite} onClick={onAdd}>Add OT hours</Button>}
+        actions={<Button icon={Plus} onClick={onAdd}>Add OT hours</Button>}
       />
       {query.isLoading ? <LoadingState /> : query.isError ? (
         <ErrorState error={query.error} onRetry={() => void query.refetch()} />
@@ -501,7 +579,7 @@ function OvertimeList({ query, page, setPage, canWrite, onAdd, onEdit, onReverse
                       <td className="numeric"><strong>{money(amount)}</strong></td>
                       <td>{row.claimed_payroll_reference || (claimed ? 'Claimed' : 'Not claimed')}</td>
                       <td><Badge tone={statusTone(claimed ? 'partial' : (row.status || 'active'))}>{titleCase(claimed ? 'claimed' : (row.status || 'open'))}</Badge></td>
-                      <td><div className="row-actions"><Button size="small" variant="ghost" icon={Pencil} disabled={!canWrite || claimed || row.status === 'reversed'} onClick={() => onEdit(row)}>Edit</Button><Button size="small" variant="ghost" icon={RotateCcw} disabled={!canWrite || row.status === 'reversed'} onClick={() => onReverse(row)}>Reverse</Button></div></td>
+                      <td><div className="row-actions"><Button size="small" variant="ghost" icon={Pencil} disabled={claimed || row.status === 'reversed'} onClick={() => onEdit(row)}>Edit</Button><Button size="small" variant="ghost" icon={RotateCcw} disabled={row.status === 'reversed'} onClick={() => onReverse(row)}>Reverse</Button></div></td>
                     </tr>
                   )
                 })}
@@ -510,7 +588,7 @@ function OvertimeList({ query, page, setPage, canWrite, onAdd, onEdit, onReverse
           </TableWrap>
           <Pagination page={query.data?.page ?? page} pages={query.data?.pages ?? 0} total={query.data?.total ?? 0} onChange={setPage} />
         </>
-      ) : <EmptyState message="No overtime has been recorded for this year." action={<Button icon={Plus} disabled={!canWrite} onClick={onAdd}>Add first OT entry</Button>} />}
+      ) : <EmptyState message="No overtime has been recorded for this year." action={<Button icon={Plus} onClick={onAdd}>Add first OT entry</Button>} />}
     </Card>
   )
 }
@@ -541,7 +619,6 @@ interface PayrollListProps {
   setPage: (page: number) => void
   search: string
   setSearch: (value: string) => void
-  canWrite: boolean
   report: boolean
   reportMonth: string
   onReportMonthChange: (value: string) => void
@@ -560,7 +637,6 @@ function PayrollList({
   setPage,
   search,
   setSearch,
-  canWrite,
   report,
   reportMonth,
   onReportMonthChange,
@@ -585,7 +661,7 @@ function PayrollList({
             <Button variant="secondary" icon={Download} loading={exporting} onClick={onExport}>Download EPF / ETF Excel</Button>
             <Button variant="secondary" onClick={() => window.print()}>Print / save PDF</Button>
           </div>
-        ) : <Button icon={Plus} disabled={!canWrite} onClick={onAdd}>New payroll</Button>}
+        ) : <Button icon={Plus} onClick={onAdd}>New payroll</Button>}
       />
       <div className="toolbar no-print">
         <SearchBox value={search} onChange={setSearch} placeholder="Search payroll reference" />
@@ -640,7 +716,7 @@ function PayrollList({
                       <td className="numeric">{money(row.paid_amount)}<span className="table-subtext">Due {money(row.balance_due)}</span></td>
                       <td><Badge tone={statusTone(row.status === 'reversed' ? row.status : row.payment_status)}>{titleCase(row.status === 'reversed' ? row.status : row.payment_status ?? 'payable')}</Badge></td>
                       {!report ? (
-                        <td className="no-print"><div className="row-actions"><Button size="small" variant="ghost" icon={Banknote} disabled={!canWrite || row.status === 'reversed'} onClick={() => onPayment(row)}>Payments</Button><Button size="small" variant="ghost" icon={Pencil} disabled={!canWrite || row.status === 'reversed'} onClick={() => onEdit(row)}>Correct</Button><Button size="small" variant="ghost" icon={RotateCcw} disabled={!canWrite || row.status === 'reversed'} onClick={() => onReverse(row)}>Reverse</Button></div></td>
+                        <td className="no-print"><div className="row-actions"><Button size="small" variant="ghost" icon={ReceiptText} onClick={() => onProfile(row)}>Paysheet</Button><Button size="small" variant="ghost" icon={Banknote} disabled={row.status === 'reversed'} onClick={() => onPayment(row)}>Payments</Button><Button size="small" variant="ghost" icon={Pencil} disabled={row.status === 'reversed'} onClick={() => onEdit(row)}>Correct</Button><Button size="small" variant="ghost" icon={RotateCcw} disabled={row.status === 'reversed'} onClick={() => onReverse(row)}>Reverse</Button></div></td>
                       ) : null}
                     </tr>
                   )
@@ -650,7 +726,7 @@ function PayrollList({
           </TableWrap>
           <Pagination page={query.data?.page ?? page} pages={query.data?.pages ?? 0} total={query.data?.total ?? 0} onChange={setPage} />
         </>
-      ) : <EmptyState message={report ? `No posted payroll exists for ${monthLabel(reportMonth)}.` : 'No payroll records match this view.'} action={!report ? <Button icon={Plus} disabled={!canWrite} onClick={onAdd}>Post first payroll</Button> : undefined} />}
+      ) : <EmptyState message={report ? `No posted payroll exists for ${monthLabel(reportMonth)}.` : 'No payroll records match this view.'} action={!report ? <Button icon={Plus} onClick={onAdd}>Post first payroll</Button> : undefined} />}
     </Card>
   )
 }
@@ -924,17 +1000,18 @@ function DailyWorkDialog({ open, record, mutation, onClose }: { open: boolean; r
   )
 }
 
-function OvertimeDialog({ open, record, mutation, onClose }: {
+function OvertimeDialog({ open, record, initialEmployee, mutation, onClose }: {
   open: boolean
   record: OvertimeRecord | null
+  initialEmployee: Employee | null
   mutation: ReturnType<typeof useMutation<MutationReceipt, Error, { id?: string | undefined; values: OvertimeValues; employee: Employee | null }>>
   onClose: () => void
 }) {
-  const [employee, setEmployee] = useState<Employee | null>(null)
+  const [employee, setEmployee] = useState<Employee | null>(initialEmployee)
   const form = useForm<OvertimeValues>({
     resolver: zodResolver(overtimeSchema),
     defaultValues: {
-      employee_id: record?.employee_id ?? '',
+      employee_id: record?.employee_id ?? initialEmployee?.id ?? '',
       work_date: record?.work_date ?? localIsoDate(),
       hours: numberValue(record?.hours),
       rate: numberValue(record?.rate),
@@ -951,16 +1028,16 @@ function OvertimeDialog({ open, record, mutation, onClose }: {
   const activeEmployee = employee ?? recordEmployeeQuery.data ?? null
 
   useEffect(() => {
-    setEmployee(null)
+    setEmployee(initialEmployee)
     form.reset({
-      employee_id: record?.employee_id ?? '',
+      employee_id: record?.employee_id ?? initialEmployee?.id ?? '',
       work_date: record?.work_date ?? localIsoDate(),
       hours: numberValue(record?.hours),
       rate: numberValue(record?.rate),
       notes: record?.notes ?? '',
       update_employee_rate: false,
     })
-  }, [record?.id, open])
+  }, [record?.id, initialEmployee?.id, open])
 
   const hours = numberValue(form.watch('hours'))
   const rate = numberValue(form.watch('rate'))
@@ -998,7 +1075,7 @@ function OvertimeDialog({ open, record, mutation, onClose }: {
             required
             disabled={Boolean(record)}
             error={form.formState.errors.employee_id?.message}
-            selectedLabel={record ? `${record.employee_name || 'Current employee'} · ${record.employee_no || record.employee_id.slice(0, 8)}` : undefined}
+            selectedLabel={record ? `${record.employee_name || 'Current employee'} · ${record.employee_no || record.employee_id.slice(0, 8)}` : initialEmployee ? `${initialEmployee.name} · ${initialEmployee.employee_no || 'No number'}` : undefined}
           />
           <Field label="OT date" required><Input type="date" {...form.register('work_date')} /></Field>
           <Field label="OT hours" required error={form.formState.errors.hours?.message}><Input type="number" min="0.01" max="24" step="0.25" {...form.register('hours')} /></Field>
@@ -1462,6 +1539,60 @@ function PayrollPaymentDialog({ payroll, mutation, onReverse, onClose }: { payro
   )
 }
 
+function PayrollPostFollowupDialog({ payroll, step, companyName, hidden, onPayLater, onPayment, onPrint, onDone }: {
+  payroll: Payroll | null
+  step: 'payment' | 'delivery'
+  companyName: string
+  hidden: boolean
+  onPayLater: () => void
+  onPayment: () => void
+  onPrint: () => void
+  onDone: () => void
+}) {
+  const toast = useToast()
+  const sendWhatsApp = () => {
+    if (!payroll) return
+    const phone = normalizeWhatsAppPhone(payroll.employee?.phone)
+    if (!phone) {
+      toast.error('WhatsApp message not opened', 'Add a valid phone number to the employee profile first.')
+      return
+    }
+    const message = payrollWhatsAppMessage({
+      employeeName: payrollEmployeeDisplay(payroll),
+      companyName,
+      salaryMonth: payroll.salary_month,
+      reference: payroll.reference_no,
+      gross: numberValue(payroll.gross_pay),
+      deductions: numberValue(payroll.deductions_total),
+      net: numberValue(payroll.net_pay),
+      paid: numberValue(payroll.paid_amount),
+      due: numberValue(payroll.balance_due),
+    })
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
+  }
+
+  return (
+    <Dialog
+      open={Boolean(payroll) && !hidden}
+      title={step === 'payment' ? 'Payroll posted · record payment?' : 'Payroll saved · deliver paysheet'}
+      description={step === 'payment' ? 'Choose whether to settle this payroll now or leave it payable.' : 'Print the employee paysheet or send a clear salary summary by WhatsApp.'}
+      size="small"
+      onClose={onDone}
+      footer={step === 'payment' ? <><Button variant="secondary" onClick={onPayLater}>Pay later</Button><Button icon={Banknote} onClick={onPayment}>Record payment</Button></> : <Button variant="secondary" onClick={onDone}>Done</Button>}
+    >
+      <div className="form-stack">
+        <Card><strong>{payroll ? payrollEmployeeDisplay(payroll) : ''}</strong><span className="table-subtext">{payroll ? `${monthLabel(payroll.salary_month)} · ${payroll.reference_no}` : ''}</span></Card>
+        <div className="stats-grid">
+          <Card><span className="table-subtext">Net salary</span><strong>{money(payroll?.net_pay)}</strong></Card>
+          <Card><span className="table-subtext">Paid</span><strong>{money(payroll?.paid_amount)}</strong></Card>
+          <Card><span className="table-subtext">Balance due</span><strong>{money(payroll?.balance_due)}</strong></Card>
+        </div>
+        {step === 'delivery' ? <div className="row-actions"><Button icon={Printer} onClick={onPrint}>Open / print paysheet</Button><Button variant="secondary" icon={MessageCircle} onClick={sendWhatsApp}>Send WhatsApp message</Button></div> : null}
+      </div>
+    </Dialog>
+  )
+}
+
 type DetailedPayrollLine = PayrollLine & {
   line_kind?: string | null
   source_type?: string | null
@@ -1612,7 +1743,8 @@ function printLineType(line: PayrollLine) {
   return payrollDetailBasis(line)
 }
 
-export function EmployeePayrollProfileDialog({ payroll, onClose }: { payroll: Payroll | null; onClose: () => void }) {
+export function EmployeePayrollProfileDialog({ payroll, companyName, onClose }: { payroll: Payroll | null; companyName: string; onClose: () => void }) {
+  const toast = useToast()
   const [selectedMonth, setSelectedMonth] = useState(() => payroll?.salary_month ?? localIsoMonth())
   const [section, setSection] = useState<PaysheetSection>('overview')
 
@@ -1732,6 +1864,26 @@ export function EmployeePayrollProfileDialog({ payroll, onClose }: { payroll: Pa
   const sectionClass = (value: PaysheetSection) => `paysheet-section${section === value ? ' paysheet-section--active' : ''}`
   const employeeDisplayName = payrollEmployeeDisplay(monthlyPayrolls[0] || payroll)
   const employeeNumber = employee.employee_no || payroll.employee_no || '—'
+  const sendPaysheetWhatsApp = () => {
+    const phone = normalizeWhatsAppPhone(employee.phone)
+    if (!phone) {
+      toast.error('WhatsApp message not opened', 'Add a valid phone number to the employee profile first.')
+      return
+    }
+    const references = monthlyPayrolls.map((row) => row.reference_no).filter(Boolean).join(', ')
+    const message = payrollWhatsAppMessage({
+      employeeName: employeeDisplayName,
+      companyName,
+      salaryMonth: selectedMonth,
+      reference: references || payroll.reference_no,
+      gross,
+      deductions: deductionsValue,
+      net,
+      paid,
+      due,
+    })
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <Dialog
@@ -1898,7 +2050,8 @@ export function EmployeePayrollProfileDialog({ payroll, onClose }: { payroll: Pa
                 <strong>{monthLabel(selectedMonth)}</strong>
                 <span className="table-subtext">{monthlyPayrollQuery.isFetching ? 'Loading…' : `${monthlyPayrolls.length} payroll record${monthlyPayrolls.length === 1 ? '' : 's'}`}</span>
               </div>
-              <Button variant="secondary" onClick={() => window.print()} disabled={!hasMonthlyPayroll}>Print / save PDF</Button>
+              <Button variant="secondary" icon={MessageCircle} onClick={sendPaysheetWhatsApp} disabled={!hasMonthlyPayroll}>WhatsApp</Button>
+              <Button variant="secondary" icon={Printer} onClick={() => window.print()} disabled={!hasMonthlyPayroll}>Print / save PDF</Button>
               <Button variant="secondary" onClick={onClose}>Close</Button>
             </div>
           </div>

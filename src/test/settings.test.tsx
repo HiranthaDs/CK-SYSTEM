@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -7,9 +7,63 @@ import { ToastProvider } from '../components/Toast'
 import { api } from '../lib/api'
 import { PURGE_CONFIRMATION, SettingsPage } from '../pages/SettingsPage'
 
+vi.mock('../layout/AppShell', () => ({
+  useAppContext: () => ({
+    me: {
+      user_id: 'admin',
+      is_active: true,
+      active_company_id: 'company-ck',
+      active_company_code: 'CK',
+      active_company_name: 'CK Plastics',
+      is_super_admin: true,
+      role_codes: ['admin'],
+      permission_codes: ['system.admin'],
+    },
+    basePath: '/ck',
+    year: 2026,
+    setYear: vi.fn(),
+  }),
+}))
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+})
+
+describe('bilingual system workflow guide', () => {
+  it('opens a complete English and Sinhala guide and returns focus to its button', async () => {
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    vi.spyOn(api, 'list').mockResolvedValue({ items: [], total: 0, page: 1, page_size: 100, pages: 0 })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/settings']}>
+          <ToastProvider><SettingsPage /></ToastProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    const openGuide = screen.getByRole('button', { name: 'Open user guide / මාර්ගෝපදේශය' })
+    await user.click(openGuide)
+
+    const dialog = screen.getByRole('dialog', { name: /System workflow guide/ })
+    const englishGuide = within(dialog).getByRole('region', { name: 'English guide' })
+    const sinhalaGuide = within(dialog).getByRole('region', { name: 'සිංහල මාර්ගෝපදේශය' })
+
+    expect(within(englishGuide).getAllByRole('listitem')).toHaveLength(8)
+    expect(within(sinhalaGuide).getAllByRole('listitem')).toHaveLength(8)
+    expect(within(englishGuide).getByText('Confirm the company and year')).toBeInTheDocument()
+    expect(within(englishGuide).getByText('Review accounting and finish safely')).toBeInTheDocument()
+    expect(within(sinhalaGuide).getByText('සමාගම සහ වර්ෂය තහවුරු කරන්න')).toBeInTheDocument()
+    expect(within(sinhalaGuide).getByText('ගිණුම් පරීක්ෂා කර ආරක්ෂිතව අවසන් කරන්න')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: 'Done / අවසන්' }))
+    expect(screen.queryByRole('dialog', { name: /System workflow guide/ })).not.toBeInTheDocument()
+    expect(openGuide).toHaveFocus()
+  })
 })
 
 describe('administrator business-data purge', () => {
@@ -56,6 +110,7 @@ describe('administrator business-data purge', () => {
     await waitFor(() => expect(post).toHaveBeenCalledWith('/admin/purge-business-data', {
       confirmation: PURGE_CONFIRMATION,
       acknowledge_irreversible: true,
+      company_code: 'CK',
     }))
     await waitFor(() => expect(queryClient.getQueryData(['dashboard', 2026])).toBeUndefined())
     expect(queryClient.getQueryData(['me'])).toEqual({ user_id: 'admin' })
@@ -107,5 +162,99 @@ describe('conversion setup', () => {
       status: 'active',
       notes: null,
     }))
+  })
+})
+
+describe('super-admin settings', () => {
+  it('loads and displays controlled account management', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const list = vi.spyOn(api, 'list').mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 100,
+      pages: 0,
+    })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/settings']}>
+          <ToastProvider><SettingsPage /></ToastProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('System settings')).toBeInTheDocument()
+    await waitFor(() => expect(list).toHaveBeenCalled())
+    expect(list.mock.calls.some(([path]) => path === '/admin/users')).toBe(true)
+    expect(screen.getByText('Login accounts & access')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument()
+  })
+
+  it('changes account status with a switch and requires the removal PIN', async () => {
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    const accountRows = [{
+      company_id: 'company-ck',
+      company_code: 'CK',
+      company_name: 'CK Plastics',
+      user_id: 'staff-user',
+      display_name: 'Accounts User',
+      email: 'accounts@example.com',
+      profile_active: true,
+      is_super_admin: false,
+      membership_active: true,
+      is_primary: true,
+      role_codes: ['accountant'],
+    }, {
+      company_id: 'company-ar',
+      company_code: 'AR',
+      company_name: 'AR Plastics',
+      user_id: 'staff-user',
+      display_name: 'Accounts User',
+      email: 'accounts@example.com',
+      profile_active: true,
+      is_super_admin: false,
+      membership_active: true,
+      is_primary: false,
+      role_codes: ['viewer'],
+    }]
+    vi.spyOn(api, 'list').mockImplementation((path) => Promise.resolve({
+      items: path === '/admin/users' ? accountRows : [],
+      total: path === '/admin/users' ? accountRows.length : 0,
+      page: 1,
+      page_size: 100,
+      pages: path === '/admin/users' ? 1 : 0,
+    }))
+    const patch = vi.spyOn(api, 'patch').mockResolvedValue({ ok: true, operation: 'admin.user.status', id: 'staff-user', idempotent: false })
+    const remove = vi.spyOn(api, 'delete').mockResolvedValue({ ok: true, operation: 'admin.user.remove', id: 'staff-user', idempotent: false })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/settings']}>
+          <ToastProvider><SettingsPage /></ToastProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText('Accounts User')).toBeInTheDocument()
+    expect(screen.getByText('CK + AR')).toBeInTheDocument()
+    const statusSwitch = screen.getByRole('switch', { name: 'Account status for Accounts User' })
+    expect(statusSwitch).toHaveAttribute('aria-checked', 'true')
+    await user.click(statusSwitch)
+    await waitFor(() => expect(patch).toHaveBeenCalledWith('/admin/users/staff-user/status', { is_active: false }))
+
+    await user.click(screen.getByRole('button', { name: 'Remove' }))
+    const removeButton = screen.getByRole('button', { name: 'Remove account' })
+    expect(removeButton).toBeDisabled()
+    expect(screen.queryByText(/2113/)).not.toBeInTheDocument()
+    await user.type(screen.getByLabelText('Account-removal PIN'), '2113')
+    expect(removeButton).toBeEnabled()
+    await user.click(removeButton)
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('/admin/users/staff-user', { confirmation_pin: '2113' }))
   })
 })

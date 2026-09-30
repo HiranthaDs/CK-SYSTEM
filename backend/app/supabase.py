@@ -12,6 +12,7 @@ import re
 from dataclasses import dataclass
 from math import ceil
 from typing import Any, Literal
+from uuid import UUID
 
 import httpx
 
@@ -19,12 +20,13 @@ from .config import Settings
 from .errors import ApiError
 from .models import MutationResponse, PageResponse, ProfileAccess
 
-
 logger = logging.getLogger(__name__)
 
 READABLE_SOURCES = frozenset(
     {
         "current_user_access",
+        "admin_user_access",
+        "roles",
         "employees",
         "employee_compensation_history",
         "conversion_types",
@@ -49,6 +51,8 @@ READABLE_SOURCES = frozenset(
         "stock_movements",
         "inventory_position",
         "inventory_stage_summary",
+        "company_inventory_position",
+        "company_inventory_stage_summary",
         "production_daily_summary",
         "account_balances",
         "account_balances_by_year",
@@ -64,6 +68,8 @@ READABLE_SOURCES = frozenset(
 # both offset pages stable and keyset pages safe when many records share a date.
 SOURCE_TIEBREAKERS: dict[str, str] = {
     "current_user_access": "user_id",
+    "admin_user_access": "user_id",
+    "roles": "id",
     "employees": "id",
     "employee_compensation_history": "id",
     "conversion_types": "id",
@@ -88,6 +94,8 @@ SOURCE_TIEBREAKERS: dict[str, str] = {
     "stock_movements": "id",
     "inventory_position": "item_id",
     "inventory_stage_summary": "stage",
+    "company_inventory_position": "item_id",
+    "company_inventory_stage_summary": "stage",
     "production_daily_summary": "production_date",
     "account_balances": "account_code",
     "account_balances_by_year": "account_code",
@@ -97,6 +105,22 @@ SOURCE_TIEBREAKERS: dict[str, str] = {
     "payroll_outstanding": "id",
     "audit_log": "id",
 }
+
+# Company-private sources are always constrained here as a defense in depth in
+# addition to database RLS. Only identity/configuration and the intentionally
+# shared physical inventory catalogue/availability views remain unscoped.
+UNSCOPED_SOURCES = frozenset(
+    {
+        "current_user_access",
+        "roles",
+        "conversion_types",
+        "piecework_rates",
+        "inventory_items",
+        "inventory_position",
+        "inventory_stage_summary",
+    }
+)
+COMPANY_SCOPED_SOURCES = READABLE_SOURCES - UNSCOPED_SOURCES
 
 FilterOperator = Literal["eq", "neq", "gt", "gte", "lt", "lte", "is", "in", "ilike"]
 PaginationMode = Literal["offset", "cursor"]
@@ -206,7 +230,7 @@ class SupabaseGateway:
             token=token,
             request_id=request_id,
             params={
-                "select": "user_id,display_name,email,is_active,role_codes,permission_codes",
+                "select": "user_id,display_name,email,is_active,is_super_admin,companies",
                 "user_id": f"eq.{expected_user_id}",
                 "limit": "1",
             },
@@ -234,6 +258,7 @@ class SupabaseGateway:
         filters: list[QueryFilter] | None = None,
         pagination_mode: PaginationMode = "offset",
         cursor: str | None = None,
+        company_id: UUID | str | None = None,
     ) -> PageResponse[dict[str, Any]]:
         self._assert_source(source)
         if page < 1 or page_size < 1:
@@ -242,7 +267,7 @@ class SupabaseGateway:
             raise ApiError(422, "Page size exceeds the configured limit", code="invalid_pagination")
 
         stable_order, order_column, direction, tie_column = self._stable_order(source, order)
-        query_filters = list(filters or [])
+        query_filters = self._scope_filters(source, company_id, filters)
         fingerprint = self._query_fingerprint(query_filters, select)
         # Keep query parameters as an ordered list. PostgREST accepts repeated
         # column filters (for example date >= start AND date <= end), while a
@@ -361,14 +386,22 @@ class SupabaseGateway:
         token: str,
         request_id: str,
         select: str = "*",
+        company_id: UUID | str | None = None,
     ) -> dict[str, Any]:
         self._assert_source(source)
+        params: list[tuple[str, str]] = [
+            ("select", select),
+            ("id", f"eq.{record_id}"),
+            ("limit", "1"),
+        ]
+        for item in self._scope_filters(source, company_id, None):
+            params.append((item.column, self._filter_value(item)))
         data = await self._request(
             "GET",
             source,
             token=token,
             request_id=request_id,
-            params={"select": select, "id": f"eq.{record_id}", "limit": "1"},
+            params=params,
             retry_safe=True,
         )
         if not isinstance(data, list) or not data:
@@ -387,6 +420,7 @@ class SupabaseGateway:
         order: str | None = None,
         filters: list[QueryFilter] | None = None,
         max_rows: int = 10_000,
+        company_id: UUID | str | None = None,
     ) -> list[dict[str, Any]]:
         """Read a bounded result using keysets; never accumulate an unbounded export."""
         if max_rows < 1:
@@ -406,6 +440,7 @@ class SupabaseGateway:
                 filters=filters,
                 pagination_mode="cursor",
                 cursor=cursor,
+                company_id=company_id,
             )
             if len(rows) + len(result.items) > max_rows:
                 raise ApiError(413, "Result exceeds the safe row limit", code="result_too_large")
@@ -424,10 +459,13 @@ class SupabaseGateway:
         *,
         token: str,
         request_id: str,
+        company_id: UUID | str,
     ) -> MutationResponse:
+        scoped_payload = dict(payload)
+        scoped_payload["company_id"] = str(company_id)
         body = {
             "p_operation": operation,
-            "p_payload": payload,
+            "p_payload": scoped_payload,
             "p_idempotency_key": idempotency_key,
         }
         data = await self._request(
@@ -449,17 +487,169 @@ class SupabaseGateway:
             raise ApiError(502, "ERP transaction returned an invalid result", code="invalid_upstream")
         return MutationResponse.model_validate(data)
 
+    async def create_auth_user(
+        self,
+        *,
+        email: str,
+        password: str,
+        display_name: str,
+        request_id: str,
+    ) -> UUID:
+        secret = self._settings.secret_key
+        if not secret:
+            raise ApiError(
+                503,
+                "Server account creation is not configured",
+                code="auth_admin_not_configured",
+            )
+        url = f"{self._settings.auth_issuer}/admin/users"
+        headers = {
+            "apikey": secret,
+            "Authorization": f"Bearer {secret}",
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "X-Request-ID": request_id,
+            "Cache-Control": "no-store, no-cache",
+        }
+        try:
+            response = await self._send_with_retry(
+                "POST",
+                url,
+                headers=headers,
+                json={
+                    "email": email,
+                    "password": password,
+                    "email_confirm": True,
+                    "user_metadata": {"full_name": display_name},
+                },
+                retry_safe=False,
+            )
+        except httpx.HTTPError as exc:
+            raise ApiError(503, "Supabase Auth is unavailable", code="supabase_unavailable") from exc
+        if not response.is_success:
+            raise self._map_error(response)
+        try:
+            body = response.json()
+            return UUID(str(body["id"]))
+        except (ValueError, KeyError, TypeError) as exc:
+            raise ApiError(502, "Supabase Auth returned an invalid user", code="invalid_upstream") from exc
+
+    async def delete_auth_user(self, user_id: UUID, *, request_id: str) -> None:
+        """Compensate a failed first-time provision; never used for normal deletion."""
+        secret = self._settings.secret_key
+        if not secret:
+            return
+        response = await self._send_with_retry(
+            "DELETE",
+            f"{self._settings.auth_issuer}/admin/users/{user_id}",
+            headers={
+                "apikey": secret,
+                "Authorization": f"Bearer {secret}",
+                "Accept": "application/json",
+                "X-Request-ID": request_id,
+                "Cache-Control": "no-store, no-cache",
+            },
+            retry_safe=False,
+        )
+        if not response.is_success:
+            logger.error("Auth-user compensation failed", extra={"request_id": request_id})
+
+    async def provision_user_access(
+        self,
+        *,
+        target_user_id: UUID,
+        display_name: str,
+        company_codes: list[str],
+        role_codes: list[str],
+        is_super_admin: bool,
+        token: str,
+        request_id: str,
+    ) -> MutationResponse:
+        data = await self._request(
+            "POST",
+            "rpc/provision_user_access",
+            token=token,
+            request_id=request_id,
+            json={
+                "p_target_user_id": str(target_user_id),
+                "p_display_name": display_name,
+                "p_company_codes": company_codes,
+                "p_role_codes": role_codes,
+                "p_is_super_admin": is_super_admin,
+            },
+            retry_safe=False,
+        )
+        value = self._unwrap_rpc(data)
+        if not isinstance(value, dict):
+            raise ApiError(502, "Access provisioning returned an invalid result", code="invalid_upstream")
+        return MutationResponse.model_validate(value)
+
+    async def set_user_account_status(
+        self,
+        *,
+        target_user_id: UUID,
+        is_active: bool,
+        token: str,
+        request_id: str,
+        idempotency_key: str,
+    ) -> MutationResponse:
+        data = await self._request(
+            "POST",
+            "rpc/set_user_account_status",
+            token=token,
+            request_id=request_id,
+            json={
+                "p_target_user_id": str(target_user_id),
+                "p_is_active": is_active,
+                "p_request_id": request_id,
+                "p_idempotency_key": idempotency_key,
+            },
+            retry_safe=False,
+        )
+        value = self._unwrap_rpc(data)
+        if not isinstance(value, dict):
+            raise ApiError(502, "Account status returned an invalid result", code="invalid_upstream")
+        return MutationResponse.model_validate(value)
+
+    async def remove_user_account(
+        self,
+        *,
+        target_user_id: UUID,
+        confirmation_pin: str,
+        token: str,
+        request_id: str,
+        idempotency_key: str,
+    ) -> MutationResponse:
+        data = await self._request(
+            "POST",
+            "rpc/remove_user_account",
+            token=token,
+            request_id=request_id,
+            json={
+                "p_target_user_id": str(target_user_id),
+                "p_confirmation_pin": confirmation_pin,
+                "p_request_id": request_id,
+                "p_idempotency_key": idempotency_key,
+            },
+            retry_safe=False,
+        )
+        value = self._unwrap_rpc(data)
+        if not isinstance(value, dict):
+            raise ApiError(502, "Account removal returned an invalid result", code="invalid_upstream")
+        return MutationResponse.model_validate(value)
+
     async def dashboard(
         self,
         year: int | None,
         *,
         token: str,
         request_id: str,
+        company_id: UUID | str,
     ) -> dict[str, Any]:
-        body = {"p_year": year} if year is not None else {}
+        body = {"p_company_id": str(company_id), "p_year": year}
         data = await self._request(
             "POST",
-            "rpc/erp_dashboard",
+            "rpc/erp_company_dashboard",
             token=token,
             request_id=request_id,
             json=body,
@@ -787,6 +977,34 @@ class SupabaseGateway:
             return f"in.({item.value})"
         value = str(item.value).lower() if isinstance(item.value, bool) else str(item.value)
         return f"{item.operator}.{value}"
+
+    @staticmethod
+    def _scope_filters(
+        source: str,
+        company_id: UUID | str | None,
+        filters: list[QueryFilter] | None,
+    ) -> list[QueryFilter]:
+        scoped = list(filters or [])
+        if source not in COMPANY_SCOPED_SOURCES:
+            return scoped
+        if company_id is None:
+            raise ApiError(
+                500,
+                "A company context is required for this data source",
+                code="company_context_missing",
+            )
+
+        expected = str(company_id)
+        supplied = [item for item in scoped if item.column == "company_id"]
+        if any(item.operator != "eq" or str(item.value) != expected for item in supplied):
+            raise ApiError(
+                403,
+                "A data query cannot override the selected company",
+                code="company_scope_mismatch",
+            )
+        if not supplied:
+            scoped.append(QueryFilter("company_id", "eq", expected))
+        return scoped
 
     @staticmethod
     def _assert_source(source: str) -> None:

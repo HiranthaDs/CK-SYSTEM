@@ -7,19 +7,35 @@ export const JOURNAL_ACCOUNT_CODES = {
   outputTaxPayable: 'OUTPUT_TAX_PAYABLE',
 } as const
 
+// The database protects these accounts from direct manual journals because
+// their balances must be driven by the related sales, inventory, payroll, or
+// tax workflow. Account metadata takes precedence when the API exposes it;
+// this list keeps older account-balance payloads safe as well.
+export const MANUAL_POSTING_RESTRICTED_ACCOUNT_CODES: ReadonlySet<string> = new Set([
+  JOURNAL_ACCOUNT_CODES.accountsReceivable,
+  JOURNAL_ACCOUNT_CODES.accountsPayable,
+  JOURNAL_ACCOUNT_CODES.inputTaxRecoverable,
+  JOURNAL_ACCOUNT_CODES.outputTaxPayable,
+  'RAW_MATERIAL_INVENTORY',
+  'CHIP_INVENTORY',
+  'FINISHED_GOODS_INVENTORY',
+  'WAGES_PAYABLE',
+  'PAYROLL_DEDUCTIONS_PAYABLE',
+  'EMPLOYER_CONTRIBUTION_PAYABLE',
+  'OVERHEAD_PAYABLE',
+  'INTERCOMPANY_DUE_FROM',
+  'INTERCOMPANY_DUE_TO',
+  'RETAINED_EARNINGS',
+])
+
 export type QuickDirection = 'in' | 'out'
-export type QuickMethod =
-  | 'cash'
-  | 'bank_transfer'
-  | 'credit_card'
-  | 'cheque'
-  | 'accounts_receivable'
-  | 'accounts_payable'
-  | 'other'
+export type QuickMethod = string
 
 export interface AccountCodeSource {
   code?: unknown
   account_code?: unknown
+  is_control?: unknown
+  allow_manual_posting?: unknown
 }
 
 export interface JournalSubmissionLine {
@@ -41,23 +57,43 @@ export function normalizeAccountCode(value: unknown): string {
 }
 
 export function accountCodeOf(account: AccountCodeSource): string {
-  return normalizeAccountCode(account.code ?? account.account_code)
+  return normalizeAccountCode(account.code) || normalizeAccountCode(account.account_code)
+}
+
+export function accountAllowsManualPosting(account: AccountCodeSource): boolean {
+  if (account.allow_manual_posting === false || account.is_control === true) return false
+  if (account.allow_manual_posting === true && account.is_control === false) return true
+  return !MANUAL_POSTING_RESTRICTED_ACCOUNT_CODES.has(accountCodeOf(account))
+}
+
+export function manualPostingAccounts<T extends AccountCodeSource>(accounts: readonly T[]): T[] {
+  return accounts.filter((account) => accountCodeOf(account) && accountAllowsManualPosting(account))
 }
 
 export function roundCurrency(value: unknown): number {
   const numeric = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(numeric)) return 0
-  return Math.round((numeric + Number.EPSILON) * 100) / 100
+  const sign = numeric < 0 ? -1 : 1
+  return sign * Math.round((Math.abs(numeric) + Number.EPSILON) * 100) / 100
 }
 
-export function defaultOffsetCode(method: QuickMethod, direction: QuickDirection): string {
+export function postingDateForYear(year: number, todayIso: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(todayIso)
+  if (!match) return `${year}-01-01`
+  const month = Math.min(12, Math.max(1, Number(match[2])))
+  const requestedDay = Math.max(1, Number(match[3]))
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  return `${year}-${String(month).padStart(2, '0')}-${String(Math.min(requestedDay, lastDay)).padStart(2, '0')}`
+}
+
+export function defaultOffsetCode(method: QuickMethod): string {
   if (method === 'bank_transfer' || method === 'credit_card' || method === 'cheque') {
     return JOURNAL_ACCOUNT_CODES.bank
   }
   if (method === 'accounts_receivable') return JOURNAL_ACCOUNT_CODES.accountsReceivable
   if (method === 'accounts_payable') return JOURNAL_ACCOUNT_CODES.accountsPayable
   if (method === 'cash') return JOURNAL_ACCOUNT_CODES.cash
-  return direction === 'in' ? JOURNAL_ACCOUNT_CODES.cash : JOURNAL_ACCOUNT_CODES.accountsPayable
+  return JOURNAL_ACCOUNT_CODES.cash
 }
 
 export function quickJournalAmounts(baseAmount: unknown, taxPercent: unknown) {
@@ -79,7 +115,7 @@ export function requiredQuickAccountCodes(values: {
   const required = [
     normalizeAccountCode(values.primaryAccountCode),
     normalizeAccountCode(values.offsetAccountCode)
-      || defaultOffsetCode(values.method, values.direction),
+      || defaultOffsetCode(values.method),
   ]
   if (tax > 0) {
     required.push(values.direction === 'in'
@@ -90,12 +126,28 @@ export function requiredQuickAccountCodes(values: {
 }
 
 export function missingAccountCodes(
-  accounts: AccountCodeSource[],
-  requiredCodes: unknown[],
+  accounts: readonly AccountCodeSource[],
+  requiredCodes: readonly unknown[],
 ): string[] {
   const available = new Set(accounts.map(accountCodeOf).filter(Boolean))
   return [...new Set(requiredCodes.map(normalizeAccountCode).filter(Boolean))]
     .filter((code) => !available.has(code))
+}
+
+export function blockedManualAccountCodes(
+  accounts: readonly AccountCodeSource[],
+  requiredCodes: readonly unknown[],
+): string[] {
+  const accountsByCode = new Map(
+    accounts.map((account) => [accountCodeOf(account), account] as const).filter(([code]) => Boolean(code)),
+  )
+  return [...new Set(requiredCodes.map(normalizeAccountCode).filter(Boolean))]
+    .filter((code) => {
+      const account = accountsByCode.get(code)
+      return account
+        ? !accountAllowsManualPosting(account)
+        : MANUAL_POSTING_RESTRICTED_ACCOUNT_CODES.has(code)
+    })
 }
 
 export function buildQuickJournalLines(values: {
