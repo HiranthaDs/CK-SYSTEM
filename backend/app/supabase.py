@@ -499,13 +499,16 @@ class SupabaseGateway:
         if not secret:
             raise ApiError(
                 503,
-                "Server account creation is not configured",
+                (
+                    "Account creation is not configured on the API server. "
+                    "Add a rotated SUPABASE_SECRET_KEY (sb_secret_...) to the "
+                    "backend environment and restart the API."
+                ),
                 code="auth_admin_not_configured",
             )
         url = f"{self._settings.auth_issuer}/admin/users"
         headers = {
             "apikey": secret,
-            "Authorization": f"Bearer {secret}",
             "Accept": "application/json",
             "Content-Type": "application/json",
             "X-Request-ID": request_id,
@@ -527,7 +530,7 @@ class SupabaseGateway:
         except httpx.HTTPError as exc:
             raise ApiError(503, "Supabase Auth is unavailable", code="supabase_unavailable") from exc
         if not response.is_success:
-            raise self._map_error(response)
+            raise self._map_auth_admin_error(response)
         try:
             body = response.json()
             return UUID(str(body["id"]))
@@ -544,7 +547,6 @@ class SupabaseGateway:
             f"{self._settings.auth_issuer}/admin/users/{user_id}",
             headers={
                 "apikey": secret,
-                "Authorization": f"Bearer {secret}",
                 "Accept": "application/json",
                 "X-Request-ID": request_id,
                 "Cache-Control": "no-store, no-cache",
@@ -802,6 +804,60 @@ class SupabaseGateway:
         logger.info(
             "Supabase request rejected",
             extra={"upstream_status": response.status_code, "postgres_code": pg_code},
+        )
+        headers: dict[str, str] = {}
+        retry_after = response.headers.get("retry-after")
+        if retry_after and len(retry_after) <= 100:
+            headers["Retry-After"] = retry_after
+        return ApiError(status, detail, code=code, headers=headers)
+
+    def _map_auth_admin_error(self, response: httpx.Response) -> ApiError:
+        """Translate Auth Admin failures without exposing credentials or raw internals."""
+        try:
+            body = response.json()
+        except ValueError:
+            body = {}
+        if not isinstance(body, dict):
+            body = {}
+
+        auth_code = str(body.get("code") or body.get("error_code") or "")[:64]
+        upstream_message = str(
+            body.get("message") or body.get("msg") or body.get("error_description") or ""
+        ).strip()
+        status = response.status_code
+        code = "supabase_auth_admin_error"
+        detail = "Supabase Auth rejected the new account"
+
+        if auth_code in {"email_exists", "user_already_exists"}:
+            status, code = 409, "account_email_exists"
+            detail = "A login account already exists for this email address"
+        elif auth_code == "email_address_invalid":
+            status, code = 422, "invalid_account_email"
+            detail = "Supabase Auth rejected this email address"
+        elif auth_code == "weak_password":
+            status, code = 422, "weak_account_password"
+            detail = upstream_message[:500] or "The temporary password does not meet the Auth password policy"
+        elif auth_code in {"validation_failed", "bad_json"}:
+            status, code = 422, "invalid_account_details"
+            detail = upstream_message[:500] or "Supabase Auth rejected the account details"
+        elif auth_code == "over_request_rate_limit" or status == 429:
+            status, code = 429, "supabase_auth_rate_limited"
+            detail = "Too many account-creation requests. Wait a few minutes and try again"
+        elif auth_code in {"not_admin", "no_authorization", "bad_jwt"} or status in {401, 403}:
+            status, code = 503, "auth_admin_key_invalid"
+            detail = (
+                "The API server's Supabase secret key is missing, invalid, or belongs "
+                "to another project"
+            )
+        elif status >= 500 or auth_code == "unexpected_failure":
+            status, code = 502, "supabase_auth_unavailable"
+            detail = "Supabase Auth could not create the account"
+        elif upstream_message:
+            detail = upstream_message[:500]
+
+        logger.info(
+            "Supabase Auth Admin request rejected",
+            extra={"upstream_status": response.status_code, "auth_code": auth_code},
         )
         headers: dict[str, str] = {}
         retry_after = response.headers.get("retry-after")

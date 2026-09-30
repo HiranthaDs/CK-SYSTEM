@@ -61,7 +61,7 @@ export function AccountPage() {
       await auth.updatePassword(values.password, values.otp)
       form.reset()
       setOtpSent(false)
-      toast.success('Password changed', 'Sign in again with your new password.')
+      toast.success('Password changed', 'Your new password was verified and your secure session was renewed.')
     } catch (error) {
       toast.error(
         'Password was not changed',

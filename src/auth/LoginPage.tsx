@@ -5,6 +5,7 @@ import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-route
 import { Building2, Boxes, KeyRound, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import { z } from 'zod'
 import { useAuth } from './AuthProvider'
+import { PasswordUpdatedSignInError } from './errors'
 import { Button, Field, Input, LoadingState } from '../components/UI'
 import { useToast } from '../components/Toast'
 import { companyPath, getCompanyPortal } from '../lib/companyPortal'
@@ -45,8 +46,9 @@ export function LoginPage() {
   const destination = portal && requestedDestination?.startsWith(`/${portal.routeCode}/`)
     ? requestedDestination
     : portal ? companyPath(portal.routeCode, 'dashboard') : '/login'
+  const suggestedEmail = (location.state as { email?: string } | null)?.email ?? ''
 
-  const loginForm = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } })
+  const loginForm = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: suggestedEmail, password: '' } })
   const resetForm = useForm<ResetValues>({ resolver: zodResolver(resetSchema), defaultValues: { email: '' } })
   const otpForm = useForm<OtpValues>({ resolver: zodResolver(otpSchema), defaultValues: { otp: '' } })
   const passwordForm = useForm<PasswordValues>({ resolver: zodResolver(passwordSchema), defaultValues: { password: '', confirm: '' } })
@@ -114,9 +116,19 @@ export function LoginPage() {
   const updatePassword = passwordForm.handleSubmit(async (values) => {
     try {
       await auth.updatePassword(values.password)
-      toast.success('Password updated', 'Sign in now with your new password.')
-      void navigate(companyPath(portal.routeCode, 'login'), { replace: true })
+      passwordForm.reset()
+      toast.success('Password updated', 'Your new password was verified and you are signed in securely.')
+      void navigate(destination, { replace: true })
     } catch (error) {
+      if (error instanceof PasswordUpdatedSignInError) {
+        passwordForm.reset()
+        toast.error('Password updated — sign in required', error.message)
+        void navigate(companyPath(portal.routeCode, 'login'), {
+          replace: true,
+          state: { email: error.email },
+        })
+        return
+      }
       toast.error('Unable to update password', error instanceof Error ? error.message : 'Try again shortly.')
     }
   })
@@ -142,7 +154,7 @@ export function LoginPage() {
             <LoadingState label="Validating your recovery link..." />
           ) : auth.recovery && auth.session ? (
             <>
-              <div className="auth-card__heading"><h2>Set a new password</h2><p>Choose a strong password for your account.</p></div>
+              <div className="auth-card__heading"><h2>Set a new password</h2><p>Choose a strong password. We will verify it by creating a fresh secure session before continuing.</p></div>
               <form onSubmit={(event) => void updatePassword(event)} className="form-stack">
                 <Field label="New password" required error={passwordForm.formState.errors.password?.message}>
                   <Input type="password" autoComplete="new-password" {...passwordForm.register('password')} />

@@ -46,6 +46,52 @@ def test_settings_reject_secret_keys() -> None:
         settings(supabase_publishable_key="sb_secret_test_key_1234567890")
 
 
+@pytest.mark.asyncio
+async def test_auth_account_creation_requires_server_secret_key() -> None:
+    async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(500))) as client:
+        gateway = SupabaseGateway(settings(), client)
+        with pytest.raises(ApiError) as caught:
+            await gateway.create_auth_user(
+                email="new.user@example.com",
+                password="Strong-password-1!",
+                display_name="New User",
+                request_id="create-user-missing-secret",
+            )
+
+    assert caught.value.status_code == 503
+    assert caught.value.code == "auth_admin_not_configured"
+    assert "SUPABASE_SECRET_KEY" in caught.value.detail
+
+
+@pytest.mark.asyncio
+async def test_auth_account_creation_maps_duplicate_email_safely() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith("/auth/v1/admin/users")
+        assert request.headers["apikey"].startswith("sb_secret_")
+        assert "authorization" not in request.headers
+        return httpx.Response(
+            422,
+            json={"code": "email_exists", "message": "User already registered"},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        gateway = SupabaseGateway(
+            settings(supabase_secret_key="sb_secret_test_key_1234567890"),
+            client,
+        )
+        with pytest.raises(ApiError) as caught:
+            await gateway.create_auth_user(
+                email="existing@example.com",
+                password="Strong-password-1!",
+                display_name="Existing User",
+                request_id="create-user-duplicate",
+            )
+
+    assert caught.value.status_code == 409
+    assert caught.value.code == "account_email_exists"
+    assert caught.value.detail == "A login account already exists for this email address"
+
+
 def test_purge_request_requires_exact_phrase_and_acknowledgement() -> None:
     with pytest.raises(ValidationError):
         PurgeBusinessDataRequest(
@@ -383,6 +429,66 @@ async def test_super_admin_can_list_company_user_access() -> None:
 
     assert response.status_code == 200, response.text
     assert response.json()["items"][0]["role_codes"] == ["accountant"]
+
+
+@pytest.mark.asyncio
+async def test_super_admin_can_create_auth_user_and_provision_access() -> None:
+    created_user_id = UUID("00000000-0000-0000-0000-000000000020")
+
+    class AccountCreationGateway:
+        def __init__(self) -> None:
+            self.auth_call: dict[str, Any] | None = None
+            self.access_call: dict[str, Any] | None = None
+
+        async def create_auth_user(self, **kwargs: Any) -> UUID:
+            self.auth_call = kwargs
+            return created_user_id
+
+        async def provision_user_access(self, **kwargs: Any) -> MutationResponse:
+            self.access_call = kwargs
+            return MutationResponse(ok=True, operation="admin.user.provision", id=created_user_id)
+
+        async def delete_auth_user(self, *_: Any, **__: Any) -> None:
+            raise AssertionError("successful provisioning must not compensate the Auth user")
+
+    gateway = AccountCreationGateway()
+    app = create_app(settings())
+    app.dependency_overrides[get_gateway] = lambda: gateway
+    app.dependency_overrides[get_principal] = lambda: principal("access.manage", "system.admin")
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post(
+            "/api/v1/admin/users",
+            headers={"Idempotency-Key": "account-create-001", "X-Request-ID": "create-request"},
+            json={
+                "email": " New.User@Example.com ",
+                "display_name": " New User ",
+                "temporary_password": "Strong-password-1!",
+                "company_access": "BOTH",
+                "role_codes": ["operations", "viewer", "operations"],
+                "is_super_admin": False,
+            },
+        )
+
+    assert response.status_code == 201, response.text
+    assert gateway.auth_call == {
+        "email": "new.user@example.com",
+        "password": "Strong-password-1!",
+        "display_name": "New User",
+        "request_id": "create-request",
+    }
+    assert gateway.access_call == {
+        "target_user_id": created_user_id,
+        "display_name": "New User",
+        "company_codes": ["CK", "AR"],
+        "role_codes": ["operations", "viewer"],
+        "is_super_admin": False,
+        "token": "test-token",
+        "request_id": "create-request",
+    }
 
 
 @pytest.mark.asyncio

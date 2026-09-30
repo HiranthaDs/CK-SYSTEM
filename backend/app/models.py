@@ -586,15 +586,21 @@ class AdminUserCreate(ERPModel):
             raise ValueError("Password requires a symbol")
         return value
 
-    @model_validator(mode="after")
-    def validate_access(self) -> "AdminUserCreate":
-        self.role_codes = list(dict.fromkeys(self.role_codes))
-        if self.is_super_admin:
-            self.company_access = "BOTH"
-            self.role_codes = ["admin"]
-        elif not self.role_codes:
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_access(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        normalized = dict(value)
+        roles = normalized.get("role_codes")
+        if isinstance(roles, list) and all(isinstance(role, str) for role in roles):
+            normalized["role_codes"] = list(dict.fromkeys(roles))
+        if normalized.get("is_super_admin") is True:
+            normalized["company_access"] = "BOTH"
+            normalized["role_codes"] = ["admin"]
+        elif not normalized.get("role_codes"):
             raise ValueError("Select at least one access role")
-        return self
+        return normalized
 
 
 class AdminUserAccessRecord(FlexibleRecord):

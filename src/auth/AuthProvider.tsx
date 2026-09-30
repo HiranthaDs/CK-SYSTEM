@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { setActiveCompanyId } from '../lib/api'
+import { PasswordUpdatedSignInError } from './errors'
 
 interface AuthContextValue {
   session: Session | null
@@ -55,8 +56,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     setActiveCompanyId(null)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
     if (error) throw error
+    if (!data.session) throw new Error('Sign-in succeeded without creating a session. Please try again.')
+    setRecovery(false)
   }, [])
 
   const signOut = useCallback(async () => {
@@ -65,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const requestPasswordReset = useCallback(async (email: string, redirectPath = '/login') => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: `${window.location.origin}${redirectPath}`,
     })
     if (error) throw error
@@ -88,15 +94,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const updatePassword = useCallback(async (password: string, otp?: string) => {
+    // Validate the recovery/change-password session with Auth before changing
+    // credentials, and retain the canonical email for the verification login.
+    const { data: identityData, error: identityError } = await supabase.auth.getUser()
+    if (identityError) throw identityError
+    const identity = identityData.user
+    const email = identity?.email?.trim().toLowerCase()
+    if (!identity || !email) throw new Error('A verified email account is required to change this password.')
+
     const attributes = otp
-      ? { password, nonce: otp }
+      ? { password, nonce: otp.trim() }
       : { password }
-    const { error } = await supabase.auth.updateUser(attributes)
+    const { data, error } = await supabase.auth.updateUser(attributes)
     if (error) throw error
-    // End the local session after changing credentials. The next sign-in must
-    // prove the newly saved password and cannot rely on a stale browser token.
-    const signOutResult = await supabase.auth.signOut({ scope: 'local' })
-    if (signOutResult?.error) throw signOutResult.error
+    if (!data.user || data.user.id !== identity.id) {
+      throw new Error('Supabase did not confirm the password update for this account.')
+    }
+
+    // Prove that the saved password can immediately create a fresh, ordinary
+    // sign-in session. This also replaces the temporary recovery session.
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    if (signInError || !signInData.session) {
+      // The password has already changed. End the temporary recovery session
+      // so the user gets a clean manual sign-in screen with accurate guidance.
+      const { error: cleanupError } = await supabase.auth.signOut({ scope: 'local' })
+      setRecovery(false)
+      throw new PasswordUpdatedSignInError(email, signInError ?? cleanupError)
+    }
     setRecovery(false)
   }, [])
 

@@ -41,5 +41,23 @@ describe('password recovery page', () => {
     await user.click(screen.getByRole('button', { name: 'Update password' }))
 
     await waitFor(() => expect(mocks.updatePassword).toHaveBeenCalledWith('Recovered-password-1!'))
+    expect(await screen.findByText('Your new password was verified and you are signed in securely.')).toBeInTheDocument()
+  })
+
+  it('does not submit when the password confirmation differs', async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={['/ck/reset-password']}>
+        <ToastProvider><LoginPage /></ToastProvider>
+      </MemoryRouter>,
+    )
+
+    const passwordFields = screen.getAllByLabelText(/password/i)
+    await user.type(passwordFields[0]!, 'Recovered-password-1!')
+    await user.type(passwordFields[1]!, 'Different-password-2!')
+    await user.click(screen.getByRole('button', { name: 'Update password' }))
+
+    expect(await screen.findByText('Passwords do not match.')).toBeInTheDocument()
+    expect(mocks.updatePassword).not.toHaveBeenCalled()
   })
 })

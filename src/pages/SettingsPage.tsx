@@ -15,6 +15,39 @@ export const PURGE_CONFIRMATION = 'DELETE ALL BUSINESS DATA'
 
 type CompanyAccessChoice = 'CK' | 'AR' | 'BOTH'
 type AccessRole = 'admin' | 'accountant' | 'operations' | 'payroll' | 'viewer'
+type CreateUserField = 'display_name' | 'email' | 'temporary_password' | 'role_codes'
+
+interface NewUserDraft {
+  display_name: string
+  email: string
+  temporary_password: string
+  company_access: CompanyAccessChoice
+  role_codes: AccessRole[]
+  is_super_admin: boolean
+}
+
+function validateNewUser(value: NewUserDraft) {
+  const errors: Partial<Record<CreateUserField, string>> = {}
+  const email = value.email.trim()
+  const password = value.temporary_password
+
+  if (!value.display_name.trim()) errors.display_name = 'Enter the user’s full name.'
+  else if (value.display_name.trim().length > 200) errors.display_name = 'Use no more than 200 characters.'
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address.'
+
+  if (password.length < 10) errors.temporary_password = 'Use at least 10 characters.'
+  else if (password.length > 72) errors.temporary_password = 'Use no more than 72 characters.'
+  else if (!/[a-z]/.test(password)) errors.temporary_password = 'Include a lowercase letter.'
+  else if (!/[A-Z]/.test(password)) errors.temporary_password = 'Include an uppercase letter.'
+  else if (!/[0-9]/.test(password)) errors.temporary_password = 'Include a number.'
+  else if (!/[^A-Za-z0-9]/.test(password)) errors.temporary_password = 'Include a symbol.'
+
+  if (!value.is_super_admin && value.role_codes.length === 0) {
+    errors.role_codes = 'Select at least one capability access role.'
+  }
+  return errors
+}
 
 const accessRoleOptions: Array<{ code: AccessRole; label: string; description: string }> = [
   { code: 'admin', label: 'Company administrator', description: 'All company pages, actions, setup, audit, and access management.' },
@@ -154,7 +187,7 @@ export function SettingsPage() {
   const [createUserOpen, setCreateUserOpen] = useState(false)
   const [accountToRemove, setAccountToRemove] = useState<AccountSummary | null>(null)
   const [removalPin, setRemovalPin] = useState('')
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<NewUserDraft>({
     display_name: '',
     email: '',
     temporary_password: '',
@@ -162,9 +195,20 @@ export function SettingsPage() {
     role_codes: ['viewer'] as AccessRole[],
     is_super_admin: false,
   })
+  const [createUserErrors, setCreateUserErrors] = useState<Partial<Record<CreateUserField, string>>>({})
+  const [createUserSubmissionError, setCreateUserSubmissionError] = useState<string | null>(null)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const toast = useToast()
+
+  const clearCreateUserError = (field: CreateUserField) => {
+    setCreateUserSubmissionError(null)
+    setCreateUserErrors((value) => {
+      const next = { ...value }
+      delete next[field]
+      return next
+    })
+  }
 
   const typesQuery = useQuery({
     queryKey: ['conversion-types', 'settings'],
@@ -181,15 +225,34 @@ export function SettingsPage() {
   })
 
   const createUserMutation = useMutation({
-    mutationFn: () => api.post<MutationReceipt, typeof newUser>('/admin/users', newUser),
+    mutationFn: (payload: NewUserDraft) => api.post<MutationReceipt, NewUserDraft>('/admin/users', payload),
     onSuccess: async () => {
       setCreateUserOpen(false)
       setNewUser({ display_name: '', email: '', temporary_password: '', company_access: 'BOTH', role_codes: ['viewer'], is_super_admin: false })
+      setCreateUserErrors({})
+      setCreateUserSubmissionError(null)
       await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
       toast.success('Account created', 'The user can sign in with the temporary password and only the selected access.')
     },
-    onError: (error) => toast.error('Account was not created', error instanceof Error ? error.message : 'Review the account and try again.'),
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : 'Review the account and try again.'
+      setCreateUserSubmissionError(message)
+      toast.error('Account was not created', message)
+    },
   })
+
+  const submitNewUser = () => {
+    setCreateUserSubmissionError(null)
+    const errors = validateNewUser(newUser)
+    setCreateUserErrors(errors)
+    if (Object.keys(errors).length) return
+    createUserMutation.mutate({
+      ...newUser,
+      display_name: newUser.display_name.trim(),
+      email: newUser.email.trim().toLowerCase(),
+      role_codes: [...new Set(newUser.role_codes)],
+    })
+  }
 
   const statusMutation = useMutation({
     mutationFn: ({ account, isActive }: { account: AccountSummary; isActive: boolean }) =>
@@ -422,21 +485,27 @@ export function SettingsPage() {
         title="Create a login account"
         description="Create the Supabase Auth identity and assign company/capability access in one controlled workflow."
         size="large"
-        onClose={() => { if (!createUserMutation.isPending) setCreateUserOpen(false) }}
+        onClose={() => { if (!createUserMutation.isPending) { setCreateUserOpen(false); setCreateUserErrors({}); setCreateUserSubmissionError(null) } }}
         closeDisabled={createUserMutation.isPending}
-        footer={<><Button variant="secondary" onClick={() => setCreateUserOpen(false)} disabled={createUserMutation.isPending}>Cancel</Button><Button icon={UserPlus} loading={createUserMutation.isPending} onClick={() => createUserMutation.mutate()}>Create account</Button></>}
+        footer={<><Button variant="secondary" onClick={() => { setCreateUserOpen(false); setCreateUserErrors({}); setCreateUserSubmissionError(null) }} disabled={createUserMutation.isPending}>Cancel</Button><Button icon={UserPlus} loading={createUserMutation.isPending} onClick={submitNewUser}>Create account</Button></>}
       >
         <div className="form-stack">
+          {createUserSubmissionError ? (
+            <InlineNotice tone="danger" title="Account was not created">
+              {createUserSubmissionError}
+            </InlineNotice>
+          ) : null}
           <div className="form-grid form-grid--two">
-            <Field label="Full name" required hint="Shown in the audit trail and account menu."><Input value={newUser.display_name} onChange={(event) => setNewUser((value) => ({ ...value, display_name: event.target.value }))} /></Field>
-            <Field label="Email address" required hint="This becomes the unique login name."><Input type="email" autoComplete="off" value={newUser.email} onChange={(event) => setNewUser((value) => ({ ...value, email: event.target.value }))} /></Field>
-            <Field label="Temporary password" required hint="At least 10 characters with upper/lowercase, a number, and a symbol."><Input type="password" autoComplete="new-password" value={newUser.temporary_password} onChange={(event) => setNewUser((value) => ({ ...value, temporary_password: event.target.value }))} /></Field>
+            <Field label="Full name" required hint="Shown in the audit trail and account menu." error={createUserErrors.display_name}><Input value={newUser.display_name} onChange={(event) => { clearCreateUserError('display_name'); setNewUser((value) => ({ ...value, display_name: event.target.value })) }} /></Field>
+            <Field label="Email address" required hint="This becomes the unique login name." error={createUserErrors.email}><Input type="email" autoComplete="off" value={newUser.email} onChange={(event) => { clearCreateUserError('email'); setNewUser((value) => ({ ...value, email: event.target.value })) }} /></Field>
+            <Field label="Temporary password" required hint="At least 10 characters with upper/lowercase, a number, and a symbol." error={createUserErrors.temporary_password}><Input type="password" autoComplete="new-password" value={newUser.temporary_password} onChange={(event) => { clearCreateUserError('temporary_password'); setNewUser((value) => ({ ...value, temporary_password: event.target.value })) }} /></Field>
             <Field label="System access" required hint="Company data and accounting books remain isolated."><select className="input select" value={newUser.company_access} disabled={newUser.is_super_admin} onChange={(event) => setNewUser((value) => ({ ...value, company_access: event.target.value as CompanyAccessChoice }))}><option value="CK">CK system only</option><option value="AR">AR system only</option><option value="BOTH">Both CK and AR</option></select></Field>
           </div>
-          <label className="check-field"><input type="checkbox" checked={newUser.is_super_admin} onChange={(event) => setNewUser((value) => ({ ...value, is_super_admin: event.target.checked, company_access: event.target.checked ? 'BOTH' : value.company_access, role_codes: event.target.checked ? ['admin'] : value.role_codes }))} /><span><strong>Group super administrator</strong><small>Full access to both systems and permission to create other super administrators.</small></span></label>
+          <label className="check-field"><input type="checkbox" checked={newUser.is_super_admin} onChange={(event) => { clearCreateUserError('role_codes'); setNewUser((value) => ({ ...value, is_super_admin: event.target.checked, company_access: event.target.checked ? 'BOTH' : value.company_access, role_codes: event.target.checked ? ['admin'] : value.role_codes })) }} /><span><strong>Group super administrator</strong><small>Full access to both systems and permission to create other super administrators.</small></span></label>
           <fieldset className="access-role-grid" disabled={newUser.is_super_admin}><legend>Capability access</legend>
-            {accessRoleOptions.map((role) => <label className="check-field" key={role.code}><input type="checkbox" checked={newUser.role_codes.includes(role.code)} onChange={(event) => setNewUser((value) => ({ ...value, role_codes: event.target.checked ? [...value.role_codes, role.code] : value.role_codes.filter((code) => code !== role.code) }))} /><span><strong>{role.label}</strong><small>{role.description}</small></span></label>)}
+            {accessRoleOptions.map((role) => <label className="check-field" key={role.code}><input type="checkbox" checked={newUser.role_codes.includes(role.code)} onChange={(event) => { clearCreateUserError('role_codes'); setNewUser((value) => ({ ...value, role_codes: event.target.checked ? [...value.role_codes, role.code] : value.role_codes.filter((code) => code !== role.code) })) }} /><span><strong>{role.label}</strong><small>{role.description}</small></span></label>)}
           </fieldset>
+          {createUserErrors.role_codes ? <span className="field__error" role="alert">{createUserErrors.role_codes}</span> : null}
         </div>
       </Dialog>
 

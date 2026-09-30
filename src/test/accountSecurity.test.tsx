@@ -49,7 +49,7 @@ describe('account security', () => {
     await user.click(screen.getByRole('button', { name: 'Change password' }))
 
     await waitFor(() => expect(mocks.updatePassword).toHaveBeenCalledWith('New-password-123!', '123456'))
-    expect(await screen.findByText('Sign in again with your new password.')).toBeInTheDocument()
+    expect(await screen.findByText('Your new password was verified and your secure session was renewed.')).toBeInTheDocument()
   })
 
   it('does not submit an incomplete email code', async () => {

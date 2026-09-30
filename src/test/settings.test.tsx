@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ToastProvider } from '../components/Toast'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { PURGE_CONFIRMATION, SettingsPage } from '../pages/SettingsPage'
 
 vi.mock('../layout/AppShell', () => ({
@@ -191,6 +191,52 @@ describe('super-admin settings', () => {
     expect(list.mock.calls.some(([path]) => path === '/admin/users')).toBe(true)
     expect(screen.getByText('Login accounts & access')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument()
+  })
+
+  it('validates account details and keeps actionable server errors in the dialog', async () => {
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    vi.spyOn(api, 'list').mockResolvedValue({ items: [], total: 0, page: 1, page_size: 100, pages: 0 })
+    const post = vi.spyOn(api, 'post').mockRejectedValue(new ApiError(
+      'Account creation is not configured on the API server. Add a rotated SUPABASE_SECRET_KEY (sb_secret_...) to the backend environment and restart the API.',
+      503,
+      { code: 'auth_admin_not_configured' },
+    ))
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={['/settings']}>
+          <ToastProvider><SettingsPage /></ToastProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'Create account' }))
+    const dialog = screen.getByRole('dialog', { name: 'Create a login account' })
+    const submit = within(dialog).getByRole('button', { name: 'Create account' })
+
+    await user.click(submit)
+    expect(within(dialog).getByText('Enter the user’s full name.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Enter a valid email address.')).toBeInTheDocument()
+    expect(within(dialog).getByText('Use at least 10 characters.')).toBeInTheDocument()
+    expect(post).not.toHaveBeenCalled()
+
+    await user.type(within(dialog).getByLabelText(/Full name/), '  New User  ')
+    await user.type(within(dialog).getByLabelText(/Email address/), ' New.User@Example.com ')
+    await user.type(within(dialog).getByLabelText(/Temporary password/), 'Strong-password-1!')
+    await user.click(submit)
+
+    await waitFor(() => expect(post).toHaveBeenCalledWith('/admin/users', {
+      display_name: 'New User',
+      email: 'new.user@example.com',
+      temporary_password: 'Strong-password-1!',
+      company_access: 'BOTH',
+      role_codes: ['viewer'],
+      is_super_admin: false,
+    }))
+    expect(await within(dialog).findByText(/SUPABASE_SECRET_KEY/)).toBeInTheDocument()
   })
 
   it('changes account status with a switch and requires the removal PIN', async () => {
