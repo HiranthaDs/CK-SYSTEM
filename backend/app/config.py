@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
-from typing import Any, Literal
+from pathlib import Path
+from typing import Annotated, Any, Literal
 
 from pydantic import AnyHttpUrl, Field, SecretStr, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 def _parse_list(value: Any) -> Any:
@@ -32,6 +33,7 @@ class Settings(BaseSettings):
     app_env: str = "development"
     log_level: str = "INFO"
     docs_enabled: bool = True
+    static_dir: Path | None = None
 
     supabase_url: AnyHttpUrl
     supabase_publishable_key: SecretStr = Field(min_length=20)
@@ -41,10 +43,10 @@ class Settings(BaseSettings):
     supabase_jwks_url: AnyHttpUrl | None = None
     supabase_schema: str = Field(default="public", pattern=r"^[a-z_][a-z0-9_]*$")
 
-    cors_origins: list[str] = Field(
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"]
     )
-    trusted_hosts: list[str] = Field(
+    trusted_hosts: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["localhost", "127.0.0.1", "testserver"]
     )
 

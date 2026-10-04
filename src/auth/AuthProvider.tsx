@@ -66,7 +66,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
-    const { error } = await supabase.auth.signOut()
+    // Do not use Supabase's default global scope here: it revokes the user's
+    // refresh tokens on every browser and device.
+    const { error } = await supabase.auth.signOut({ scope: 'local' })
     if (error) throw error
   }, [])
 

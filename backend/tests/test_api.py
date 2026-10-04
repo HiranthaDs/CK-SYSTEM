@@ -46,6 +46,18 @@ def test_settings_reject_secret_keys() -> None:
         settings(supabase_publishable_key="sb_secret_test_key_1234567890")
 
 
+def test_settings_accept_comma_separated_render_hosts(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test_key_1234567890")
+    monkeypatch.setenv("TRUSTED_HOSTS", "*.onrender.com,localhost,127.0.0.1")
+    monkeypatch.setenv("CORS_ORIGINS", "https://erp.example.com,http://localhost:5173")
+
+    config = Settings(_env_file=None)  # type: ignore[call-arg]
+
+    assert config.trusted_hosts == ["*.onrender.com", "localhost", "127.0.0.1"]
+    assert config.cors_origins == ["https://erp.example.com", "http://localhost:5173"]
+
+
 @pytest.mark.asyncio
 async def test_auth_account_creation_requires_server_secret_key() -> None:
     async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(500))) as client:
@@ -296,6 +308,41 @@ async def test_liveness_has_request_and_security_headers() -> None:
     assert response.headers["x-request-id"] == "test-request-123"
     assert "no-store" in response.headers["cache-control"]
     assert response.headers["x-content-type-options"] == "nosniff"
+
+
+@pytest.mark.asyncio
+async def test_frontend_deep_links_use_spa_fallback_without_masking_missing_assets(
+    tmp_path: Any,
+) -> None:
+    (tmp_path / "index.html").write_text(
+        "<!doctype html><title>CK SYS</title><div id='root'></div>",
+        encoding="utf-8",
+    )
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    (assets / "app.js").write_text("console.log('loaded')", encoding="utf-8")
+    app = create_app(settings(static_dir=tmp_path))
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        login = await client.get("/ck/login", headers={"Accept": "text/html"})
+        dashboard = await client.get("/ar/dashboard", headers={"Accept": "text/html"})
+        asset = await client.get("/assets/app.js")
+        missing_asset = await client.get(
+            "/assets/missing.js", headers={"Accept": "text/html"}
+        )
+        missing_api = await client.get(
+            "/api/v1/not-a-real-route", headers={"Accept": "text/html"}
+        )
+
+    assert login.status_code == 200
+    assert dashboard.status_code == 200
+    assert "<div id='root'></div>" in login.text
+    assert asset.status_code == 200
+    assert "loaded" in asset.text
+    assert missing_asset.status_code == 404
+    assert missing_api.status_code == 404
 
 
 def test_company_resolution_defaults_to_primary_and_rejects_forged_company() -> None:

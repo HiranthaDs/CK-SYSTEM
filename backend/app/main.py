@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -15,6 +15,7 @@ from .logging_config import configure_logging
 from .middleware import RequestContextMiddleware
 from .routes import router
 from .security import JWKSVerifier
+from .spa import SPAStaticFiles
 from .supabase import SupabaseGateway
 
 
@@ -148,6 +149,23 @@ def create_app(
 
     # Main API routes.
     application.include_router(router)
+
+    # Reserve the entire /api namespace. Without this guard, a typo in an API
+    # URL could fall through to the SPA mount and incorrectly return HTML/200.
+    @application.api_route(
+        "/api/{unmatched_path:path}",
+        methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        include_in_schema=False,
+    )
+    async def unmatched_api_route(unmatched_path: str) -> None:
+        del unmatched_path
+        raise HTTPException(status_code=404, detail="API route not found")
+
+    # In production the same process serves the Vite build. Mount this last so
+    # /api routes always win, while direct React URLs receive index.html instead
+    # of Render's generic 404 page.
+    if config.static_dir is not None:
+        application.mount("/", SPAStaticFiles(config.static_dir), name="frontend")
 
     # Ensure dependency injection uses the exact same settings instance.
     application.dependency_overrides[get_settings] = lambda: config

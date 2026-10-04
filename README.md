@@ -117,7 +117,47 @@ npm run check
 
 The API pages every collection, supports cursor/keyset traversal for deep datasets, keeps lookup searches server-filtered and debounced, and calculates dashboard/inventory/production totals in Postgres instead of loading whole tables into the browser or Python process.
 
-Production containers can be built with `compose.yaml`. Copy `deploy.env.example` to `.env`, set the public values, create `backend/.env`, then run:
+Production uses one origin for the React application and Python API. This is
+important: direct links such as `/ck/login`, `/ar/dashboard`, and password-reset
+links are served by the SPA fallback instead of returning a hosting-provider 404.
+
+### Render (recommended)
+
+Deploy the repository as the Docker web service defined by `render.yaml` (Render
+Dashboard → **New** → **Blueprint**). Supply these prompted values:
+
+- `VITE_SUPABASE_URL` and `SUPABASE_URL`: the same Supabase project URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_PUBLISHABLE_KEY`: the same
+  `sb_publishable_...` key
+
+Add `SUPABASE_SECRET_KEY` separately in Render only if in-app account creation is
+required. Never put that secret in a `VITE_*` variable. If you attach a custom
+domain, append its hostname (without `https://`) to `TRUSTED_HOSTS`.
+
+Render cannot convert an existing **Static Site** into a Docker **Web Service**.
+Create the new `ck-sys-v3-app` Blueprint service, verify it, then move bookmarks
+and any custom domain to it. Keep the old service until that verification passes.
+Afterward, the old two-service/static-site deployment should not remain public.
+The Docker service now serves both the frontend and `/api/v1` on Render's `PORT`,
+so there is no cross-origin or internal-hostname dependency. After deployment,
+verify all of these URLs directly in a private browser window:
+
+```text
+https://YOUR-SERVICE.onrender.com/login
+https://YOUR-SERVICE.onrender.com/ck/login
+https://YOUR-SERVICE.onrender.com/ar/login
+https://YOUR-SERVICE.onrender.com/api/v1/health/live
+```
+
+In **Supabase Dashboard → Authentication → Sessions**, keep **Single session per
+user** disabled when the same staff account must work on several devices. The app
+persists a separate browser session per device, and its normal Sign out action now
+ends only the current device's session.
+
+### Docker Compose
+
+Copy `deploy.env.example` to `.env`, set the public values, create
+`backend/.env`, then run:
 
 ```bash
 docker compose up --build -d

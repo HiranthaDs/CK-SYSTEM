@@ -1,29 +1,19 @@
 services:
-  backend:
-    build:
-      context: ./backend
-    env_file:
-      - ./backend/.env
-    restart: unless-stopped
-    expose:
-      - "8000"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=5)"]
-      interval: 30s
-      timeout: 6s
-      retries: 3
-      start_period: 10s
-
-  frontend:
+  app:
     build:
       context: .
       args:
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
         VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY}
         VITE_API_URL: /api/v1
+    env_file:
+      - ./backend/.env
     restart: unless-stopped
-    depends_on:
-      backend:
-        condition: service_healthy
     ports:
-      - "${APP_PORT:-8080}:80"
+      - "${APP_PORT:-8080}:10000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:10000/api/v1/health/live', timeout=5)"]
+      interval: 30s
+      timeout: 6s
+      retries: 3
+      start_period: 15s

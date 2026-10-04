@@ -14,7 +14,8 @@ import './styles.css'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // React Query is memory-only in this app; it is never persisted to browser storage.
+      // Business data remains memory-only. Only the encrypted-in-transit Supabase
+      // session tokens are persisted by the auth client.
       staleTime: 10_000,
       gcTime: 2 * 60_000,
       refetchOnWindowFocus: true,

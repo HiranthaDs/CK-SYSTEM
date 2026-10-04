@@ -32,6 +32,7 @@ function AuthActions() {
       <button onClick={() => void auth.requestPasswordReset(' User@Example.com ', '/ck/reset-password')}>Request reset</button>
       <button onClick={() => void auth.requestPasswordChangeOtp()}>Request change code</button>
       <button onClick={() => void auth.updatePassword('new-password-123', '123456')}>Change password</button>
+      <button onClick={() => void auth.signOut()}>Sign out</button>
     </>
   )
 }
@@ -63,5 +64,14 @@ describe('Supabase password flows', () => {
       password: 'new-password-123',
     }))
     expect(authMocks.signOut).not.toHaveBeenCalled()
+  })
+
+  it('signs out only the current browser session', async () => {
+    const user = userEvent.setup()
+    render(<AuthProvider><AuthActions /></AuthProvider>)
+
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+
+    await waitFor(() => expect(authMocks.signOut).toHaveBeenCalledWith({ scope: 'local' }))
   })
 })

@@ -20,9 +20,10 @@ export const supabase = createClient(
     auth: {
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      // The session intentionally lives in memory only. Reloading the page requires
-      // a new sign-in, but no refresh token is written to browser storage.
-      persistSession: false,
+      // A browser-local session survives refreshes and mobile tab suspension. Each
+      // device receives its own refresh token and can be signed out independently.
+      persistSession: true,
+      storageKey: 'ck-sys-v3-auth',
     },
     global: { fetch: noStoreFetch },
   },
