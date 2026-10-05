@@ -19,8 +19,7 @@ insert into purge_preserved_counts (relation_name, row_count) values
   ('public.company_user_roles', (select pg_catalog.count(*) from public.company_user_roles)),
   ('public.accounts', (select pg_catalog.count(*) from public.accounts)),
   ('public.inventory_items', (select pg_catalog.count(*) from public.inventory_items)),
-  ('public.conversion_types', (select pg_catalog.count(*) from public.conversion_types)),
-  ('public.piecework_rates', (select pg_catalog.count(*) from public.piecework_rates));
+  ('public.conversion_types', (select pg_catalog.count(*) from public.conversion_types));
 
 do $safeupdate_compatible_purge$
 begin
@@ -199,6 +198,20 @@ $verify_removed$;
 rollback to savepoint account_lifecycle_checks;
 release savepoint account_lifecycle_checks;
 
+select pg_catalog.set_config('app.erp_rpc_guard', 'enabled', true);
+insert into public.piecework_rates (
+  id, work_type, rate_per_kg, effective_from, status, notes, created_by, updated_by
+) values (
+  pg_catalog.gen_random_uuid(),
+  'Danger-zone purge rate sentinel',
+  1,
+  current_date,
+  'active',
+  'Must be removed by the complete purge',
+  pg_catalog.current_setting('app.test_actor')::uuid,
+  pg_catalog.current_setting('app.test_actor')::uuid
+);
+
 set local role authenticated;
 select public.erp_execute(
   'employee.upsert',
@@ -237,7 +250,8 @@ begin
         'company_id', pg_catalog.current_setting('app.test_company_id')::uuid,
         'company_code', pg_catalog.current_setting('app.other_company_code'),
         'confirmation', 'DELETE ALL BUSINESS DATA',
-        'acknowledge_irreversible', true
+        'acknowledge_irreversible', true,
+        'delete_conversion_rates', true
       ),
       'purge-wrong-company'
     );
@@ -247,13 +261,24 @@ begin
 end;
 $wrong_company_confirmation$;
 
+select pg_catalog.set_config(
+  'app.target_audit_count',
+  (
+    select pg_catalog.count(*)::text
+    from public.audit_log
+    where company_id = pg_catalog.current_setting('app.test_company_id')::uuid
+  ),
+  true
+);
+
 select public.erp_execute(
   'system.purge_business_data',
   pg_catalog.jsonb_build_object(
     'company_id', pg_catalog.current_setting('app.test_company_id')::uuid,
     'company_code', pg_catalog.current_setting('app.test_company_code'),
     'confirmation', 'DELETE ALL BUSINESS DATA',
-    'acknowledge_irreversible', true
+    'acknowledge_irreversible', true,
+    'delete_conversion_rates', true
   ),
   'purge-valid-test-0001'
 );
@@ -268,7 +293,8 @@ begin
       'company_id', pg_catalog.current_setting('app.test_company_id')::uuid,
       'company_code', pg_catalog.current_setting('app.test_company_code'),
       'confirmation', 'DELETE ALL BUSINESS DATA',
-      'acknowledge_irreversible', true
+      'acknowledge_irreversible', true,
+      'delete_conversion_rates', true
     ),
     'purge-valid-test-0001'
   ) into v_result;
@@ -335,7 +361,7 @@ begin
 
   foreach v_table in array array[
     'roles', 'permissions', 'role_permissions', 'companies', 'accounts',
-    'inventory_items', 'conversion_types', 'piecework_rates'
+    'inventory_items', 'conversion_types'
   ]
   loop
     execute pg_catalog.format('select count(*) from public.%I', v_table) into v_count;
@@ -344,12 +370,33 @@ begin
     end if;
   end loop;
 
+  if exists (select 1 from public.piecework_rates) then
+    raise exception 'Conversion rates remain after danger-zone purge';
+  end if;
+
   if not exists (
     select 1 from public.audit_log
     where operation = 'system.purge_business_data'
       and company_id = pg_catalog.current_setting('app.test_company_id')::uuid
+      and actor_display_name is not null
   ) then
-    raise exception 'Company purge audit event is missing';
+    raise exception 'Company purge audit event or actor snapshot is missing';
+  end if;
+
+  if not exists (
+    select 1 from public.audit_log
+    where company_id = pg_catalog.current_setting('app.test_company_id')::uuid
+      and idempotency_key = 'purge-seed-target-0001'
+  ) then
+    raise exception 'Company purge removed pre-existing audit history';
+  end if;
+
+  if (
+    select pg_catalog.count(*)
+    from public.audit_log
+    where company_id = pg_catalog.current_setting('app.test_company_id')::uuid
+  ) <> pg_catalog.current_setting('app.target_audit_count')::bigint + 1 then
+    raise exception 'Company purge must preserve audit rows and append exactly one receipt';
   end if;
 end;
 $verify_company_purge$;

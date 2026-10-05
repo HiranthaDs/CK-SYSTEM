@@ -57,6 +57,23 @@ export interface AdminUserAccess extends JsonRecord {
   role_codes: string[]
 }
 
+export interface AuditLogEntry extends JsonRecord {
+  id: number
+  occurred_at: string
+  actor_user_id: Id
+  actor_display_name?: string | null
+  actor_email?: string | null
+  operation: string
+  entity_table: string
+  entity_id?: string | null
+  action: 'insert' | 'update' | 'delete' | 'reverse' | 'execute'
+  before_data?: unknown
+  after_data?: unknown
+  idempotency_key?: string | null
+  request_id?: string | null
+  company_id: Id
+}
+
 export interface InventoryPosition extends JsonRecord {
   item_id: Id
   sku?: string | null

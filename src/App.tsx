@@ -14,6 +14,7 @@ const InventoryPage = lazy(() => import('./pages/InventoryPage').then((module) =
 const SalesPage = lazy(() => import('./pages/SalesPage').then((module) => ({ default: module.SalesPage })))
 const EmployeesPage = lazy(() => import('./pages/EmployeesPage').then((module) => ({ default: module.EmployeesPage })))
 const AccountPage = lazy(() => import('./pages/AccountPage').then((module) => ({ default: module.AccountPage })))
+const ActivityPage = lazy(() => import('./pages/ActivityPage').then((module) => ({ default: module.ActivityPage })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })))
 
@@ -62,6 +63,7 @@ export function App() {
           <Route path="sales" element={<PermissionPage permissions={['sales.read', 'sales.write']}><SalesPage /></PermissionPage>} />
           <Route path="employees" element={<PermissionPage permissions={['employees.read', 'employees.write', 'payroll.read', 'payroll.write']}><EmployeesPage /></PermissionPage>} />
           <Route path="accounting" element={<PermissionPage permissions={['finance.read', 'finance.write', 'reports.read']}><AccountingPage /></PermissionPage>} />
+          <Route path="activity" element={<PermissionPage permissions={['audit.read']}><ActivityPage /></PermissionPage>} />
           <Route path="account" element={<AccountPage />} />
           <Route path="settings" element={<PermissionPage permissions={['system.admin']}><SettingsPage /></PermissionPage>} />
           <Route path="*" element={<NotFoundPage />} />

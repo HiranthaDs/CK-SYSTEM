@@ -60,7 +60,7 @@ export function printElement(title: string, html: string) {
   popup.document.write(`<!doctype html><html><head><title>${title}</title><style>
     body{font:14px/1.5 system-ui,sans-serif;color:#111827;padding:32px}h1,h2{margin:0 0 16px}
     table{border-collapse:collapse;width:100%;margin-top:20px}th,td{border:1px solid #d1d5db;padding:8px;text-align:left}
-    th{background:#f3f4f6}.numeric{text-align:right}@media print{button{display:none}}
+    th{background:#f3f4f6}.numeric{text-align:right}.no-print{display:none!important}@media print{button{display:none}}
   </style></head><body>${html}<script>window.addEventListener('load',()=>window.print())</script></body></html>`)
   popup.document.close()
   return true

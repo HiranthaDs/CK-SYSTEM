@@ -27,6 +27,7 @@ from .models import (
     AdminUserCreate,
     AdminUserRemove,
     AdminUserStatusUpdate,
+    AuditLogRecord,
     AdjustmentPost,
     AdjustmentRecord,
     ConversionPost,
@@ -161,6 +162,7 @@ def _filters(
     date_column: str | None,
     search_column: str | None,
     include_status: bool = True,
+    date_is_timestamp: bool = False,
     extra: list[QueryFilter] | None = None,
 ) -> list[QueryFilter]:
     result = list(extra or [])
@@ -173,7 +175,10 @@ def _filters(
     if date_column and values.from_date:
         result.append(QueryFilter(date_column, "gte", values.from_date.isoformat()))
     if date_column and values.to_date:
-        result.append(QueryFilter(date_column, "lte", values.to_date.isoformat()))
+        if date_is_timestamp:
+            result.append(QueryFilter(date_column, "lt", (values.to_date + timedelta(days=1)).isoformat()))
+        else:
+            result.append(QueryFilter(date_column, "lte", values.to_date.isoformat()))
     return result
 
 
@@ -980,6 +985,42 @@ async def finished_inventory(
 ) -> Any:
     return await _inventory_stage_page(
         InventoryStage.FINISHED, request, gateway, pagination, filters, principal
+    )
+
+
+@router.get(
+    "/inventory/position",
+    response_model=PageResponse[InventoryPositionRecord],
+    tags=["inventory"],
+)
+async def inventory_position(
+    request: Request,
+    gateway: Gateway,
+    pagination: PageParams,
+    filters: CollectionQuery,
+    principal: Annotated[Principal, _principal("inventory.read")],
+    stage_value: Annotated[InventoryStage | None, Query(alias="stage")] = None,
+) -> Any:
+    """List detailed company and shared warehouse stock for drill-downs."""
+    extra = [QueryFilter("stage", "eq", stage_value.value)] if stage_value else []
+    return await _list(
+        request,
+        gateway,
+        principal,
+        pagination,
+        source="company_inventory_position",
+        order=_order(
+            filters,
+            allowed={"item_name", "stage", "quantity_on_hand", "inventory_value"},
+            default="item_name",
+        ),
+        filters=_filters(
+            filters,
+            date_column=None,
+            search_column="item_name",
+            include_status=False,
+            extra=extra,
+        ),
     )
 
 
@@ -2186,6 +2227,54 @@ async def financial_summary_report(
         token=principal.token,
         request_id=request.state.request_id,
         company_id=principal.company_id,
+    )
+
+
+@router.get(
+    "/reports/audit-log",
+    response_model=PageResponse[AuditLogRecord],
+    tags=["reports"],
+)
+async def audit_log_report(
+    request: Request,
+    gateway: Gateway,
+    pagination: PageParams,
+    filters: CollectionQuery,
+    principal: Annotated[Principal, _principal("audit.read")],
+    action: Annotated[
+        str | None,
+        Query(pattern=r"^(insert|update|delete|reverse|execute)$"),
+    ] = None,
+    actor: Annotated[str | None, Query(min_length=1, max_length=200)] = None,
+    entity: Annotated[
+        str | None,
+        Query(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_. -]+$"),
+    ] = None,
+) -> Any:
+    """Return the immutable, company-scoped who-did-what report."""
+    return await _list(
+        request,
+        gateway,
+        principal,
+        pagination,
+        source="audit_log",
+        order=_order(
+            filters,
+            allowed={"occurred_at", "operation", "action", "actor_display_name"},
+            default="occurred_at",
+        ),
+        filters=_filters(
+            filters,
+            date_column="occurred_at",
+            search_column="operation",
+            include_status=False,
+            date_is_timestamp=True,
+            extra=[
+                *([QueryFilter("action", "eq", action)] if action else []),
+                *([QueryFilter("actor_display_name", "ilike", f"*{actor.replace('*', '').replace('%', '')}*")] if actor else []),
+                *([QueryFilter("entity_table", "ilike", f"*{entity.replace('*', '').replace('%', '')}*")] if entity else []),
+            ],
+        ),
     )
 
 

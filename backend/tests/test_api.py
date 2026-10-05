@@ -109,12 +109,21 @@ def test_purge_request_requires_exact_phrase_and_acknowledgement() -> None:
         PurgeBusinessDataRequest(
             confirmation="delete all business data",  # type: ignore[arg-type]
             acknowledge_irreversible=True,
+            delete_conversion_rates=True,
             company_code="CK",
         )
     with pytest.raises(ValidationError):
         PurgeBusinessDataRequest(
             confirmation="DELETE ALL BUSINESS DATA",
             acknowledge_irreversible=False,  # type: ignore[arg-type]
+            delete_conversion_rates=True,
+            company_code="CK",
+        )
+    with pytest.raises(ValidationError):
+        PurgeBusinessDataRequest(
+            confirmation="DELETE ALL BUSINESS DATA",
+            acknowledge_irreversible=True,
+            delete_conversion_rates=False,  # type: ignore[arg-type]
             company_code="CK",
         )
 
@@ -247,6 +256,7 @@ async def test_admin_can_request_atomic_business_data_purge() -> None:
             json={
                 "confirmation": "DELETE ALL BUSINESS DATA",
                 "acknowledge_irreversible": True,
+                "delete_conversion_rates": True,
                 "company_code": "CK",
             },
         )
@@ -259,6 +269,7 @@ async def test_admin_can_request_atomic_business_data_purge() -> None:
             "payload": {
                 "confirmation": "DELETE ALL BUSINESS DATA",
                 "acknowledge_irreversible": True,
+                "delete_conversion_rates": True,
                 "company_code": "CK",
             },
             "idempotency_key": "purge-request-001",
@@ -284,6 +295,7 @@ async def test_non_admin_cannot_request_business_data_purge() -> None:
             json={
                 "confirmation": "DELETE ALL BUSINESS DATA",
                 "acknowledge_irreversible": True,
+                "delete_conversion_rates": True,
                 "company_code": "CK",
             },
         )
@@ -291,6 +303,64 @@ async def test_non_admin_cannot_request_business_data_purge() -> None:
     assert response.status_code == 403
     assert response.json()["code"] == "permission_denied"
     assert gateway.calls == []
+
+
+@pytest.mark.asyncio
+async def test_audit_report_is_company_scoped_and_identifies_actor() -> None:
+    class AuditGateway:
+        def __init__(self) -> None:
+            self.source: str | None = None
+            self.kwargs: dict[str, Any] = {}
+
+        async def select_page(self, source: str, **kwargs: Any) -> PageResponse[dict[str, Any]]:
+            self.source = source
+            self.kwargs = kwargs
+            return PageResponse.build(
+                [{
+                    "id": 42,
+                    "occurred_at": "2026-10-05T08:30:00+05:30",
+                    "actor_user_id": "00000000-0000-0000-0000-000000000001",
+                    "actor_display_name": "Test administrator",
+                    "actor_email": "admin@example.com",
+                    "operation": "sale.upsert",
+                    "entity_table": "sale",
+                    "entity_id": "sale-42",
+                    "action": "execute",
+                    "before_data": None,
+                    "after_data": {"ok": True},
+                    "request_id": "request-42",
+                    "company_id": str(COMPANY_ID),
+                }],
+                total=1,
+                page=kwargs["page"],
+                page_size=kwargs["page_size"],
+            )
+
+    gateway = AuditGateway()
+    app = create_app(settings())
+    app.dependency_overrides[get_gateway] = lambda: gateway
+    app.dependency_overrides[get_principal] = lambda: principal("audit.read")
+    transport = httpx.ASGITransport(app=app)
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.get(
+            "/api/v1/reports/audit-log?q=sale&page=1&page_size=25"
+            "&action=execute&actor=Test%20administrator&entity=sale"
+            "&from_date=2026-10-05&to_date=2026-10-05"
+            "&sort=actor_display_name&descending=false"
+        )
+
+    assert response.status_code == 200
+    assert response.json()["items"][0]["actor_display_name"] == "Test administrator"
+    assert gateway.source == "audit_log"
+    assert gateway.kwargs["company_id"] == COMPANY_ID
+    assert QueryFilter("operation", "ilike", "*sale*") in gateway.kwargs["filters"]
+    assert QueryFilter("action", "eq", "execute") in gateway.kwargs["filters"]
+    assert QueryFilter("actor_display_name", "ilike", "*Test administrator*") in gateway.kwargs["filters"]
+    assert QueryFilter("entity_table", "ilike", "*sale*") in gateway.kwargs["filters"]
+    assert QueryFilter("occurred_at", "gte", "2026-10-05") in gateway.kwargs["filters"]
+    assert QueryFilter("occurred_at", "lt", "2026-10-06") in gateway.kwargs["filters"]
+    assert gateway.kwargs["order"] == "actor_display_name.asc"
 
 
 @pytest.mark.asyncio

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BadgeDollarSign,
+  ClipboardList,
   Boxes,
   Factory,
   Gauge,
@@ -32,6 +33,7 @@ const navItems: Array<{ to: string; label: string; icon: typeof Gauge; permissio
   { to: '/sales', label: 'Sales', icon: ShoppingCart, permissions: ['sales.read', 'sales.write'] },
   { to: '/employees', label: 'Staff & payroll', icon: Users, permissions: ['employees.read', 'employees.write', 'payroll.read', 'payroll.write'] },
   { to: '/accounting', label: 'Accounting', icon: BadgeDollarSign, permissions: ['finance.read', 'finance.write', 'reports.read'] },
+  { to: '/activity', label: 'Activity & audit', icon: ClipboardList, permissions: ['audit.read'] },
   { to: '/account', label: 'Account & security', icon: KeyRound },
   { to: '/settings', label: 'Settings', icon: Settings, permissions: ['system.admin'] },
 ]

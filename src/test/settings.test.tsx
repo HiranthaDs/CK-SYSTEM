@@ -110,6 +110,7 @@ describe('administrator business-data purge', () => {
     await waitFor(() => expect(post).toHaveBeenCalledWith('/admin/purge-business-data', {
       confirmation: PURGE_CONFIRMATION,
       acknowledge_irreversible: true,
+      delete_conversion_rates: true,
       company_code: 'CK',
     }))
     await waitFor(() => expect(queryClient.getQueryData(['dashboard', 2026])).toBeUndefined())

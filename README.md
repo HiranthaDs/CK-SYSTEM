@@ -8,7 +8,8 @@ CK SYS V3 is the Supabase-backed replacement for the legacy AR Plastic Google Sh
 - CK/AR company memberships with database-enforced capability roles
 - Super-admin account creation with Accounting/PDF Studio, Production, Staff & Payroll, Admin, or read-only access packages
 - Super-admin Active/Inactive controls and PIN-confirmed access removal with historical audit identities preserved
-- Company-scoped CK/AR danger-zone purge that never deletes login accounts or the other company's records
+- Company-scoped CK/AR danger-zone purge that removes the selected company's complete operational position plus all shared conversion rates, while preserving every login account, the complete audit history, and the other company's records
+- Dedicated, permission-controlled Activity & audit page with actor/action/entity/date filters, full before/after details, printing, and CSV export
 - Email OTP PIN password recovery and verified password changes
 - Raw-material purchasing, bulk-to-chip conversion, piecework, production, and finished stock
 - Invoices, partial receipts, customer balances, and server-calculated COGS
@@ -23,7 +24,7 @@ The previous seven source files are retained only as a read-only reference in `l
 
 Rotate any `sb_secret_...` key shared during development. It is privileged and must be treated as compromised. Ordinary requests use the publishable key plus each signed-in user's JWT. The optional in-app **Create account** action requires a rotated `sb_secret_...` key in the backend environment only; it is never sent to React.
 
-The database API key is not the Postgres password. The linked Supabase project was migrated through `20260929190820_enable_lifecycle_rpc_guard.sql` on 2026-09-29. For another environment, apply every checked-in migration through the Supabase SQL Editor or a linked Supabase CLI project before starting the app.
+The database API key is not the Postgres password. Apply every checked-in migration through the Supabase SQL Editor or a linked Supabase CLI project before starting the app.
 
 ## 1. Apply the database
 
@@ -59,6 +60,9 @@ Or run these files in the Supabase SQL Editor, in this exact order:
 21. `supabase/migrations/20260929185454_add_account_lifecycle_and_company_purge.sql`
 22. `supabase/migrations/20260929190634_fix_account_lifecycle_audit_context.sql`
 23. `supabase/migrations/20260929190820_enable_lifecycle_rpc_guard.sql`
+24. `supabase/migrations/20260930024902_fix_company_purge_safeupdate_reconciliation.sql`
+25. `supabase/migrations/20260930043000_add_finished_product_selling_prices.sql`
+26. `supabase/migrations/20261005032012_add_audit_report_and_complete_company_purge.sql`
 
 Then run every script in `supabase/tests/` in numeric order against a non-production project. The final migration intentionally reverses the temporary universal-Admin state: ordinary Auth identities become pending until a super administrator assigns company and capability access.
 
@@ -129,9 +133,10 @@ Dashboard → **New** → **Blueprint**). Supply these prompted values:
 - `VITE_SUPABASE_URL` and `SUPABASE_URL`: the same Supabase project URL
 - `VITE_SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_PUBLISHABLE_KEY`: the same
   `sb_publishable_...` key
+- `SUPABASE_SECRET_KEY`: a rotated server-only `sb_secret_...` key from the same project
 
-Add `SUPABASE_SECRET_KEY` separately in Render only if in-app account creation is
-required. Never put that secret in a `VITE_*` variable. If you attach a custom
+The Blueprint now declares `SUPABASE_SECRET_KEY`, so Render prompts for it with
+the other environment values. Never put that secret in a `VITE_*` variable. If you attach a custom
 domain, append its hostname (without `https://`) to `TRUSTED_HOSTS`.
 
 Render cannot convert an existing **Static Site** into a Docker **Web Service**.

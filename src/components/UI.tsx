@@ -43,9 +43,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   )
 })
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={clsx('card', className)} {...props} />
-}
+export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function Card({ className, ...props }, ref) {
+  return <div ref={ref} className={clsx('card', className)} {...props} />
+})
 
 export function PageHeader({
   eyebrow,
@@ -76,23 +76,33 @@ export function StatCard({
   hint,
   icon: Icon,
   tone = 'blue',
+  onClick,
+  ariaLabel,
 }: {
   label: string
   value: ReactNode
   hint?: ReactNode | undefined
   icon: LucideIcon
   tone?: 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'slate' | undefined
+  onClick?: (() => void) | undefined
+  ariaLabel?: string | undefined
 }) {
-  return (
-    <Card className="stat-card">
+  const content = (
+    <>
       <div className={`stat-card__icon stat-card__icon--${tone}`}><Icon size={21} /></div>
       <div className="stat-card__content">
         <span>{label}</span>
         <strong>{value}</strong>
         {hint ? <small>{hint}</small> : null}
       </div>
-    </Card>
+    </>
   )
+  if (onClick) return (
+    <button type="button" className="card stat-card stat-card--interactive" onClick={onClick} aria-label={ariaLabel ?? `View ${label} details`}>
+      {content}
+    </button>
+  )
+  return <Card className="stat-card">{content}</Card>
 }
 
 export function Badge({

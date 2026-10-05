@@ -541,6 +541,7 @@ class ReverseRequest(ERPModel):
 class PurgeBusinessDataRequest(ERPModel):
     confirmation: Literal["DELETE ALL BUSINESS DATA"]
     acknowledge_irreversible: Literal[True]
+    delete_conversion_rates: Literal[True]
     company_code: Literal["CK", "AR"]
 
 
@@ -615,6 +616,23 @@ class AdminUserAccessRecord(FlexibleRecord):
     membership_active: bool
     is_primary: bool
     role_codes: list[str] = Field(default_factory=list)
+
+
+class AuditLogRecord(FlexibleRecord):
+    id: int
+    occurred_at: datetime
+    actor_user_id: UUID
+    actor_display_name: str | None = None
+    actor_email: str | None = None
+    operation: str
+    entity_table: str
+    entity_id: str | None = None
+    action: Literal["insert", "update", "delete", "reverse", "execute"]
+    before_data: Any | None = None
+    after_data: Any | None = None
+    idempotency_key: str | None = None
+    request_id: str | None = None
+    company_id: UUID
 
 
 class LegacyActionRequest(ERPModel):

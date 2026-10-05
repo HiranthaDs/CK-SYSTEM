@@ -60,6 +60,7 @@ const accessRoleOptions: Array<{ code: AccessRole; label: string; description: s
 interface PurgePayload {
   confirmation: typeof PURGE_CONFIRMATION
   acknowledge_irreversible: true
+  delete_conversion_rates: true
   company_code: 'CK' | 'AR'
 }
 
@@ -98,15 +99,17 @@ function summarizeAccounts(rows: AdminUserAccess[]): AccountSummary[] {
 
 const deletedGroups = [
   'This company’s employee, bank/pay, compensation, work, and payroll records',
-  'This company’s conversion, production, purchasing, inventory ownership, and stock movements',
-  'This company’s sales, receipts, journals, and operational audit history',
+  'This company’s complete production, conversion, purchasing, inventory position, and stock-movement data',
+  'This company’s sales, receipts, receivables, journals, and accounting transactions',
+  'All saved conversion rates (shared by CK and AR)',
 ]
 
 const preservedGroups = [
   'All Supabase Authentication accounts, user profiles, memberships, and capability roles',
+  'The complete Activity & audit history, including the new purge receipt',
   'Every business record belonging only to the other company',
-  'Shared inventory item definitions, conversion types, piecework rates, and chart of accounts',
-  'Database schema, fiscal controls, application configuration, and the purge receipt',
+  'Shared inventory item definitions, conversion types, and chart of accounts',
+  'Database schema, fiscal controls, and application configuration',
 ]
 
 const externalGroups = [
@@ -223,7 +226,6 @@ export function SettingsPage() {
     queryFn: ({ signal }) => api.list<AdminUserAccess>('/admin/users', { page: 1, page_size: 100 }, signal),
     enabled: me.is_super_admin,
   })
-
   const createUserMutation = useMutation({
     mutationFn: (payload: NewUserDraft) => api.post<MutationReceipt, NewUserDraft>('/admin/users', payload),
     onSuccess: async () => {
@@ -285,6 +287,7 @@ export function SettingsPage() {
     mutationFn: () => api.post<MutationReceipt, PurgePayload>('/admin/purge-business-data', {
       confirmation: PURGE_CONFIRMATION,
       acknowledge_irreversible: true,
+      delete_conversion_rates: true,
       company_code: me.active_company_code === 'AR' ? 'AR' : 'CK',
     }),
     onSuccess: async () => {
@@ -297,7 +300,7 @@ export function SettingsPage() {
       await queryClient.invalidateQueries({ queryKey: ['me'] })
       toast.success(
         'Business data deleted',
-        `${me.active_company_code} business records were deleted. Login accounts, shared setup, and the other company were preserved.`,
+        `${me.active_company_code} business records and all saved conversion rates were deleted. Login accounts, audit history, and the other company were preserved.`,
       )
       void navigate(`${basePath}/dashboard`, { replace: true })
     },
@@ -432,7 +435,7 @@ export function SettingsPage() {
       {me.is_super_admin ? <Card className="danger-zone">
         <SectionTitle
           title="Danger zone"
-          description={`Use this only to permanently reset ${me.active_company_name} business records. Accounts are never deleted by this action.`}
+          description={`Use this only to permanently reset ${me.active_company_name} business records. Accounts and audit history are never deleted by this action.`}
         />
         <InlineNotice tone="danger" title="Permanent live-data deletion">
           Confirm your legal, tax, payroll, and backup retention obligations before continuing.
@@ -441,7 +444,7 @@ export function SettingsPage() {
         <div className="danger-zone__action">
           <div>
             <strong>Delete {me.active_company_code} business data</strong>
-            <span>Keep every login account and the other company, but remove this company&apos;s live operational records.</span>
+            <span>Keep every login account, the full activity log, and the other company&apos;s records, but remove this company&apos;s operational data and every saved conversion rate.</span>
           </div>
           <Button variant="danger" icon={Trash2} onClick={() => setDialogOpen(true)}>
             Delete all data
@@ -552,7 +555,7 @@ export function SettingsPage() {
       <Dialog
         open={dialogOpen}
         title={`Permanently delete ${me.active_company_code} business data?`}
-        description={`This resets ${me.active_company_name} only. Login accounts and the other company are preserved.`}
+        description={`This resets ${me.active_company_name} only. Login accounts, audit history, and the other company are preserved.`}
         size="large"
         onClose={closeDialog}
         closeDisabled={purgeMutation.isPending}

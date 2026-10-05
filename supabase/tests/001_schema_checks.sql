@@ -26,6 +26,30 @@ begin
   if pg_catalog.to_regprocedure('public.erp_company_dashboard(uuid,integer)') is null then
     raise exception 'Missing public.erp_company_dashboard(uuid,integer)';
   end if;
+  if not exists (
+    select 1
+    from pg_catalog.pg_attribute a
+    where a.attrelid = 'public.audit_log'::pg_catalog.regclass
+      and a.attname = 'actor_display_name'
+      and not a.attisdropped
+  ) or not exists (
+    select 1
+    from pg_catalog.pg_attribute a
+    where a.attrelid = 'public.audit_log'::pg_catalog.regclass
+      and a.attname = 'actor_email'
+      and not a.attisdropped
+  ) then
+    raise exception 'Audit actor identity snapshots are missing';
+  end if;
+  if not exists (
+    select 1
+    from pg_catalog.pg_trigger t
+    where t.tgrelid = 'public.audit_log'::pg_catalog.regclass
+      and t.tgname = 'audit_log_snapshot_actor'
+      and not t.tgisinternal
+  ) then
+    raise exception 'Audit actor snapshot trigger is missing';
+  end if;
 
   foreach v_name in array array[
     'current_user_access', 'inventory_position', 'inventory_stage_summary',
